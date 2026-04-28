@@ -15,6 +15,7 @@ import { policiesRouter } from './routes/policies';
 import { productsRouter } from './routes/products';
 import { reportsRouter } from './routes/reports';
 import { resourcesRouter } from './routes/resources';
+import { subscriptionsRouter } from './routes/subscriptions';
 import { templatesRouter } from './routes/templates';
 import { usersRouter } from './routes/users';
 
@@ -46,6 +47,7 @@ app.use('/api/funeral-cases', funeralCasesRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/resources', resourcesRouter);
+app.use('/api/subscriptions', subscriptionsRouter);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console

@@ -76,6 +76,42 @@ async function main() {
     { id: 'u11', name: 'Neo Mahlasela', email: 'neo.reports@ubuntufunerals.co.za', role: 'reporting_analyst', parlourId: 'p1', branchId: 'b1', status: 'active' },
   ] as const;
 
+  const baseSubscriptions = [
+    {
+      id: 'sub1',
+      parlourId: 'p1',
+      tier: 'premium',
+      status: 'active',
+      billingCycle: 'monthly',
+      amount: 4999,
+      startDate: '2025-11-15',
+      autoRenew: true,
+      notes: 'Enterprise support package',
+    },
+    {
+      id: 'sub2',
+      parlourId: 'p2',
+      tier: 'standard',
+      status: 'active',
+      billingCycle: 'monthly',
+      amount: 2499,
+      startDate: '2026-01-10',
+      autoRenew: true,
+      notes: 'Standard growth plan',
+    },
+    {
+      id: 'sub3',
+      parlourId: 'p3',
+      tier: 'basic',
+      status: 'paused',
+      billingCycle: 'monthly',
+      amount: 999,
+      startDate: '2026-02-20',
+      autoRenew: false,
+      notes: 'Paused during onboarding',
+    },
+  ] as const;
+
   const baseProducts = [
     { id: 'pr1', parlourId: 'p1', name: 'Individual Plan', description: 'Cover for a single individual', premiumFrom: 99, coverFrom: 15000, waitingPeriodDays: 180, maxDependants: 0, isActive: true },
     { id: 'pr2', parlourId: 'p1', name: 'Family Plan', description: 'Cover for member plus dependants', premiumFrom: 199, coverFrom: 25000, waitingPeriodDays: 180, maxDependants: 6, isActive: true },
@@ -292,6 +328,14 @@ async function main() {
       where: { id: user.id },
       update: user,
       create: user,
+    });
+  }
+
+  for (const subscription of baseSubscriptions) {
+    await prisma.parlourSubscription.upsert({
+      where: { id: subscription.id },
+      update: subscription,
+      create: subscription,
     });
   }
 

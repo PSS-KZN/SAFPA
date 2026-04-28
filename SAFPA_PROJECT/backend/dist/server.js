@@ -20,6 +20,7 @@ const policies_1 = require("./routes/policies");
 const products_1 = require("./routes/products");
 const reports_1 = require("./routes/reports");
 const resources_1 = require("./routes/resources");
+const subscriptions_1 = require("./routes/subscriptions");
 const templates_1 = require("./routes/templates");
 const users_1 = require("./routes/users");
 const app = (0, express_1.default)();
@@ -46,6 +47,7 @@ app.use('/api/funeral-cases', funeralCases_1.funeralCasesRouter);
 app.use('/api/reports', reports_1.reportsRouter);
 app.use('/api/audit', audit_1.auditRouter);
 app.use('/api/resources', resources_1.resourcesRouter);
+app.use('/api/subscriptions', subscriptions_1.subscriptionsRouter);
 app.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`Backend listening on http://localhost:${port}`);

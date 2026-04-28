@@ -35,6 +35,22 @@ export interface Parlour {
   joinedDate: string;
 }
 
+export interface ParlourSubscription {
+  id: string;
+  parlourId: string;
+  parlourName: string;
+  tier: 'basic' | 'standard' | 'premium';
+  status: 'active' | 'paused' | 'cancelled';
+  billingCycle: 'monthly' | 'quarterly' | 'annually';
+  amount: number;
+  startDate: string;
+  endDate?: string | null;
+  autoRenew: boolean;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Branch {
   id: string;
   parlourId: string;

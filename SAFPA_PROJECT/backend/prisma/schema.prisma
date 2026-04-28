@@ -231,6 +231,21 @@ model ResourceAsset {
   updatedAt   DateTime @updatedAt
 }
 
+model ParlourSubscription {
+  id           String   @id
+  parlourId    String   @unique
+  tier         String
+  status       String
+  billingCycle String
+  amount       Int
+  startDate    String
+  endDate      String?
+  autoRenew    Boolean  @default(true)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model FuneralCase {
   id               String   @id
   caseNumber       String   @unique

@@ -8,6 +8,7 @@ import type { UserRole } from './types';
 import SAFPADashboard from './pages/safpa/SAFPADashboard';
 import ParlourList from './pages/safpa/ParlourList';
 import ParlourDetail from './pages/safpa/ParlourDetail';
+import Subscriptions from './pages/safpa/Subscriptions';
 import SAFPAResources from './pages/safpa/SAFPAResources';
 
 // Parlour Admin
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="/safpa" element={withAccess(['safpa_admin'], <SAFPADashboard />)} />
         <Route path="/safpa/parlours" element={withAccess(['safpa_admin'], <ParlourList />)} />
         <Route path="/safpa/parlours/:id" element={withAccess(['safpa_admin'], <ParlourDetail />)} />
+        <Route path="/safpa/subscriptions" element={withAccess(['safpa_admin'], <Subscriptions />)} />
         <Route path="/safpa/resources" element={withAccess(['safpa_admin'], <SAFPAResources />)} />
 
         {/* Parlour Admin */}

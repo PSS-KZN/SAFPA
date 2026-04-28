@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   // SAFPA Admin
   { label: 'SAFPA Dashboard', path: '/safpa', icon: <LayoutDashboard size={18} />, roles: ['safpa_admin'], group: 'SAFPA' },
   { label: 'Parlour Management', path: '/safpa/parlours', icon: <Building2 size={18} />, roles: ['safpa_admin'], group: 'SAFPA' },
+  { label: 'Subscriptions', path: '/safpa/subscriptions', icon: <Wallet size={18} />, roles: ['safpa_admin'], group: 'SAFPA' },
   { label: 'Resources & Notices', path: '/safpa/resources', icon: <BookOpen size={18} />, roles: ['safpa_admin'], group: 'SAFPA' },
 
   // Parlour Admin
