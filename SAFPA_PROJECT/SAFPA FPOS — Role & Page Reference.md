@@ -8,6 +8,18 @@ This document describes every user role in the system, the pages each role can a
 
 ---
 
+## Access Enforcement (Demo v1.0)
+
+The demo now enforces role permissions at both navigation and route level.
+
+- **Route guards are active**: Direct URL access to pages outside a role's permission set is blocked and redirected to that role's default landing page.
+- **Branch Manager data is branch-scoped**: Leads, Members, Policies, Collections, Funeral Cases, Documents, and related detail pages only show records for the manager's assigned branch.
+- **Branch Manager member onboarding restriction**: Branch Managers can access member list and detail pages only. They cannot access Add Member or Bulk Import routes.
+- **Policy Admin document scope**: On the Documents page, Policy Admin sees only member and policy documents.
+- **Operations Coordinator document scope**: On the Documents page, Operations Coordinator sees only funeral case documents.
+
+---
+
 ## Aesthetic & Theme
 To align with the sensitive and professional nature of the funeral industry, the SAFPA FPOS UI is built using a **Clean, Dignified, and Professional Aesthetic**:
 - **Backgrounds**: Soft, respectful light slate (`#f8fafc`).
@@ -430,7 +442,7 @@ The Branch Manager sees the same parlour dashboard and operational pages as the 
 | Leads `/leads` and `/leads/:id` | Branch-scoped leads |
 | Members `/members` and `/members/:id` | Branch-scoped member list and detail |
 | Policies `/policies` and `/policies/:id` | Branch-scoped policy list and detail |
-| Collections `/collections` | All 4 tabs: Overview, Transactions, Arrears, Reconciliation |
+| Collections `/collections` | Branch-scoped data across all 4 tabs: Overview, Transactions, Arrears, Reconciliation |
 | Funeral Cases `/funeral-cases` and detail | Full case workflow |
 | Communications `/communications` | Delivery log |
 | Documents `/documents` | Branch-scoped documents |
@@ -454,7 +466,7 @@ Focused on the member and policy lifecycle. Lands on Members.
 | Members `/members`, `/members/new`, `/members/import`, `/members/:id` | Full member management including wizard and bulk import |
 | Policies `/policies` and `/policies/:id` | Full policy lifecycle management |
 | Communications `/communications` | View delivery log |
-| Documents `/documents` | Upload and manage member and policy documents |
+| Documents `/documents` | Upload and manage member and policy documents (funeral case docs hidden for this role) |
 | Reports `/reports` | Collections and member reports (no branch performance) |
 
 **Not accessible:** SAFPA Admin pages, Parlour config, Collections (financial), Funeral Cases, Audit Log.
@@ -500,7 +512,7 @@ Manages funeral service delivery from first contact to case closure. Lands on Fu
 |------|-------|
 | Funeral Cases `/funeral-cases`, `/funeral-cases/new`, `/funeral-cases/:id` | Full case workflow |
 | Communications `/communications` | View and send case-related messages |
-| Documents `/documents` | Upload and manage case documents |
+| Documents `/documents` | Upload and manage case documents (member/policy docs hidden for this role) |
 
 **Funeral Case Detail sections in detail:**
 

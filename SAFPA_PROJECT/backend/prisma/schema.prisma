@@ -1,0 +1,271 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Parlour {
+  id                 String   @id
+  name               String
+  region             String
+  province           String
+  tier               String
+  status             String
+  onboardingProgress Int
+  totalMembers       Int
+  totalPolicies      Int
+  contactEmail       String
+  contactPhone       String
+  logo               String?
+  primaryColor       String
+  joinedDate         String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Branch {
+  id        String   @id
+  parlourId String
+  name      String
+  address   String
+  city      String
+  province  String
+  manager   String
+  phone     String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AppUser {
+  id        String   @id
+  name      String
+  email     String   @unique
+  role      String
+  parlourId String?
+  branchId  String?
+  avatar    String?
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id                       String   @id
+  parlourId                String
+  name                     String
+  description              String
+  premiumFrom              Int
+  coverFrom                Int
+  waitingPeriodDays        Int
+  maxDependants            Int
+  isActive                 Boolean  @default(true)
+  allowedStatusTransitions Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model Lead {
+  id         String   @id
+  parlourId  String
+  branchId   String?
+  firstName  String
+  lastName   String
+  phone      String
+  email      String?
+  source     String
+  status     String
+  assignedTo String?
+  notes      String?
+  createdOn  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Member {
+  id            String   @id
+  parlourId     String
+  branchId      String
+  firstName     String
+  lastName      String
+  idNumber      String
+  phone         String
+  email         String
+  address       String
+  city          String
+  province      String
+  joinDate      String
+  status        String
+  dependants    Json
+  beneficiaries Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Policy {
+  id               String   @id
+  policyNumber     String   @unique
+  memberId         String
+  parlourId        String
+  productId        String
+  productName      String
+  status           String
+  premiumAmount    Int
+  billingFrequency String
+  nextDueDate      String
+  startDate        String
+  coverAmount      Int
+  arrearsAmount    Int
+  lastPaymentDate  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PaymentTransaction {
+  id         String   @id
+  policyId   String
+  policyNumber String
+  memberId   String
+  memberName String
+  amount     Int
+  date       String
+  method     String
+  status     String
+  reference  String   @unique
+  parlourId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BillingEvent {
+  id           String   @id
+  parlourId    String
+  policyId     String
+  policyNumber String
+  dueDate      String
+  amount       Int
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ReconciliationImport {
+  id         String   @id
+  parlourId  String
+  fileName   String
+  importedBy String
+  importedAt String
+  matched    Int
+  exceptions Int
+  status     String
+  details    Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model CommunicationTemplate {
+  id          String   @id
+  parlourId   String
+  name        String
+  type        String
+  trigger     String
+  subject     String?
+  body        String
+  isActive    Boolean  @default(true)
+  createdOn   String
+  lastUpdated String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CommunicationLog {
+  id               String   @id
+  parlourId        String
+  type             String
+  recipientName    String
+  recipientContact String
+  subject          String?
+  template         String
+  status           String
+  sentAt           String
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model DocumentRecord {
+  id         String   @id
+  parlourId  String
+  name       String
+  type       String
+  entityType String
+  entityId   String
+  uploadedBy String
+  uploadedAt String
+  size       String
+  storagePath String?
+  mimeType   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ResourceAsset {
+  id          String   @id
+  title       String
+  type        String
+  description String
+  publishedAt String
+  publishedBy String
+  fileSize    String?
+  url         String?
+  tags        Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FuneralCase {
+  id               String   @id
+  caseNumber       String   @unique
+  parlourId        String
+  branchId         String
+  deceasedName     String
+  deceasedIdNumber String
+  dateOfDeath      String
+  policyId         String?
+  policyNumber     String?
+  memberId         String?
+  coordinatorId    String
+  coordinatorName  String
+  status           String
+  funeralDate      String?
+  venue            String?
+  caseType         String
+  tasks            Json
+  notes            Json
+  createdOn        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model AuditEntry {
+  id          String   @id
+  timestamp   String
+  userId      String
+  userName    String
+  userRole    String
+  action      String
+  entityType  String
+  entityId    String
+  entityLabel String
+  parlourId   String?
+  details     String?
+  createdAt   DateTime @default(now())
+}
