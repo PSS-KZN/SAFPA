@@ -1,6 +1,6 @@
 import { useRole } from '../../contexts/RoleContext';
 import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
+import { Eye, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Member, Policy, Product } from '../../types';
 import { fetchMembers } from '../../services/membersApi';
@@ -34,6 +34,7 @@ export default function PolicyList() {
     billingFrequency: 'monthly' as Policy['billingFrequency'],
     premiumAmount: 0,
     coverAmount: 0,
+    waitingPeriodDays: 0,
     startDate: new Date().toISOString().slice(0, 10),
     nextDueDate: new Date().toISOString().slice(0, 10),
   });
@@ -103,6 +104,7 @@ export default function PolicyList() {
         productName: selectedProduct.name,
         status: 'pending',
         premiumAmount: form.premiumAmount,
+        waitingPeriodDays: Math.max(0, form.waitingPeriodDays),
         billingFrequency: form.billingFrequency,
         nextDueDate: form.nextDueDate,
         startDate: form.startDate,
@@ -123,7 +125,12 @@ export default function PolicyList() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Policies</h1>
         {canCreatePolicy && (
-          <button onClick={() => setShowModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ Create Policy</button>
+          <div className="flex gap-2">
+            <Link to="/policies/import" className="border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-1">
+              <Upload size={14} /> Bulk Import
+            </Link>
+            <button onClick={() => setShowModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ Create Policy</button>
+          </div>
         )}
       </div>
 
@@ -236,6 +243,10 @@ export default function PolicyList() {
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Start Date</label>
                 <input type="date" value={form.startDate} onChange={(e) => setForm((previous) => ({ ...previous, startDate: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-slate-600">Waiting Period (days)</label>
+                <input type="number" min={0} value={form.waitingPeriodDays} onChange={(e) => setForm((previous) => ({ ...previous, waitingPeriodDays: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-600">Next Due Date</label>

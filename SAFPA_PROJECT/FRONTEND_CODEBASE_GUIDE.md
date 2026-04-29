@@ -163,10 +163,18 @@ If not set, frontend calls backend at:
 2. npm install
 3. npm run dev
 
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ### Option B: from project root
 
-- npm --prefix frontend install
-- npm --prefix frontend run dev
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev
+```
 
 Note:
 - There is no root package.json script for dev.
@@ -182,10 +190,10 @@ Note:
 
 - Frontend loads but API calls fail:
   - Ensure backend is running on port 4000
-  - Verify VITE_API_BASE_URL if using non-default backend URL
+  - Verify `VITE_API_BASE_URL` if using a non-default backend URL
 
 - 401 or 403 responses:
-  - Ensure safpa_session exists and includes role/parlour context
+  - Ensure `safpa_session` exists and includes role/parlour context
   - Switch role in top bar to one allowed for the route
 
 - Empty tables:

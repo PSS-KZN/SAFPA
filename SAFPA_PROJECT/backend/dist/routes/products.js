@@ -7,17 +7,14 @@ const audit_1 = require("../lib/audit");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const subscription_1 = require("../lib/subscription");
-const statusTransitionRuleSchema = zod_1.z.record(zod_1.z.string(), zod_1.z.array(zod_1.z.string())).optional();
 const createProductSchema = zod_1.z.object({
     parlourId: zod_1.z.string().min(1),
     name: zod_1.z.string().min(2),
     description: zod_1.z.string().min(2),
     premiumFrom: zod_1.z.number().int().nonnegative(),
     coverFrom: zod_1.z.number().int().nonnegative(),
-    waitingPeriodDays: zod_1.z.number().int().nonnegative(),
     maxDependants: zod_1.z.number().int().nonnegative(),
     isActive: zod_1.z.boolean().default(true),
-    allowedStatusTransitions: statusTransitionRuleSchema,
 });
 const updateProductSchema = createProductSchema.omit({ parlourId: true }).partial();
 exports.productsRouter = (0, express_1.Router)();
@@ -44,7 +41,6 @@ exports.productsRouter.post('/', async (req, res) => {
         data: {
             id: (0, id_1.generateId)('pr'),
             ...parsed.data,
-            allowedStatusTransitions: parsed.data.allowedStatusTransitions,
         },
     });
     await (0, audit_1.writeAuditLog)(req, {
@@ -62,13 +58,9 @@ exports.productsRouter.patch('/:id', async (req, res) => {
         return res.status(400).json({ message: 'Invalid product payload', errors: parsed.error.flatten() });
     }
     try {
-        const data = { ...parsed.data };
-        if (Object.prototype.hasOwnProperty.call(data, 'allowedStatusTransitions')) {
-            data.allowedStatusTransitions = data.allowedStatusTransitions;
-        }
         const product = await prisma_1.prisma.product.update({
             where: { id: req.params.id },
-            data,
+            data: parsed.data,
         });
         await (0, audit_1.writeAuditLog)(req, {
             action: 'PRODUCT_UPDATED',

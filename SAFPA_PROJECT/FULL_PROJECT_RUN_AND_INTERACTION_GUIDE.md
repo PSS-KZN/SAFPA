@@ -37,45 +37,63 @@ Run each app from its own folder, or use npm --prefix from the project root.
 From project root:
 
 1. Install frontend dependencies
-- npm --prefix frontend install
+```bash
+npm --prefix frontend install
+```
 
 2. Install backend dependencies
-- npm --prefix backend install
+```bash
+npm --prefix backend install
+```
 
 3. Prepare backend database and client
-- npm --prefix backend run prisma:generate
-- npm --prefix backend run prisma:push
-- npm --prefix backend run prisma:seed
+```bash
+npm --prefix backend run prisma:generate
+npm --prefix backend run prisma:push
+npm --prefix backend run prisma:seed
+```
 
 ## 5) Daily run (two terminals)
 
 ### Terminal 1: backend
 
 From project root:
-- npm --prefix backend run dev
+```bash
+npm --prefix backend run dev
+```
 
 or from backend folder:
-- cd backend
-- npm run dev
+```bash
+cd backend
+npm run dev
+```
 
 ### Terminal 2: frontend
 
 From project root:
-- npm --prefix frontend run dev
+```bash
+npm --prefix frontend run dev
+```
 
 or from frontend folder:
-- cd frontend
-- npm run dev
+```bash
+cd frontend
+npm run dev
+```
 
 ## 6) Why npm run dev from project root fails
 
 This repository does not have a root package.json with a dev script.
 So this command fails:
-- npm run dev
+```bash
+npm run dev
+```
 
 Use one of these patterns instead:
-- npm --prefix backend run dev
-- npm --prefix frontend run dev
+```bash
+npm --prefix backend run dev
+npm --prefix frontend run dev
+```
 
 ## 7) Environment configuration
 
@@ -178,8 +196,8 @@ You can run additional endpoint checks using x-user-* headers to verify role-sco
   - confirm role/parlour context is not filtering results out
 
 - Prisma client/runtime errors:
-  - npm --prefix backend run prisma:generate
-  - npm --prefix backend run prisma:push
+  - run `npm --prefix backend run prisma:generate`
+  - run `npm --prefix backend run prisma:push`
 
 ## 14) What each guide covers
 

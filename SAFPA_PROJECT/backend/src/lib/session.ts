@@ -34,9 +34,21 @@ function getHeaderValue(req: Request, key: string): string | undefined {
   return value && value.trim() ? value.trim() : undefined;
 }
 
+function normalizeRole(role?: string): string {
+  if (!role) {
+    return '';
+  }
+
+  return role.trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
 async function resolveActor(req: Request): Promise<Express.SessionActor | null> {
   const explicitUserId = getHeaderValue(req, 'x-user-id');
   const authHeader = getHeaderValue(req, 'authorization');
+  const headerRole = normalizeRole(getHeaderValue(req, 'x-user-role'));
+  const headerUserName = getHeaderValue(req, 'x-user-name');
+  const headerParlourId = getHeaderValue(req, 'x-parlour-id');
+  const headerBranchId = getHeaderValue(req, 'x-branch-id');
   const bearerUserId = authHeader && authHeader.toLowerCase().startsWith('bearer ')
     ? authHeader.slice('bearer '.length).trim()
     : undefined;
@@ -44,36 +56,48 @@ async function resolveActor(req: Request): Promise<Express.SessionActor | null> 
 
   if (userId) {
     const user = await prisma.appUser.findUnique({ where: { id: userId } });
-    if (!user || user.status !== 'active') {
-      return null;
+    if (user && user.status === 'active') {
+      return {
+        userId: user.id,
+        userName: headerUserName || user.name,
+        role: headerRole || normalizeRole(user.role),
+        parlourId: headerParlourId || user.parlourId || undefined,
+        branchId: headerBranchId || user.branchId || undefined,
+        isAuthenticated: true,
+      };
     }
 
-    return {
-      userId: user.id,
-      userName: user.name,
-      role: user.role,
-      parlourId: user.parlourId || undefined,
-      branchId: user.branchId || undefined,
-      isAuthenticated: true,
-    };
+    // Demo role switching can provide actor context entirely via headers.
+    if (headerRole) {
+      return {
+        userId,
+        userName: headerUserName || userId,
+        role: headerRole,
+        parlourId: headerParlourId,
+        branchId: headerBranchId,
+        isAuthenticated: true,
+      };
+    }
+
+    return null;
   }
 
-  const role = getHeaderValue(req, 'x-user-role');
-  if (!role) {
+  if (!headerRole) {
     return null;
   }
 
   return {
-    userId: getHeaderValue(req, 'x-user-name') || 'header-user',
-    userName: getHeaderValue(req, 'x-user-name') || 'Header User',
-    role,
-    parlourId: getHeaderValue(req, 'x-parlour-id'),
-    branchId: getHeaderValue(req, 'x-branch-id'),
+    userId: headerUserName || 'header-user',
+    userName: headerUserName || 'Header User',
+    role: headerRole,
+    parlourId: headerParlourId,
+    branchId: headerBranchId,
     isAuthenticated: true,
   };
 }
 
 function ruleAllows(path: string, method: string, role: string): boolean {
+  const normalizedRole = normalizeRole(role);
   const rules = ROLE_PERMISSIONS.filter((rule) => path.startsWith(rule.prefix));
   if (rules.length === 0) {
     return true;
@@ -81,7 +105,7 @@ function ruleAllows(path: string, method: string, role: string): boolean {
 
   for (const rule of rules) {
     if (!rule.methods || rule.methods.includes(method)) {
-      return rule.roles.includes(role);
+      return rule.roles.includes(normalizedRole);
     }
   }
 

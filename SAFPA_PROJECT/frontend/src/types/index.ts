@@ -108,12 +108,14 @@ export interface Policy {
   productName: string;
   status: 'draft' | 'pending' | 'active' | 'suspended' | 'lapsed' | 'reinstated' | 'cancelled' | 'closed';
   premiumAmount: number;
+  waitingPeriodDays: number;
   billingFrequency: 'monthly' | 'weekly' | 'annually';
   nextDueDate: string;
   startDate: string;
   coverAmount: number;
   arrearsAmount: number;
   lastPaymentDate?: string;
+  allowedStatusTransitions?: Record<string, string[]> | null;
 }
 
 export interface Product {
@@ -123,7 +125,6 @@ export interface Product {
   description: string;
   premiumFrom: number;
   coverFrom: number;
-  waitingPeriodDays: number;
   maxDependants: number;
   isActive: boolean;
 }
@@ -161,7 +162,30 @@ export interface FuneralCase {
   caseType: 'policy' | 'cash' | 'private';
   tasks: CaseTask[];
   notes: string[];
+  staff?: FuneralCaseStaff[];
+  vehicles?: FuneralCaseVehicle[];
+  suppliers?: FuneralCaseSupplier[];
   createdAt: string;
+}
+
+export interface FuneralCaseStaff {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface FuneralCaseVehicle {
+  id: string;
+  reg: string;
+  type: string;
+  driver: string;
+}
+
+export interface FuneralCaseSupplier {
+  id: string;
+  name: string;
+  service: string;
+  status: 'pending' | 'confirmed';
 }
 
 export interface CaseTask {

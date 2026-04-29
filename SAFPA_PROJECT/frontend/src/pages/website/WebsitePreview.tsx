@@ -41,7 +41,7 @@ export default function WebsitePreview() {
       cover: `R${product.coverFrom.toLocaleString()}`,
       features: [
         `${product.maxDependants} dependants max`,
-        `${product.waitingPeriodDays} day waiting period`,
+        'Waiting period configured per member policy',
         product.description,
       ],
     }));

@@ -32,3 +32,62 @@ export function updateFuneralCaseTask(
 ): Promise<FuneralCase> {
   return request<FuneralCase>(`/api/funeral-cases/${id}/tasks/${taskId}`, jsonRequest(input, { method: 'PATCH' }));
 }
+
+export function deleteFuneralCaseTask(id: string, taskId: string): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/tasks/${taskId}`, { method: 'DELETE' });
+}
+
+export function addFuneralCaseNote(id: string, note: string): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/notes`, jsonRequest({ note }, { method: 'POST' }));
+}
+
+export function deleteFuneralCaseNote(id: string, index: number): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/notes/${index}`, { method: 'DELETE' });
+}
+
+export function deleteFuneralCase(id: string): Promise<void> {
+  return request<void>(`/api/funeral-cases/${id}`, { method: 'DELETE' });
+}
+
+export function addFuneralCaseStaff(id: string, input: { name: string; role: string }): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/staff`, jsonRequest(input, { method: 'POST' }));
+}
+
+export function updateFuneralCaseStaff(id: string, staffId: string, input: { name?: string; role?: string }): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/staff/${staffId}`, jsonRequest(input, { method: 'PATCH' }));
+}
+
+export function deleteFuneralCaseStaff(id: string, staffId: string): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/staff/${staffId}`, { method: 'DELETE' });
+}
+
+export function addFuneralCaseVehicle(id: string, input: { reg: string; type: string; driver: string }): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/vehicles`, jsonRequest(input, { method: 'POST' }));
+}
+
+export function updateFuneralCaseVehicle(id: string, vehicleId: string, input: { reg?: string; type?: string; driver?: string }): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/vehicles/${vehicleId}`, jsonRequest(input, { method: 'PATCH' }));
+}
+
+export function deleteFuneralCaseVehicle(id: string, vehicleId: string): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/vehicles/${vehicleId}`, { method: 'DELETE' });
+}
+
+export function addFuneralCaseSupplier(
+  id: string,
+  input: { name: string; service: string; status?: 'pending' | 'confirmed' }
+): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/suppliers`, jsonRequest(input, { method: 'POST' }));
+}
+
+export function updateFuneralCaseSupplier(
+  id: string,
+  supplierId: string,
+  input: { name?: string; service?: string; status?: 'pending' | 'confirmed' }
+): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/suppliers/${supplierId}`, jsonRequest(input, { method: 'PATCH' }));
+}
+
+export function deleteFuneralCaseSupplier(id: string, supplierId: string): Promise<FuneralCase> {
+  return request<FuneralCase>(`/api/funeral-cases/${id}/suppliers/${supplierId}`, { method: 'DELETE' });
+}

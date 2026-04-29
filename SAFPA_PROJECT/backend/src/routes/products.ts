@@ -1,12 +1,9 @@
 import { Router } from 'express';
-import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
 import { assertCreateLimit } from '../lib/subscription';
-
-const statusTransitionRuleSchema = z.record(z.string(), z.array(z.string())).optional();
 
 const createProductSchema = z.object({
   parlourId: z.string().min(1),
@@ -14,10 +11,8 @@ const createProductSchema = z.object({
   description: z.string().min(2),
   premiumFrom: z.number().int().nonnegative(),
   coverFrom: z.number().int().nonnegative(),
-  waitingPeriodDays: z.number().int().nonnegative(),
   maxDependants: z.number().int().nonnegative(),
   isActive: z.boolean().default(true),
-  allowedStatusTransitions: statusTransitionRuleSchema,
 });
 
 const updateProductSchema = createProductSchema.omit({ parlourId: true }).partial();
@@ -51,7 +46,6 @@ productsRouter.post('/', async (req, res) => {
     data: {
       id: generateId('pr'),
       ...parsed.data,
-      allowedStatusTransitions: parsed.data.allowedStatusTransitions as Prisma.InputJsonValue | undefined,
     },
   });
 
@@ -73,14 +67,9 @@ productsRouter.patch('/:id', async (req, res) => {
   }
 
   try {
-    const data: Record<string, unknown> = { ...parsed.data };
-    if (Object.prototype.hasOwnProperty.call(data, 'allowedStatusTransitions')) {
-      data.allowedStatusTransitions = data.allowedStatusTransitions as Prisma.InputJsonValue;
-    }
-
     const product = await prisma.product.update({
       where: { id: req.params.id },
-      data,
+      data: parsed.data,
     });
 
     await writeAuditLog(req, {

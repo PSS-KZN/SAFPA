@@ -34,6 +34,7 @@ import BulkImport from './pages/members/BulkImport';
 // Policies
 import PolicyList from './pages/policies/PolicyList';
 import PolicyDetail from './pages/policies/PolicyDetail';
+import BulkImportPolicies from './pages/policies/BulkImportPolicies';
 
 // Collections
 import CollectionsDashboard from './pages/collections/CollectionsDashboard';
@@ -117,6 +118,7 @@ function AppRoutes() {
 
         {/* Policies */}
         <Route path="/policies" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <PolicyList />)} />
+        <Route path="/policies/import" element={withAccess(['parlour_owner', 'policy_admin'], <BulkImportPolicies />)} />
         <Route path="/policies/:id" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <PolicyDetail />)} />
 
         {/* Collections */}

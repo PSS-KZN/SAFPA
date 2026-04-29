@@ -31,6 +31,44 @@ export default function PolicyDetail() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const parseTransitionRules = (raw: unknown): Record<string, string[]> | null => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return null;
+    }
+
+    const parsed: Record<string, string[]> = {};
+    for (const [from, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (Array.isArray(value) && value.every((entry) => typeof entry === 'string')) {
+        parsed[from] = value;
+      }
+    }
+
+    return Object.keys(parsed).length > 0 ? parsed : null;
+  };
+
+  const defaultTransitions: Record<string, string[]> = {
+    draft: ['pending', 'cancelled'],
+    pending: ['active', 'cancelled'],
+    active: ['suspended', 'lapsed', 'closed', 'cancelled'],
+    suspended: ['active', 'reinstated', 'lapsed', 'cancelled'],
+    lapsed: ['reinstated', 'closed'],
+    reinstated: ['active', 'suspended', 'cancelled'],
+    cancelled: [],
+    closed: [],
+  };
+
+  const canTransition = (from: string, to: string, rules: Record<string, string[]> | null): boolean => {
+    if (from === to) {
+      return true;
+    }
+
+    if (rules) {
+      return (rules[from] || []).includes(to);
+    }
+
+    return (defaultTransitions[from] || []).includes(to);
+  };
+
   const load = async () => {
     if (!id) {
       setLoading(false);
@@ -94,6 +132,13 @@ export default function PolicyDetail() {
     try {
       setBusy(true);
       setError(null);
+
+      const policyRules = parseTransitionRules(policy.allowedStatusTransitions);
+      if (!canTransition(policy.status, 'active', policyRules)) {
+        setError(`Status transition from ${policy.status} to active is not allowed for this policy.`);
+        return;
+      }
+
       const updated = await updatePolicyStatus(policy.id, 'active');
       setPolicy(updated);
     } catch (statusError) {

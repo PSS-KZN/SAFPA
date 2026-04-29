@@ -18,7 +18,6 @@ export default function Products() {
     description: '',
     premiumFrom: 0,
     coverFrom: 0,
-    waitingPeriodDays: 0,
     maxDependants: 0,
     isActive: true,
   });
@@ -46,7 +45,6 @@ export default function Products() {
       description: '',
       premiumFrom: 0,
       coverFrom: 0,
-      waitingPeriodDays: 0,
       maxDependants: 0,
       isActive: true,
     });
@@ -65,7 +63,6 @@ export default function Products() {
       description: product.description,
       premiumFrom: product.premiumFrom,
       coverFrom: product.coverFrom,
-      waitingPeriodDays: product.waitingPeriodDays,
       maxDependants: product.maxDependants,
       isActive: product.isActive,
     });
@@ -82,13 +79,22 @@ export default function Products() {
       setSaving(true);
       setError(null);
 
+      const payload = {
+        name: form.name,
+        description: form.description,
+        premiumFrom: form.premiumFrom,
+        coverFrom: form.coverFrom,
+        maxDependants: form.maxDependants,
+        isActive: form.isActive,
+      };
+
       if (editingId) {
-        const updated = await updateProduct(editingId, form);
+        const updated = await updateProduct(editingId, payload);
         setProducts((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
       } else {
         const created = await createProduct({
           parlourId,
-          ...form,
+          ...payload,
         });
         setProducts((previous) => [created, ...previous]);
       }
@@ -137,7 +143,6 @@ export default function Products() {
             <div className="text-sm space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Premium from</span><span className="font-medium">R{p.premiumFrom}/mo</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Cover from</span><span className="font-medium">R{p.coverFrom.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Waiting period</span><span className="font-medium">{p.waitingPeriodDays} days</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Max dependants</span><span className="font-medium">{p.maxDependants}</span></div>
             </div>
             <div className="mt-4 flex gap-2">
@@ -169,10 +174,6 @@ export default function Products() {
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Cover</label>
                 <input type="number" value={form.coverFrom} onChange={(e) => setForm((previous) => ({ ...previous, coverFrom: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Waiting Period (days)</label>
-                <input type="number" value={form.waitingPeriodDays} onChange={(e) => setForm((previous) => ({ ...previous, waitingPeriodDays: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Max Dependants</label>

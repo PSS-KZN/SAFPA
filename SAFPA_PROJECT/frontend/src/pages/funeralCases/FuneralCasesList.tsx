@@ -1,9 +1,9 @@
 import { useRole } from '../../contexts/RoleContext';
 import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FuneralCase } from '../../types';
-import { fetchFuneralCases } from '../../services/funeralCasesApi';
+import { deleteFuneralCase, fetchFuneralCases } from '../../services/funeralCasesApi';
 
 const statusColors: Record<string, string> = {
   logged: 'bg-red-100 text-red-700',
@@ -43,6 +43,21 @@ export default function FuneralCasesList() {
     ? items.filter((item) => item.branchId === currentUser.branchId)
     : items;
   const filtered = filterStatus === 'all' ? cases : cases.filter((c) => c.status === filterStatus);
+
+  const onDeleteCase = async (id: string) => {
+    const confirmed = window.confirm('Delete this funeral case? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await deleteFuneralCase(id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete funeral case');
+    }
+  };
 
   return (
     <div>
@@ -101,7 +116,18 @@ export default function FuneralCasesList() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <Link to={`/funeral-cases/${c.id}`} className="text-red-600 hover:text-red-800"><Eye size={16} /></Link>
+                    <div className="flex items-center gap-3">
+                      <Link to={`/funeral-cases/${c.id}`} className="text-red-600 hover:text-red-800"><Eye size={16} /></Link>
+                      <button
+                        type="button"
+                        onClick={() => void onDeleteCase(c.id)}
+                        className="text-slate-400 hover:text-red-700"
+                        aria-label="Delete funeral case"
+                        title="Delete case"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

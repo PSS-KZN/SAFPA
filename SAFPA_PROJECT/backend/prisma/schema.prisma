@@ -65,10 +65,8 @@ model Product {
   description              String
   premiumFrom              Int
   coverFrom                Int
-  waitingPeriodDays        Int
   maxDependants            Int
   isActive                 Boolean  @default(true)
-  allowedStatusTransitions Json?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 }
@@ -119,12 +117,14 @@ model Policy {
   productName      String
   status           String
   premiumAmount    Int
+  waitingPeriodDays Int    @default(0)
   billingFrequency String
   nextDueDate      String
   startDate        String
   coverAmount      Int
   arrearsAmount    Int
   lastPaymentDate  String?
+  allowedStatusTransitions Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -265,6 +265,9 @@ model FuneralCase {
   caseType         String
   tasks            Json
   notes            Json
+  staff            Json?
+  vehicles         Json?
+  suppliers        Json?
   createdOn        String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

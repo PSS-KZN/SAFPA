@@ -33,11 +33,13 @@ export default function ParlourDashboard() {
         setLoading(true);
         setError(null);
 
+        const canReadAudit = currentUser.role === 'safpa_admin' || currentUser.role === 'parlour_owner';
+
         const [parlourRecord, reportData, leads, audit] = await Promise.all([
           fetchParlourById(parlourId),
           fetchReportsDashboard(parlourId, currentUser.role === 'branch_manager' ? { branchId: currentUser.branchId } : undefined),
           fetchLeads(parlourId),
-          fetchAuditEntries(parlourId, 5),
+          canReadAudit ? fetchAuditEntries(parlourId, 5) : Promise.resolve([]),
         ]);
 
         const scopedLeads = currentUser.role === 'branch_manager' && currentUser.branchId
@@ -105,7 +107,7 @@ export default function ParlourDashboard() {
     { label: 'Active Members', value: stats.totalMembers.toLocaleString(), icon: <Users size={20} />, color: 'bg-slate-100 text-slate-600' },
     { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: <FileText size={20} />, color: 'bg-slate-100 text-slate-600' },
     { label: 'Collection Rate', value: `${stats.collectionRate}%`, icon: <Wallet size={20} />, color: 'bg-amber-50 text-amber-600' },
-    { label: 'Arrears', value: `R${(stats.totalArrears / 100).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'bg-red-50 text-red-600' },
+    { label: 'Arrears', value: `R${stats.totalArrears.toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'bg-red-50 text-red-600' },
     { label: 'Open Cases', value: stats.openCases, icon: <HeartHandshake size={20} />, color: 'bg-slate-100 text-slate-600' },
     { label: 'New Leads', value: stats.newLeads, icon: <UserPlus size={20} />, color: 'bg-amber-50 text-amber-600' },
   ];
@@ -136,7 +138,7 @@ export default function ParlourDashboard() {
             <BarChart data={stats.monthlyCollections}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${(v / 1000000).toFixed(1)}M`} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v: any) => `R${v.toLocaleString()}`} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
               <Bar dataKey="collected" fill="#e31837" name="Collected" radius={[4, 4, 0, 0]} />
               <Bar dataKey="due" fill="#cbd5e1" name="Due" radius={[4, 4, 0, 0]} />

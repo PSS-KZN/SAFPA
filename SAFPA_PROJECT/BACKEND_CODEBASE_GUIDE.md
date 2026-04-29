@@ -112,19 +112,24 @@ From backend/.env.example:
 5. npm run prisma:seed
 6. npm run dev
 
+```bash
+cd backend
 npm install
 npm run prisma:generate
 npm run prisma:push
 npm run prisma:seed
 npm run dev
+```
 
 ### Option B: from project root
 
-- npm --prefix backend install
-- npm --prefix backend run prisma:generate
-- npm --prefix backend run prisma:push
-- npm --prefix backend run prisma:seed
-- npm --prefix backend run dev
+```bash
+npm --prefix backend install
+npm --prefix backend run prisma:generate
+npm --prefix backend run prisma:push
+npm --prefix backend run prisma:seed
+npm --prefix backend run dev
+```
 
 Important:
 - There is no root package.json script for dev.
@@ -274,8 +279,8 @@ Implemented in auth.ts:
   - verify FRONTEND_ORIGIN in backend/.env
 
 - Root terminal dev command fails:
-  - use npm --prefix backend run dev
-  - and run frontend separately with npm --prefix frontend run dev
+  - use `npm --prefix backend run dev`
+  - run frontend separately with `npm --prefix frontend run dev`
 
 - File upload/download issues:
   - ensure backend process can read/write backend/uploads

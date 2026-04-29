@@ -11,6 +11,7 @@ export interface ReportsDashboardData {
   monthlyCollections: Array<{ month: string; collected: number; due: number }>;
   branchPerformance: Array<{ branchId: string; branch: string; members: number; collections: number }>;
   policyDistribution: Array<{ name: string; value: number }>;
+  policyLifecycle: Array<{ status: string; count: number }>;
 }
 
 export interface ReportsFilters {

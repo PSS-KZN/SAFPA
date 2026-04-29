@@ -31,6 +31,17 @@ function inDateRange(dateText: string, startDate?: string, endDate?: string): bo
   return true;
 }
 
+function currentMonthRange(): { startDate: string; endDate: string } {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+}
+
 async function buildParlourDashboard(params: {
   parlourId?: string;
   branchId?: string;
@@ -85,13 +96,21 @@ async function buildParlourDashboard(params: {
     return true;
   });
 
+  const hasExplicitDateFilter = Boolean(params.startDate || params.endDate);
+  const defaultRange = currentMonthRange();
+  const collectionWindowStart = hasExplicitDateFilter ? params.startDate : defaultRange.startDate;
+  const collectionWindowEnd = hasExplicitDateFilter ? params.endDate : defaultRange.endDate;
+  const collectionWindowPayments = filteredPayments.filter((payment) =>
+    inDateRange(payment.date, collectionWindowStart, collectionWindowEnd)
+  );
+
   const activePolicies = filteredPolicies.filter((policy) => policy.status === 'active').length;
   const totalPolicies = filteredPolicies.length;
   const totalMembers = members.length;
   const openFuneralCases = filteredFuneralCases.filter((funeralCase) => funeralCase.status !== 'completed' && funeralCase.status !== 'archived').length;
 
   const premiumsDue = filteredPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
-  const premiumsCollected = filteredPayments
+  const premiumsCollected = collectionWindowPayments
     .filter((payment) => payment.status === 'successful')
     .reduce((sum, payment) => sum + payment.amount, 0);
   const arrears = filteredPolicies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
@@ -118,18 +137,20 @@ async function buildParlourDashboard(params: {
       const branchMemberSet = new Set(branchMembers.map((member) => member.id));
       const branchPolicies = filteredPolicies.filter((policy) => branchMemberSet.has(policy.memberId));
       const branchPolicySet = new Set(branchPolicies.map((policy) => policy.id));
-      const branchPayments = filteredPayments.filter((payment) => branchPolicySet.has(payment.policyId));
+      const branchPayments = collectionWindowPayments.filter((payment) => branchPolicySet.has(payment.policyId));
 
       const branchDue = branchPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
       const branchCollected = branchPayments
         .filter((payment) => payment.status === 'successful')
         .reduce((sum, payment) => sum + payment.amount, 0);
 
+      const rawRate = branchDue > 0 ? Math.round((branchCollected / branchDue) * 100) : 0;
+
       return {
         branchId: branch.id,
         branch: branch.name,
         members: branchMembers.length,
-        collections: branchDue > 0 ? Math.round((branchCollected / branchDue) * 100) : 0,
+        collections: Math.max(0, Math.min(rawRate, 100)),
       };
     });
 
@@ -139,6 +160,14 @@ async function buildParlourDashboard(params: {
   }
 
   const policyDistribution = Object.entries(productCounts).map(([name, value]) => ({ name, value }));
+
+  const lifecycleMap = new Map<string, number>();
+  for (const policy of filteredPolicies) {
+    lifecycleMap.set(policy.status, (lifecycleMap.get(policy.status) || 0) + 1);
+  }
+  const policyLifecycle = Array.from(lifecycleMap.entries())
+    .map(([status, count]) => ({ status, count }))
+    .sort((left, right) => right.count - left.count);
 
   return {
     totalMembers,
@@ -151,6 +180,7 @@ async function buildParlourDashboard(params: {
     monthlyCollections,
     branchPerformance,
     policyDistribution,
+    policyLifecycle,
   };
 }
 
@@ -211,7 +241,7 @@ reportsRouter.get('/network', async (_req, res) => {
   const openFuneralCases = funeralCases.filter((item) => item.status !== 'completed' && item.status !== 'archived').length;
 
   const nowMonth = new Date().toISOString().slice(0, 7);
-  const duePoliciesThisMonth = policies.filter((policy) => monthKey(policy.nextDueDate) === nowMonth);
+  const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
   const premiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
   const paymentsThisMonth = payments.filter((payment) => monthKey(payment.date) === nowMonth && payment.status === 'successful');
   const premiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);

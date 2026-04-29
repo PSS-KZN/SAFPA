@@ -3,6 +3,25 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function addMonths(date: Date, delta: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + delta, 1));
+}
+
+function toDateText(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function monthDay(monthStart: Date, day: number): string {
+  const safeDay = Math.max(1, Math.min(day, 28));
+  return toDateText(new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), safeDay)));
+}
+
+function toTimestamp(dateText: string, hour: number, minute: number): string {
+  const hh = String(Math.max(0, Math.min(hour, 23))).padStart(2, '0');
+  const mm = String(Math.max(0, Math.min(minute, 59))).padStart(2, '0');
+  return `${dateText} ${hh}:${mm}:00`;
+}
+
 async function main() {
   const baseParlours = [
     {
@@ -113,9 +132,9 @@ async function main() {
   ] as const;
 
   const baseProducts = [
-    { id: 'pr1', parlourId: 'p1', name: 'Individual Plan', description: 'Cover for a single individual', premiumFrom: 99, coverFrom: 15000, waitingPeriodDays: 180, maxDependants: 0, isActive: true },
-    { id: 'pr2', parlourId: 'p1', name: 'Family Plan', description: 'Cover for member plus dependants', premiumFrom: 199, coverFrom: 25000, waitingPeriodDays: 180, maxDependants: 6, isActive: true },
-    { id: 'pr3', parlourId: 'p1', name: 'Premium Family Plan', description: 'Enhanced cover with added benefits', premiumFrom: 350, coverFrom: 50000, waitingPeriodDays: 90, maxDependants: 8, isActive: true },
+    { id: 'pr1', parlourId: 'p1', name: 'Individual Plan', description: 'Cover for a single individual', premiumFrom: 99, coverFrom: 15000, maxDependants: 0, isActive: true },
+    { id: 'pr2', parlourId: 'p1', name: 'Family Plan', description: 'Cover for member plus dependants', premiumFrom: 199, coverFrom: 25000, maxDependants: 6, isActive: true },
+    { id: 'pr3', parlourId: 'p1', name: 'Premium Family Plan', description: 'Enhanced cover with added benefits', premiumFrom: 350, coverFrom: 50000, maxDependants: 8, isActive: true },
   ] as const;
 
   const baseLeads = [
@@ -159,11 +178,11 @@ async function main() {
   ] as const;
 
   const basePolicies = [
-    { id: 'pol1', policyNumber: 'UBT-2025-0001', memberId: 'm1', parlourId: 'p1', productId: 'pr2', productName: 'Family Plan', status: 'active', premiumAmount: 250, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2025-12-01', coverAmount: 35000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
-    { id: 'pol2', policyNumber: 'UBT-2025-0002', memberId: 'm2', parlourId: 'p1', productId: 'pr1', productName: 'Individual Plan', status: 'active', premiumAmount: 120, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2025-12-15', coverAmount: 20000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
-    { id: 'pol3', policyNumber: 'UBT-2026-0003', memberId: 'm3', parlourId: 'p1', productId: 'pr3', productName: 'Premium Family Plan', status: 'active', premiumAmount: 450, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2026-01-05', coverAmount: 60000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
-    { id: 'pol4', policyNumber: 'UBT-2026-0004', memberId: 'm4', parlourId: 'p1', productId: 'pr1', productName: 'Individual Plan', status: 'active', premiumAmount: 99, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2026-01-20', coverAmount: 15000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
-    { id: 'pol5', policyNumber: 'UBT-2026-0005', memberId: 'm5', parlourId: 'p1', productId: 'pr2', productName: 'Family Plan', status: 'suspended', premiumAmount: 199, billingFrequency: 'monthly', nextDueDate: '2026-03-01', startDate: '2026-02-01', coverAmount: 25000, arrearsAmount: 398 },
+    { id: 'pol1', policyNumber: 'UBT-2025-0001', memberId: 'm1', parlourId: 'p1', productId: 'pr2', productName: 'Family Plan', status: 'active', premiumAmount: 250, waitingPeriodDays: 180, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2025-12-01', coverAmount: 35000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
+    { id: 'pol2', policyNumber: 'UBT-2025-0002', memberId: 'm2', parlourId: 'p1', productId: 'pr1', productName: 'Individual Plan', status: 'active', premiumAmount: 120, waitingPeriodDays: 180, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2025-12-15', coverAmount: 20000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
+    { id: 'pol3', policyNumber: 'UBT-2026-0003', memberId: 'm3', parlourId: 'p1', productId: 'pr3', productName: 'Premium Family Plan', status: 'active', premiumAmount: 450, waitingPeriodDays: 90, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2026-01-05', coverAmount: 60000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
+    { id: 'pol4', policyNumber: 'UBT-2026-0004', memberId: 'm4', parlourId: 'p1', productId: 'pr1', productName: 'Individual Plan', status: 'active', premiumAmount: 99, waitingPeriodDays: 180, billingFrequency: 'monthly', nextDueDate: '2026-05-01', startDate: '2026-01-20', coverAmount: 15000, arrearsAmount: 0, lastPaymentDate: '2026-04-01' },
+    { id: 'pol5', policyNumber: 'UBT-2026-0005', memberId: 'm5', parlourId: 'p1', productId: 'pr2', productName: 'Family Plan', status: 'suspended', premiumAmount: 199, waitingPeriodDays: 180, billingFrequency: 'monthly', nextDueDate: '2026-03-01', startDate: '2026-02-01', coverAmount: 25000, arrearsAmount: 398 },
   ] as const;
 
   const basePayments = [
@@ -307,6 +326,283 @@ async function main() {
     },
   ] as const;
 
+  const startOfCurrentMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
+  const monthStarts = Array.from({ length: 6 }, (_, index) => addMonths(startOfCurrentMonth, -(5 - index)));
+
+  const firstNames = ['Lebo', 'Anele', 'Musa', 'Nomsa', 'Peter', 'Ayabonga', 'Refilwe', 'Tumi', 'Nandi', 'Kabelo', 'Palesa', 'Brian'];
+  const lastNames = ['Mokoena', 'Mthethwa', 'Dube', 'Mahlangu', 'Pillay', 'van Wyk', 'Nkosi', 'Mbatha', 'Radebe', 'Molefe', 'Zulu', 'Naidoo'];
+  const branchCycle = ['b1', 'b2', 'b3'];
+
+  const productCatalog = {
+    pr1: { name: 'Individual Plan', premium: 99, cover: 15000 },
+    pr2: { name: 'Family Plan', premium: 199, cover: 25000 },
+    pr3: { name: 'Premium Family Plan', premium: 350, cover: 50000 },
+  };
+
+  const demoLeads: any[] = [];
+  const demoMembers: any[] = [];
+  const demoPolicies: any[] = [];
+  const demoPayments: any[] = [];
+  const demoBillingEvents: any[] = [];
+  const demoTemplates: any[] = [];
+  const demoCommunications: any[] = [];
+  const demoDocuments: any[] = [];
+  const demoFuneralCases: any[] = [];
+  const demoReconciliationImports: any[] = [];
+  const demoAuditEntries: any[] = [];
+
+  demoTemplates.push(
+    {
+      id: 'tpl_demo_1', parlourId: 'p1', name: 'Policy Lapsed Warning', type: 'sms', trigger: 'policy_lapsed',
+      body: 'Dear {member_name}, your policy is currently lapsed due to missed premiums.', isActive: true,
+      createdOn: monthDay(monthStarts[0], 5), lastUpdated: monthDay(monthStarts[5], 8),
+    },
+    {
+      id: 'tpl_demo_2', parlourId: 'p1', name: 'Collections Follow-up', type: 'email', trigger: 'payment_reminder',
+      subject: 'Premium follow-up',
+      body: 'Please settle outstanding premiums to keep your policy active.', isActive: true,
+      createdOn: monthDay(monthStarts[1], 9), lastUpdated: monthDay(monthStarts[5], 9),
+    }
+  );
+
+  for (let monthIndex = 0; monthIndex < monthStarts.length; monthIndex += 1) {
+    const monthStart = monthStarts[monthIndex];
+    let firstPolicyIdForMonth = '';
+    let firstPolicyNumberForMonth = '';
+    let firstMemberIdForMonth = '';
+
+    for (let memberIndex = 0; memberIndex < 6; memberIndex += 1) {
+      const memberId = `mdemo_${monthIndex}_${memberIndex}`;
+      const firstName = firstNames[(monthIndex * 3 + memberIndex) % firstNames.length];
+      const lastName = lastNames[(monthIndex * 5 + memberIndex) % lastNames.length];
+      const joinDate = monthDay(monthStart, 3 + memberIndex * 2);
+      const branchId = branchCycle[(monthIndex + memberIndex) % branchCycle.length];
+      const dependantCount = memberIndex % 4;
+
+      const dependants = Array.from({ length: dependantCount }, (_, dependantIndex) => ({
+        id: `ddemo_${monthIndex}_${memberIndex}_${dependantIndex}`,
+        firstName: firstNames[(monthIndex + dependantIndex + 2) % firstNames.length],
+        lastName,
+        idNumber: `7001015800${String(monthIndex * 100 + memberIndex * 10 + dependantIndex).padStart(3, '0')}`,
+        relationship: dependantIndex === 0 ? 'Spouse' : 'Child',
+        dateOfBirth: monthDay(addMonths(monthStart, -(20 + dependantIndex)), 10 + dependantIndex),
+      }));
+
+      const beneficiaries = [
+        {
+          id: `bndemo_${monthIndex}_${memberIndex}_0`,
+          firstName,
+          lastName,
+          idNumber: `8001015800${String(monthIndex * 10 + memberIndex).padStart(3, '0')}`,
+          relationship: 'Spouse',
+          percentage: 100,
+        },
+      ];
+
+      const memberStatus = monthIndex === 0 && memberIndex === 0
+        ? 'inactive'
+        : (monthIndex >= 4 && memberIndex === 4 ? 'suspended' : 'active');
+
+      demoMembers.push({
+        id: memberId,
+        parlourId: 'p1',
+        branchId,
+        firstName,
+        lastName,
+        idNumber: `9001015800${String(monthIndex * 10 + memberIndex).padStart(3, '0')}`,
+        phone: `07${String(10000000 + monthIndex * 100 + memberIndex).slice(-8)}`,
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${monthIndex}${memberIndex}@demo.co.za`,
+        address: `${10 + memberIndex} Demo Street`,
+        city: branchId === 'b2' ? 'Pretoria' : branchId === 'b3' ? 'Johannesburg' : 'Soweto',
+        province: 'Gauteng',
+        joinDate,
+        status: memberStatus,
+        dependants,
+        beneficiaries,
+      });
+
+      const productId = dependantCount === 0 && memberIndex % 2 === 0 ? 'pr1' : (memberIndex % 3 === 0 ? 'pr3' : 'pr2');
+      const product = productCatalog[productId as keyof typeof productCatalog];
+      const policyId = `poldemo_${monthIndex}_${memberIndex}`;
+      const policyNumber = `UBT-DEM-${monthIndex}${memberIndex}`;
+
+      const policyStatus = monthIndex <= 1 && memberIndex === 5
+        ? 'lapsed'
+        : (monthIndex >= 3 && memberIndex === 4 ? 'suspended' : (monthIndex === 5 && memberIndex === 0 ? 'pending' : 'active'));
+
+      const arrearsAmount = policyStatus === 'suspended' || policyStatus === 'lapsed'
+        ? product.premium * 2
+        : (policyStatus === 'pending' ? product.premium : 0);
+
+      demoPolicies.push({
+        id: policyId,
+        policyNumber,
+        memberId,
+        parlourId: 'p1',
+        productId,
+        productName: product.name,
+        status: policyStatus,
+        premiumAmount: product.premium,
+        billingFrequency: 'monthly',
+        nextDueDate: monthDay(addMonths(startOfCurrentMonth, 1), 1),
+        startDate: joinDate,
+        coverAmount: product.cover,
+        arrearsAmount,
+        lastPaymentDate: policyStatus === 'pending' ? undefined : monthDay(addMonths(startOfCurrentMonth, -1), 2 + memberIndex),
+      });
+
+      if (!firstPolicyIdForMonth) {
+        firstPolicyIdForMonth = policyId;
+        firstPolicyNumberForMonth = policyNumber;
+        firstMemberIdForMonth = memberId;
+      }
+
+      for (let paymentMonthIndex = monthIndex; paymentMonthIndex < monthStarts.length; paymentMonthIndex += 1) {
+        const paymentDate = monthDay(monthStarts[paymentMonthIndex], 2 + memberIndex);
+        const latestMonth = paymentMonthIndex === monthStarts.length - 1;
+        const isFailed = (policyStatus === 'suspended' || policyStatus === 'lapsed') && latestMonth;
+        const isPending = policyStatus === 'pending' && latestMonth;
+        const paymentStatus = isFailed ? 'failed' : (isPending ? 'pending' : 'successful');
+        const paymentId = `paydemo_${monthIndex}_${memberIndex}_${paymentMonthIndex}`;
+
+        demoPayments.push({
+          id: paymentId,
+          policyId,
+          policyNumber,
+          memberId,
+          memberName: `${firstName} ${lastName}`,
+          amount: product.premium,
+          date: paymentDate,
+          method: memberIndex % 3 === 0 ? 'eft' : 'debit_order',
+          status: paymentStatus,
+          reference: `DEMO-${monthIndex}${memberIndex}${paymentMonthIndex}-${memberIndex}`,
+          parlourId: 'p1',
+        });
+
+        demoBillingEvents.push({
+          id: `bedemo_${monthIndex}_${memberIndex}_${paymentMonthIndex}`,
+          parlourId: 'p1',
+          policyId,
+          policyNumber,
+          dueDate: monthDay(monthStarts[paymentMonthIndex], 1),
+          amount: product.premium,
+          status: paymentStatus === 'successful' ? 'paid' : paymentStatus,
+        });
+
+        demoCommunications.push({
+          id: `cdemo_${monthIndex}_${memberIndex}_${paymentMonthIndex}`,
+          parlourId: 'p1',
+          type: memberIndex % 2 === 0 ? 'sms' : 'email',
+          recipientName: `${firstName} ${lastName}`,
+          recipientContact: memberIndex % 2 === 0 ? `07${String(20000000 + memberIndex).slice(-8)}` : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@demo.co.za`,
+          subject: memberIndex % 2 === 0 ? undefined : 'Premium update',
+          template: paymentStatus === 'successful' ? 'Payment Receipt' : 'Payment Reminder',
+          status: paymentStatus === 'failed' ? 'failed' : 'delivered',
+          sentAt: toTimestamp(paymentDate, 9 + (memberIndex % 5), 10),
+        });
+      }
+    }
+
+    for (let leadIndex = 0; leadIndex < 3; leadIndex += 1) {
+      const leadId = `ldemo_${monthIndex}_${leadIndex}`;
+      const leadFirstName = firstNames[(monthIndex + leadIndex + 4) % firstNames.length];
+      const leadLastName = lastNames[(monthIndex + leadIndex + 1) % lastNames.length];
+      const statuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
+
+      demoLeads.push({
+        id: leadId,
+        parlourId: 'p1',
+        branchId: branchCycle[(monthIndex + leadIndex) % branchCycle.length],
+        firstName: leadFirstName,
+        lastName: leadLastName,
+        phone: `08${String(30000000 + monthIndex * 100 + leadIndex).slice(-8)}`,
+        email: leadIndex % 2 === 0 ? `${leadFirstName.toLowerCase()}.${leadLastName.toLowerCase()}@mail.com` : undefined,
+        source: leadIndex % 2 === 0 ? 'website' : 'agent',
+        status: statuses[(monthIndex + leadIndex) % statuses.length],
+        assignedTo: leadIndex === 0 ? 'Lindiwe Sithole' : undefined,
+        createdOn: monthDay(monthStart, 4 + leadIndex * 6),
+      });
+    }
+
+    demoReconciliationImports.push({
+      id: `recdemo_${monthIndex}`,
+      parlourId: 'p1',
+      fileName: `Recon_${toDateText(monthStart)}.csv`,
+      importedBy: 'Mpho Tau',
+      importedAt: monthDay(monthStart, 22),
+      matched: 80 + monthIndex * 7,
+      exceptions: 1 + (monthIndex % 4),
+      status: 'completed',
+    });
+
+    demoAuditEntries.push(
+      {
+        id: `ademo_${monthIndex}_0`,
+        timestamp: toTimestamp(monthDay(monthStart, 10), 11, 24),
+        userId: 'u5',
+        userName: 'Lindiwe Sithole',
+        userRole: 'policy_admin',
+        action: 'POLICY_UPDATED',
+        entityType: 'Policy',
+        entityId: firstPolicyIdForMonth || `poldemo_${monthIndex}_0`,
+        entityLabel: firstPolicyNumberForMonth || `UBT-DEM-${monthIndex}0`,
+        parlourId: 'p1',
+        details: 'Demo status adjustment and arrears review',
+      },
+      {
+        id: `ademo_${monthIndex}_1`,
+        timestamp: toTimestamp(monthDay(monthStart, 21), 14, 5),
+        userId: 'u6',
+        userName: 'Mpho Tau',
+        userRole: 'collections_clerk',
+        action: 'RECON_FILE_IMPORTED',
+        entityType: 'Reconciliation',
+        entityId: `recdemo_${monthIndex}`,
+        entityLabel: `Recon_${toDateText(monthStart)}.csv`,
+        parlourId: 'p1',
+        details: 'Demo monthly reconciliation import completed',
+      }
+    );
+
+    demoFuneralCases.push({
+      id: `fcdemo_${monthIndex}`,
+      caseNumber: `FC-DEMO-${monthIndex + 1}`,
+      parlourId: 'p1',
+      branchId: branchCycle[monthIndex % branchCycle.length],
+      deceasedName: `${firstNames[(monthIndex + 1) % firstNames.length]} ${lastNames[(monthIndex + 2) % lastNames.length]}`,
+      deceasedIdNumber: `5001015800${String(500 + monthIndex).padStart(3, '0')}`,
+      dateOfDeath: monthDay(monthStart, 18),
+      policyId: firstPolicyIdForMonth || undefined,
+      policyNumber: firstPolicyNumberForMonth || undefined,
+      memberId: firstMemberIdForMonth || undefined,
+      coordinatorId: 'u7',
+      coordinatorName: 'Sibongile Mthembu',
+      status: monthIndex >= 4 ? 'in_progress' : 'completed',
+      funeralDate: monthDay(addMonths(monthStart, 0), 24),
+      venue: monthIndex % 2 === 0 ? 'Avalon Cemetery, Soweto' : 'Westpark Cemetery, Johannesburg',
+      caseType: 'policy',
+      tasks: [
+        { id: `fctask_${monthIndex}_1`, title: 'Collect death certificate', completed: true },
+        { id: `fctask_${monthIndex}_2`, title: 'Finalize transport', completed: monthIndex <= 4 },
+        { id: `fctask_${monthIndex}_3`, title: 'Family coordination call', completed: monthIndex <= 3 },
+      ],
+      notes: ['Generated six-month demo case'],
+      createdOn: monthDay(monthStart, 18),
+    });
+
+    demoDocuments.push({
+      id: `docdemo_pol_${monthIndex}`,
+      name: `Policy_${firstPolicyNumberForMonth || `UBT-DEM-${monthIndex}0`}.pdf`,
+      type: 'policy_document',
+      entityType: 'policy',
+      entityId: firstPolicyIdForMonth || `poldemo_${monthIndex}_0`,
+      parlourId: 'p1',
+      uploadedBy: 'Lindiwe Sithole',
+      uploadedAt: monthDay(monthStart, 12),
+      size: `${280 + monthIndex * 5} KB`,
+    });
+  }
+
   for (const parlour of baseParlours) {
     await prisma.parlour.upsert({
       where: { id: parlour.id },
@@ -355,7 +651,23 @@ async function main() {
     });
   }
 
+  for (const lead of demoLeads) {
+    await prisma.lead.upsert({
+      where: { id: lead.id },
+      update: lead,
+      create: lead,
+    });
+  }
+
   for (const member of baseMembers) {
+    await prisma.member.upsert({
+      where: { id: member.id },
+      update: member,
+      create: member,
+    });
+  }
+
+  for (const member of demoMembers) {
     await prisma.member.upsert({
       where: { id: member.id },
       update: member,
@@ -371,6 +683,14 @@ async function main() {
     });
   }
 
+  for (const policy of demoPolicies) {
+    await prisma.policy.upsert({
+      where: { id: policy.id },
+      update: policy,
+      create: policy,
+    });
+  }
+
   for (const payment of basePayments) {
     await prisma.paymentTransaction.upsert({
       where: { id: payment.id },
@@ -379,7 +699,31 @@ async function main() {
     });
   }
 
+  for (const payment of demoPayments) {
+    await prisma.paymentTransaction.upsert({
+      where: { id: payment.id },
+      update: payment,
+      create: payment,
+    });
+  }
+
+  for (const billingEvent of demoBillingEvents) {
+    await prisma.billingEvent.upsert({
+      where: { id: billingEvent.id },
+      update: billingEvent,
+      create: billingEvent,
+    });
+  }
+
   for (const template of baseTemplates) {
+    await prisma.communicationTemplate.upsert({
+      where: { id: template.id },
+      update: template,
+      create: template,
+    });
+  }
+
+  for (const template of demoTemplates) {
     await prisma.communicationTemplate.upsert({
       where: { id: template.id },
       update: template,
@@ -395,7 +739,23 @@ async function main() {
     });
   }
 
+  for (const communication of demoCommunications) {
+    await prisma.communicationLog.upsert({
+      where: { id: communication.id },
+      update: communication,
+      create: communication,
+    });
+  }
+
   for (const document of baseDocuments) {
+    await prisma.documentRecord.upsert({
+      where: { id: document.id },
+      update: document,
+      create: document,
+    });
+  }
+
+  for (const document of demoDocuments) {
     await prisma.documentRecord.upsert({
       where: { id: document.id },
       update: document,
@@ -411,6 +771,14 @@ async function main() {
     });
   }
 
+  for (const funeralCase of demoFuneralCases) {
+    await prisma.funeralCase.upsert({
+      where: { id: funeralCase.id },
+      update: funeralCase,
+      create: funeralCase,
+    });
+  }
+
   for (const item of baseReconciliationImports) {
     await prisma.reconciliationImport.upsert({
       where: { id: item.id },
@@ -419,7 +787,23 @@ async function main() {
     });
   }
 
+  for (const item of demoReconciliationImports) {
+    await prisma.reconciliationImport.upsert({
+      where: { id: item.id },
+      update: item,
+      create: item,
+    });
+  }
+
   for (const item of baseAuditEntries) {
+    await prisma.auditEntry.upsert({
+      where: { id: item.id },
+      update: item,
+      create: item,
+    });
+  }
+
+  for (const item of demoAuditEntries) {
     await prisma.auditEntry.upsert({
       where: { id: item.id },
       update: item,
