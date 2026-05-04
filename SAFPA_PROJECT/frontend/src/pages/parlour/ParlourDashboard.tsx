@@ -1,5 +1,5 @@
 import { useRole } from '../../contexts/RoleContext';
-import { useTenantBranding } from '../../contexts/TenantBrandingContext';
+import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import { Users, FileText, Wallet, HeartHandshake, TrendingUp, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';

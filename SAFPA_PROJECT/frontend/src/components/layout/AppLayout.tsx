@@ -1,7 +1,8 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { TenantBrandingProvider, useTenantBranding } from '../../contexts/TenantBrandingContext';
+import { TenantBrandingProvider } from '../../contexts/TenantBrandingContext';
+import { useTenantBranding } from '../../contexts/useTenantBranding';
 
 function AppShell() {
   const { parlourBrand, isTenantBranded } = useTenantBranding();

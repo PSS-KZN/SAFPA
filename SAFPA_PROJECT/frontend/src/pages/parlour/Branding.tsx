@@ -93,6 +93,8 @@ export default function Branding() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [subdomainStatus, setSubdomainStatus] = useState<{ state: 'idle' | 'checking' | 'available' | 'taken' | 'invalid'; message: string }>({ state: 'idle', message: '' });
+  const websiteSubdomain = form?.websiteSubdomain;
+  const currentParlourId = parlour?.id;
 
   useEffect(() => {
     const load = async () => {
@@ -115,15 +117,14 @@ export default function Branding() {
   }, [parlourId]);
 
   useEffect(() => {
-    if (!form || !parlour) {
+    if (!websiteSubdomain || !currentParlourId) {
+      if (!websiteSubdomain) {
+        setSubdomainStatus({ state: 'idle', message: 'Choose a SAFPA-hosted subdomain for public website publishing.' });
+      }
       return;
     }
 
-    const nextValue = form.websiteSubdomain.trim().toLowerCase();
-    if (!nextValue) {
-      setSubdomainStatus({ state: 'idle', message: 'Choose a SAFPA-hosted subdomain for public website publishing.' });
-      return;
-    }
+    const nextValue = websiteSubdomain.trim().toLowerCase();
 
     if (!/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/.test(nextValue)) {
       setSubdomainStatus({ state: 'invalid', message: 'Use lowercase letters, numbers, and hyphens only.' });
@@ -132,7 +133,7 @@ export default function Branding() {
 
     setSubdomainStatus({ state: 'checking', message: 'Checking subdomain availability...' });
     const timer = setTimeout(() => {
-      void checkParlourSubdomainAvailability(nextValue, parlour.id)
+      void checkParlourSubdomainAvailability(nextValue, currentParlourId)
         .then((result) => {
           setSubdomainStatus(
             result.available
@@ -146,7 +147,7 @@ export default function Branding() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [form?.websiteSubdomain, parlour]);
+  }, [currentParlourId, websiteSubdomain]);
 
   const isDirty = Boolean(form && initialForm && !formsEqual(form, initialForm));
   const publishStatus = parlour?.websitePublishStatus ?? 'draft';
@@ -171,7 +172,7 @@ export default function Branding() {
     palette: Boolean(form?.primaryColor && form.secondaryColor && form.accentColor),
     profile: Boolean(form?.tagline && form.businessDescription && form.supportEmail && form.supportPhone),
     domain: Boolean(form?.websiteSubdomain) && subdomainStatus.state === 'available',
-    customDomainTracked: Boolean(form?.customDomain) ? form?.customDomainStatus !== 'not_requested' : true,
+    customDomainTracked: form?.customDomain ? form.customDomainStatus !== 'not_requested' : true,
   }), [form, subdomainStatus.state]);
 
   const contrastAudit = useMemo(() => {

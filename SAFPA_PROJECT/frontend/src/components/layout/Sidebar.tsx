@@ -1,5 +1,5 @@
 import { useRole } from '../../contexts/RoleContext';
-import { useTenantBranding } from '../../contexts/TenantBrandingContext';
+import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import type { UserRole } from '../../types';
 import {
