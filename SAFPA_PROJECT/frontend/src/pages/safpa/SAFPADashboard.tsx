@@ -116,7 +116,7 @@ export default function SAFPADashboard() {
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} dy={10} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} dx={-10} />
               <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-              <Line type="monotone" dataKey="members" stroke="#0f172a" strokeWidth={3} dot={{ r: 5, fill: '#0f172a', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="members" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
