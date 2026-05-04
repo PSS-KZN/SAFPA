@@ -5,6 +5,8 @@ import { fetchNetworkDashboard, type NetworkDashboardData } from '../../services
 
 // Premium SAFPA Palette
 const COLORS = ['#e31837', '#f59e0b', '#0f172a', '#475569', '#94a3b8'];
+const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
+const renderPolicyStatusLabel = ({ status, count }: NetworkDashboardData['policyStatusBreakdown'][number]) => `${status}: ${count.toLocaleString()}`;
 
 export default function SAFPADashboard() {
   const [stats, setStats] = useState<NetworkDashboardData | null>(null);
@@ -73,7 +75,7 @@ export default function SAFPADashboard() {
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} dy={10} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} dx={-10} />
-              <Tooltip formatter={(v: any) => `R${v.toLocaleString()}`} cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
+              <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
               <Bar dataKey="collected" fill="#e31837" name="Collected" radius={[6, 6, 0, 0]} barSize={28} />
               <Bar dataKey="due" fill="#cbd5e1" name="Due" radius={[6, 6, 0, 0]} barSize={28} />
             </BarChart>
@@ -90,7 +92,7 @@ export default function SAFPADashboard() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={stats.policyStatusBreakdown} dataKey="count" nameKey="status" cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={3} label={({ status, count }: any) => `${status}: ${count.toLocaleString()}`}>
+              <Pie data={stats.policyStatusBreakdown} dataKey="count" nameKey="status" cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={3} label={renderPolicyStatusLabel}>
                 {stats.policyStatusBreakdown.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="transparent" />
                 ))}

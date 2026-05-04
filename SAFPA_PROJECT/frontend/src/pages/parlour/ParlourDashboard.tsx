@@ -8,6 +8,8 @@ import { fetchReportsDashboard } from '../../services/reportsApi';
 import { fetchLeads } from '../../services/leadsApi';
 import { fetchAuditEntries } from '../../services/auditApi';
 
+const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
+
 interface DashboardState {
   totalMembers: number;
   activePolicies: number;
@@ -141,7 +143,7 @@ export default function ParlourDashboard() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v: any) => `R${v.toLocaleString()}`} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+              <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
               <Bar dataKey="collected" fill="#e31837" name="Collected" radius={[4, 4, 0, 0]} />
               <Bar dataKey="due" fill="#cbd5e1" name="Due" radius={[4, 4, 0, 0]} />
             </BarChart>

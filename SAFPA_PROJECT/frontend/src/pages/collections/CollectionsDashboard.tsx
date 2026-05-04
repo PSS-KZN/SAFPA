@@ -1,11 +1,13 @@
 import { useRole } from '../../contexts/RoleContext';
 import { CheckCircle, XCircle, Clock, AlertTriangle, Upload, FileDown, CheckSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PaymentTransaction, Policy } from '../../types';
 import { createPayment, createReconciliationImport, fetchPayments, fetchReconciliationImports, generateBillingEvents, type ReconciliationImportRecord } from '../../services/paymentsApi';
 import { fetchPolicies } from '../../services/policiesApi';
+
+const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
 
 export default function CollectionsDashboard() {
   const { currentUser } = useRole();
@@ -27,7 +29,7 @@ export default function CollectionsDashboard() {
 
   const parlourId = currentUser.parlourId || 'p1';
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,11 +56,11 @@ export default function CollectionsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId]);
 
   useEffect(() => {
     void load();
-  }, [parlourId]);
+  }, [load]);
 
   const runBillingGeneration = async () => {
     try {
@@ -175,7 +177,7 @@ export default function CollectionsDashboard() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis tickFormatter={(v) => `R${v.toLocaleString()}`} />
-                <Tooltip formatter={(v: any) => `R${v.toLocaleString()}`} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                 <Bar dataKey="collected" fill="#22c55e" name="Collected" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="failed" fill="#ef4444" name="Failed" radius={[4, 4, 0, 0]} />
               </BarChart>

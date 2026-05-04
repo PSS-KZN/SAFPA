@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRole } from '../../contexts/RoleContext';
 import type { User, UserRole } from '../../types';
 import { createUser, fetchUsers, setUserStatus, updateUser } from '../../services/usersApi';
@@ -49,7 +49,7 @@ export default function UserManagement() {
     setEditingUserId(null);
   };
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -60,11 +60,11 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId]);
 
   useEffect(() => {
     void loadUsers();
-  }, [parlourId]);
+  }, [loadUsers]);
 
   const openCreateModal = () => {
     resetForm();

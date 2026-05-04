@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRole } from '../../contexts/RoleContext';
 import type { Product } from '../../types';
 import { createProduct, fetchProducts, setProductStatus, updateProduct } from '../../services/productsApi';
@@ -22,7 +22,7 @@ export default function Products() {
     isActive: true,
   });
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -33,11 +33,11 @@ export default function Products() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId]);
 
   useEffect(() => {
     void loadProducts();
-  }, [parlourId]);
+  }, [loadProducts]);
 
   const resetForm = () => {
     setForm({

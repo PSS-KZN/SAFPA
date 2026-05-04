@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Calendar, DollarSign, AlertCircle, Upload, File } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Document, Member, Policy } from '../../types';
 import { fetchDocuments } from '../../services/documentsApi';
 import { fetchMembers } from '../../services/membersApi';
@@ -69,7 +69,7 @@ export default function PolicyDetail() {
     return (defaultTransitions[from] || []).includes(to);
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) {
       setLoading(false);
       return;
@@ -96,11 +96,11 @@ export default function PolicyDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser.parlourId, id]);
 
   useEffect(() => {
     void load();
-  }, [id, currentUser.parlourId]);
+  }, [load]);
 
   if (loading) {
     return <div className="text-center py-12 text-slate-500">Loading policy...</div>;

@@ -1,5 +1,5 @@
 import { useRole } from '../../contexts/RoleContext';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Communication } from '../../types';
 import { fetchCommunications, sendCommunication } from '../../services/communicationsApi';
 
@@ -20,7 +20,7 @@ export default function CommunicationLog() {
     message: '',
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -31,11 +31,11 @@ export default function CommunicationLog() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId]);
 
   useEffect(() => {
     void load();
-  }, [parlourId]);
+  }, [load]);
 
   const parlourComms = items.filter((c) => c.parlourId === parlourId);
   const filtered = filterType === 'all' ? parlourComms : parlourComms.filter((c) => c.type === filterType);

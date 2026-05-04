@@ -1,5 +1,5 @@
 import { useRole } from '../../contexts/RoleContext';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Upload, Search, Eye, Trash2, File } from 'lucide-react';
 import type { Document } from '../../types';
 import { deleteDocument, fetchDocuments, getDocumentDownloadUrl, uploadDocumentFile } from '../../services/documentsApi';
@@ -52,7 +52,7 @@ export default function DocumentsList() {
   const [uploadType, setUploadType] = useState<Document['type']>('other');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -79,11 +79,11 @@ export default function DocumentsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId, uploadEntityId]);
 
   useEffect(() => {
     void load();
-  }, [parlourId]);
+  }, [load]);
 
   const parlourDocs = documents;
 

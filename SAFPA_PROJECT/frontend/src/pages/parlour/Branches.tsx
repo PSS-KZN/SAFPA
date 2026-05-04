@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRole } from '../../contexts/RoleContext';
 import type { Branch } from '../../types';
 import { createBranch, fetchBranches, setBranchStatus, updateBranch } from '../../services/branchesApi';
@@ -27,7 +27,7 @@ export default function Branches() {
     setEditingBranchId(null);
   };
 
-  const loadBranches = async () => {
+  const loadBranches = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -38,11 +38,11 @@ export default function Branches() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parlourId]);
 
   useEffect(() => {
     void loadBranches();
-  }, [parlourId]);
+  }, [loadBranches]);
 
   const openCreateModal = () => {
     resetForm();
