@@ -16,6 +16,10 @@
     "react-router-dom": "^7.14.1",
     "recharts": "^3.8.1"
   },
+  "optionalDependencies": {
+    "@emnapi/core": "1.10.0",
+    "@emnapi/runtime": "1.10.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@tailwindcss/vite": "^4.2.2",
