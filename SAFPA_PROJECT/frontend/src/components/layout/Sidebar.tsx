@@ -1,9 +1,11 @@
 import { useRole } from '../../contexts/RoleContext';
+import { useTenantBranding } from '../../contexts/TenantBrandingContext';
+import { resolveAssetUrl } from '../../services/http';
 import type { UserRole } from '../../types';
 import {
   LayoutDashboard, Building2, Users, FileText, Wallet, HeartHandshake,
   MessageSquare, BarChart3, Globe, UserPlus, ChevronLeft, ChevronRight,
-  BookOpen, Shield, FolderOpen, LayoutTemplate,
+  BookOpen, Shield, FolderOpen, LayoutTemplate, SwatchBook,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
@@ -28,8 +30,9 @@ const navItems: NavItem[] = [
   { label: 'Branches', path: '/parlour/branches', icon: <Building2 size={18} />, roles: ['parlour_owner'], group: 'Overview' },
   { label: 'Users', path: '/parlour/users', icon: <Users size={18} />, roles: ['parlour_owner'], group: 'Overview' },
   { label: 'Products', path: '/parlour/products', icon: <FileText size={18} />, roles: ['parlour_owner'], group: 'Overview' },
-  { label: 'Comm. Templates', path: '/parlour/comm-templates', icon: <LayoutTemplate size={18} />, roles: ['parlour_owner'], group: 'Overview' },
+  { label: 'Branding', path: '/parlour/branding', icon: <SwatchBook size={18} />, roles: ['parlour_owner'], group: 'Overview' },
   { label: 'Website Preview', path: '/website', icon: <Globe size={18} />, roles: ['parlour_owner'], group: 'Overview' },
+  { label: 'Comm. Templates', path: '/parlour/comm-templates', icon: <LayoutTemplate size={18} />, roles: ['parlour_owner'], group: 'Overview' },
 
   // CRM
   { label: 'Leads', path: '/leads', icon: <UserPlus size={18} />, roles: ['parlour_owner', 'branch_manager', 'policy_admin'], group: 'CRM' },
@@ -59,6 +62,7 @@ const navItems: NavItem[] = [
 
 export default function Sidebar() {
   const { currentUser } = useRole();
+  const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [collapsed, setCollapsed] = useState(false);
 
   const filtered = navItems.filter((item) => item.roles.includes(currentUser.role));
@@ -75,21 +79,41 @@ export default function Sidebar() {
     }
   }
 
+  const sidebarBackground = isTenantBranded
+    ? { background: `linear-gradient(180deg, ${parlourBrand?.secondaryColor ?? '#0a0f1c'} 0%, #080c17 100%)`, borderRightColor: `${parlourBrand?.primaryColor ?? '#1e293b'}33` }
+    : undefined;
+  const accentColor = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
+  const logoSurface = isTenantBranded
+    ? { background: `linear-gradient(135deg, ${parlourBrand?.primaryColor ?? '#ffffff'}22, ${parlourBrand?.accentColor ?? '#ffffff'}22)` }
+    : undefined;
+  const tenantTitle = isTenantBranded ? parlourBrand?.name ?? 'Tenant Workspace' : 'SAFPA FPOS';
+
   return (
-    <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} bg-[#0a0f1c] text-slate-300 flex flex-col transition-all duration-300 min-h-screen relative z-20 shadow-2xl border-r border-slate-800/50`}>
+    <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} bg-[#0a0f1c] text-slate-300 flex flex-col transition-all duration-300 min-h-screen relative z-20 shadow-2xl border-r border-slate-800/50`} style={sidebarBackground}>
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-20 border-b border-slate-800/50 flex-shrink-0">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-              <img src="/safpa-logo.png" alt="SAFPA Logo" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1 shadow-[0_0_15px_rgba(255,255,255,0.1)]" style={logoSurface}>
+              {isTenantBranded && parlourBrand?.logo ? (
+                <img src={resolveAssetUrl(parlourBrand.logo)} alt={`${tenantTitle} logo`} className="w-full h-full object-contain" />
+              ) : (
+                <img src="/safpa-logo.png" alt="SAFPA Logo" className="w-full h-full object-contain" />
+              )}
             </div>
-            <span className="text-[17px] font-bold tracking-tight text-white font-['Outfit']">SAFPA FPOS</span>
+            <div>
+              <div className="text-[17px] font-bold tracking-tight text-white font-['Outfit']">{tenantTitle}</div>
+              {isTenantBranded && <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Tenant Workspace</div>}
+            </div>
           </div>
         )}
         {collapsed && (
           <div className="w-10 h-10 mx-auto rounded-xl bg-white flex items-center justify-center p-1">
-             <img src="/safpa-logo.png" alt="SAFPA Logo" className="w-full h-full object-contain" />
+            {isTenantBranded && parlourBrand?.logo ? (
+              <img src={resolveAssetUrl(parlourBrand.logo)} alt={`${tenantTitle} logo`} className="w-full h-full object-contain" />
+            ) : (
+              <img src="/safpa-logo.png" alt="SAFPA Logo" className="w-full h-full object-contain" />
+            )}
           </div>
         )}
         {!collapsed && (
@@ -122,6 +146,14 @@ export default function Sidebar() {
                   key={item.path}
                   to={item.path}
                   end={item.path === '/safpa' || item.path === '/parlour'}
+                  style={({ isActive }) =>
+                    isActive && isTenantBranded
+                      ? {
+                          color: accentColor,
+                          background: `linear-gradient(90deg, ${accentColor}20 0%, transparent 100%)`,
+                        }
+                      : undefined
+                  }
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 mx-3 rounded-xl text-[14px] font-medium transition-all duration-200 group ${
                       isActive
@@ -132,8 +164,8 @@ export default function Sidebar() {
                 >
                   {({ isActive }) => (
                     <>
-                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-red-600 rounded-r-full" />}
-                      <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-red-500' : 'text-slate-500 group-hover:text-slate-300'}`}>
+                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full" style={{ backgroundColor: isTenantBranded ? accentColor : '#dc2626' }} />}
+                      <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-red-500' : 'text-slate-500 group-hover:text-slate-300'}`} style={isActive && isTenantBranded ? { color: accentColor } : undefined}>
                         {item.icon}
                       </span>
                       {!collapsed && <span>{item.label}</span>}
@@ -149,7 +181,7 @@ export default function Sidebar() {
       {/* Footer */}
       {!collapsed && (
         <div className="px-6 py-5 border-t border-slate-800/50 text-[12px] font-medium text-slate-500 flex items-center justify-between bg-[#080c17]">
-          <span>v1.0.0 Production</span>
+          <span>{isTenantBranded ? 'Tenant branded shell' : 'v1.0.0 Production'}</span>
           <div className="flex items-center gap-2">
             <span className="text-emerald-500">System Online</span>
             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse-slow"></div>

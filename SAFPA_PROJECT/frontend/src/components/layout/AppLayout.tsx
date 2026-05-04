@@ -1,10 +1,16 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { TenantBrandingProvider, useTenantBranding } from '../../contexts/TenantBrandingContext';
 
-export default function AppLayout() {
+function AppShell() {
+  const { parlourBrand, isTenantBranded } = useTenantBranding();
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800 selection:bg-red-500/20">
+    <div
+      className="flex h-screen overflow-hidden bg-slate-50 text-slate-800 selection:bg-red-500/20"
+      style={isTenantBranded ? { background: `linear-gradient(180deg, ${parlourBrand?.primaryColor ?? '#f8fafc'}14 0%, #f8fafc 18%)` } : undefined}
+    >
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <TopBar />
@@ -15,6 +21,14 @@ export default function AppLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AppLayout() {
+  return (
+    <TenantBrandingProvider>
+      <AppShell />
+    </TenantBrandingProvider>
   );
 }
 

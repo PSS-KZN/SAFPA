@@ -6,6 +6,7 @@ The backend is an Express + TypeScript API using Prisma with SQLite for demo per
 
 It is responsible for:
 - Domain APIs for all major modules
+- Parlour branding, hosted website readiness, subdomain checks, and logo asset management
 - Authentication/session resolution and tenant scope enforcement
 - Role-based access checks in middleware
 - Subscription-tier feature limits
@@ -28,6 +29,7 @@ Default frontend origin expected by CORS:
 - ORM: Prisma
 - Demo database: SQLite
 - Upload handling: multer
+- Image validation/inspection for branding logos: sharp
 - Spreadsheet parsing for imports: xlsx
 
 ## 3) Backend layout
@@ -53,6 +55,10 @@ Default frontend origin expected by CORS:
     - reports.ts
     - audit.ts
     - resources.ts
+    - subscriptions.ts
+
+- backend/uploads/
+  - Runtime storage for uploaded files, including branding logos under backend/uploads/branding
 
 - backend/src/lib/
   - prisma.ts: shared Prisma client
@@ -65,7 +71,7 @@ Default frontend origin expected by CORS:
   - Request type extension for resolved actor context
 
 - backend/prisma/schema.prisma
-  - Data models
+  - Data models, including parlour branding and website publishing fields
 
 - backend/prisma/seed.ts
   - Demo data seeding
@@ -88,6 +94,9 @@ From backend/.env.example:
 
 - npm run build
   - Compiles TypeScript to dist
+
+- npm run test:branding
+  - Runs the Node test suite covering phase 7 parlour-branding authorization and publish constraints
 
 - npm run start
   - Starts compiled server from dist/server.js
@@ -141,8 +150,9 @@ Current middleware order in server.ts:
 
 1. CORS
 2. express.json()
-3. authScopeMiddleware
-4. Route handlers
+3. Static /uploads file serving
+4. authScopeMiddleware
+5. Route handlers
 
 How authScopeMiddleware works (session.ts):
 
@@ -155,10 +165,15 @@ How authScopeMiddleware works (session.ts):
    - x-user-id header, or
    - Authorization: Bearer <userId>
 3. Loads active user from AppUser where possible
-4. Applies role permissions by route prefix and method
-5. Applies tenant scope checks:
+4. Falls back to header-only actor resolution for demo role switching when a valid role header is present
+5. Applies role permissions by route prefix and method
+6. Applies tenant scope checks:
    - Non-admin users are constrained to their parlourId
    - Branch managers are constrained to their branch for report queries
+
+Special case rules:
+- Parlour branding and logo routes under /api/parlours/:id/(branding|logo) are explicitly limited to safpa_admin and parlour_owner
+- Website inquiry intake remains public through /api/leads/website-inquiry
 
 Headers commonly used:
 - x-user-id
@@ -172,6 +187,7 @@ Headers commonly used:
 
 Mounted in server.ts:
 
+- /uploads (static files)
 - /api/health
 - /api/auth
 - /api/parlours
@@ -189,6 +205,14 @@ Mounted in server.ts:
 - /api/reports
 - /api/audit
 - /api/resources
+- /api/subscriptions
+
+Important parlour subroutes implemented in parlours.ts:
+- GET /api/parlours/availability/subdomain
+- GET /api/parlours/:id
+- PATCH /api/parlours/:id/branding
+- POST /api/parlours/:id/logo
+- PATCH /api/parlours/:id/status
 
 ## 9) Data model overview
 
@@ -206,10 +230,17 @@ Core Prisma models:
 - CommunicationLog
 - DocumentRecord
 - ResourceAsset
+- ParlourSubscription
 - FuneralCase
 - AuditEntry
 
 Many workflow-heavy fields are JSON-based (tasks, dependants, beneficiaries, notes, metadata, tags).
+
+Parlour now also carries branding and website fields such as:
+- primaryColor, secondaryColor, accentColor
+- logo, tagline, businessDescription, supportEmail, supportPhone, physicalAddress
+- websiteTemplate, websiteSubdomain, customDomain, customDomainStatus, customDomainDnsTarget, customDomainNotes
+- websitePublished, websitePublishStatus, brandingCompletedAt
 
 ## 10) Cross-cutting backend features
 
@@ -235,12 +266,35 @@ documents.ts provides:
 - Download endpoint by document ID
 - Disk cleanup when a stored document is deleted
 
+parlours.ts also provides branding logo upload handling:
+- Multipart logo upload with in-memory buffering
+- MIME validation limited to PNG, JPEG, and WebP
+- Image dimension validation through sharp
+- Disk write into backend/uploads/branding
+- Cleanup of previously managed branding logo assets when replaced
+
 ### 10.4 Automation endpoint
 
 communications.ts provides reminder automation:
 - POST /api/communications/run-reminders
   - Creates reminder log rows for due/overdue policies
   - Writes audit entry for dispatch run
+
+### 10.5 Subscription administration
+
+subscriptions.ts provides SAFPA-admin subscription operations:
+- Subscription listing and detail reads
+- Create and update subscription records
+- Access limited to SAFPA admin actors by authScopeMiddleware
+
+### 10.6 Branding and hosted website workflow
+
+parlours.ts provides branding-specific domain behavior:
+- Subdomain availability checks for SAFPA-hosted tenant sites
+- Automatic readiness evaluation based on required branding/profile fields
+- Publish-state resolution across draft, ready, needs_review, and published
+- Enforcement that a website cannot be published until branding readiness rules pass
+- Audit logging for branding updates and logo uploads
 
 ## 11) Auth endpoints
 
@@ -264,6 +318,9 @@ Implemented in auth.ts:
 6. Run npm run build
 7. Smoke-test endpoint with role/scope headers
 
+For branding or upload changes, also run:
+8. npm run test:branding
+
 ## 13) Quick troubleshooting
 
 - Prisma client errors:
@@ -285,12 +342,17 @@ Implemented in auth.ts:
 - File upload/download issues:
   - ensure backend process can read/write backend/uploads
 
+- Branding publish or subdomain issues:
+  - verify the parlour has all required branding fields before requesting published status
+  - check for subdomain conflicts with `GET /api/parlours/availability/subdomain?value=...`
+
 ## 14) Current implementation status
 
 Backend domain APIs are implemented and compile successfully.
 
 Validated flows include:
 - Website lead intake + lead conversion
+- Parlour branding updates, subdomain availability checks, and logo upload validation
 - Member creation and bulk import
 - Policy/payment updates and arrears flow
 - Reconciliation import records

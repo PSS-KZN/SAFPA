@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const SESSION_KEY = 'safpa_session';
 
 function getSessionHeaders(): Record<string, string> {
@@ -64,4 +64,20 @@ export function jsonRequest(body: unknown, init?: RequestInit): RequestInit {
     },
     body: JSON.stringify(body),
   };
+}
+
+export function resolveAssetUrl(assetPath?: string | null): string | undefined {
+  if (!assetPath) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(assetPath)) {
+    return assetPath;
+  }
+
+  if (assetPath.startsWith('/')) {
+    return `${API_BASE_URL}${assetPath}`;
+  }
+
+  return `${API_BASE_URL}/${assetPath}`;
 }

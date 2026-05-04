@@ -1,4 +1,6 @@
 import { useRole } from '../../contexts/RoleContext';
+import { useTenantBranding } from '../../contexts/TenantBrandingContext';
+import { resolveAssetUrl } from '../../services/http';
 import { Users, FileText, Wallet, HeartHandshake, TrendingUp, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useEffect, useMemo, useState } from 'react';
@@ -25,6 +27,7 @@ interface DashboardState {
 
 export default function ParlourDashboard() {
   const { currentUser } = useRole();
+  const { parlourBrand, isTenantBranded } = useTenantBranding();
   const parlourId = currentUser.parlourId || 'p1';
   const [parlour, setParlour] = useState<Parlour | null>(null);
   const [stats, setStats] = useState<DashboardState | null>(null);
@@ -117,11 +120,44 @@ export default function ParlourDashboard() {
     { label: 'New Leads', value: stats.newLeads, icon: <UserPlus size={24} className="text-white" />, gradient: 'from-slate-800 to-slate-900' },
   ];
 
+  const dashboardPrimary = isTenantBranded ? parlourBrand?.primaryColor ?? parlour.primaryColor : parlour.primaryColor;
+  const dashboardSecondary = isTenantBranded ? parlourBrand?.secondaryColor ?? '#0f172a' : '#0f172a';
+  const dashboardAccent = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
+  const heroAddress = parlour.physicalAddress || `${parlour.region}, ${parlour.province}`;
+
   return (
     <div className="relative z-10 animate-fade-in-up">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{parlour.name}</h1>
-        <p className="text-slate-500 mt-1">{currentUser.role === 'branch_manager' ? 'Branch Dashboard Overview' : 'Parlour Dashboard Overview'}</p>
+      <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-1 gap-8 px-8 py-8 md:grid-cols-[1.2fr_0.8fr]" style={{ background: `linear-gradient(135deg, ${dashboardPrimary}, ${dashboardSecondary})` }}>
+          <div className="text-white">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-white/65">Internal tenant view</div>
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/90 p-2 text-slate-700 shadow-sm">
+                {parlour.logo ? <img src={resolveAssetUrl(parlour.logo)} alt={`${parlour.name} logo`} className="h-full w-full object-contain" /> : <span className="text-lg font-bold">{parlour.name.slice(0, 2).toUpperCase()}</span>}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">{parlour.name}</h1>
+                <p className="mt-1 text-white/80">{parlour.tagline || (currentUser.role === 'branch_manager' ? 'Branch Dashboard Overview' : 'Parlour Dashboard Overview')}</p>
+              </div>
+            </div>
+            <p className="mt-5 max-w-2xl text-sm leading-6 text-white/80">{parlour.businessDescription || 'This tenant-branded dashboard gives branch and parlour users a consistent internal identity without changing SAFPA-admin and cross-tenant surfaces.'}</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 text-sm">
+            <div className="rounded-2xl bg-white/10 px-5 py-4 text-white backdrop-blur-sm">
+              <div className="text-white/60">Support contact</div>
+              <div className="mt-1 font-semibold">{parlour.supportPhone || parlour.contactPhone}</div>
+            </div>
+            <div className="rounded-2xl bg-white/10 px-5 py-4 text-white backdrop-blur-sm">
+              <div className="text-white/60">Website status</div>
+              <div className="mt-1 font-semibold">{parlour.websitePublished ? 'Published' : 'Draft'}</div>
+            </div>
+            <div className="rounded-2xl bg-white/10 px-5 py-4 text-white backdrop-blur-sm">
+              <div className="text-white/60">Public address</div>
+              <div className="mt-1 font-semibold">{heroAddress}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -147,7 +183,7 @@ export default function ParlourDashboard() {
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} />
               <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-              <Bar dataKey="collected" fill="#e31837" name="Collected" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="collected" fill={dashboardAccent} name="Collected" radius={[4, 4, 0, 0]} />
               <Bar dataKey="due" fill="#cbd5e1" name="Due" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -161,7 +197,7 @@ export default function ParlourDashboard() {
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-              <Line type="monotone" dataKey="members" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="members" stroke={dashboardPrimary} strokeWidth={3} dot={{ r: 4, fill: dashboardPrimary, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

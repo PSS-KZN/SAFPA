@@ -26,6 +26,22 @@ model Parlour {
   contactPhone       String
   logo               String?
   primaryColor       String
+  secondaryColor     String   @default("#0f172a")
+  accentColor        String   @default("#dc2626")
+  businessDescription String?
+  tagline            String?
+  supportEmail       String?
+  supportPhone       String?
+  physicalAddress    String?
+  websiteTemplate    String   @default("heritage")
+  websiteSubdomain   String?
+  customDomain       String?
+  customDomainStatus String   @default("not_requested")
+  customDomainDnsTarget String?
+  customDomainNotes  String?
+  websitePublished   Boolean  @default(false)
+  websitePublishStatus String @default("draft")
+  brandingCompletedAt String?
   joinedDate         String
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

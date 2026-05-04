@@ -18,11 +18,12 @@ Run each app from its own folder, or use npm --prefix from the project root.
 1. User opens frontend in browser (http://localhost:5173)
 2. Frontend page calls a service in frontend/src/services
 3. services/http.ts sends request to backend (default http://localhost:4000)
-4. Backend authScopeMiddleware resolves actor and applies role/tenant restrictions
-5. Domain route validates payload with Zod
-6. Prisma reads/writes SQLite database
-7. Route writes audit logs for key state changes
-8. Response returns to frontend and page updates UI state
+4. Backend static `/uploads` serving exposes stored assets such as branding logos
+5. Backend authScopeMiddleware resolves actor and applies role/tenant restrictions
+6. Domain route validates payload with Zod
+7. Prisma reads/writes SQLite database
+8. Route writes audit logs for key state changes
+9. Response returns to frontend and page updates UI state
 
 ## 3) Prerequisites
 
@@ -112,6 +113,8 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 ### Frontend side
 
 - RoleContext stores selected session in localStorage key: safpa_session
+- RoleContext primes a default session on first load so initial API requests include actor headers
+- TenantBrandingContext fetches the active parlour record for non-SAFPA users so tenant shell branding stays in sync with backend parlour data
 - services/http.ts reads safpa_session and sends headers:
   - x-user-id
   - x-user-name
@@ -119,20 +122,23 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
   - x-parlour-id
   - x-branch-id
   - Authorization: Bearer <userId>
+- services/http.ts also resolves relative asset paths such as `/uploads/branding/...` against the backend origin for branded logos
 
 ### Backend side
 
 - authScopeMiddleware reads headers/token and resolves actor
+- Falls back to header-only actor resolution for demo role switching when a valid role header is present
 - Applies role-based route permissions
 - Applies tenant restrictions by parlour and branch where relevant
+- Static `/uploads` serving exposes uploaded documents and branding logos from backend storage
 - Rejects unauthorized requests with 401/403
 
 ## 9) How data and modules interact
 
 ### Core modules
 
-- SAFPA admin: parlours, resources, network reporting, audit
-- Parlour admin: branches, users, products, templates, website config
+- SAFPA admin: parlours, subscriptions, resources, network reporting, audit
+- Parlour admin: branches, users, products, templates, branding workspace, website config
 - Operations/CRM: leads, members, policies, payments, collections, funeral cases
 - Shared records: documents, communications, reports, audit
 
@@ -158,11 +164,25 @@ Website lead to reporting:
   - Metadata stored in DocumentRecord table
   - Download endpoint serves file by document id
 
+- Uploaded branding logos:
+  - Stored on disk in backend/uploads/branding
+  - Asset path stored on the Parlour record
+  - Served through backend static `/uploads` routing
+
+- Tenant branding state:
+  - Loaded from the backend parlour record, not just frontend mock data
+  - Consumed by tenant shell components, branding workspace, parlour dashboard, and website preview
+
 ## 11) Automation interactions
 
 - Billing and reconciliation flows are exposed through payments routes
 - Reminder automation is exposed via communications route:
   - POST /api/communications/run-reminders
+- Subscription administration is exposed via subscriptions routes for SAFPA admin workflows
+- Branding and website publishing interactions are exposed through parlours routes:
+  - PATCH /api/parlours/:id/branding
+  - POST /api/parlours/:id/logo
+  - GET /api/parlours/availability/subdomain
 - These actions write to communication logs and audit logs
 
 ## 12) Build and verification
@@ -172,6 +192,14 @@ Website lead to reporting:
 - npm --prefix backend run build
 - npm --prefix frontend run build
 
+### Branding-focused backend verification
+
+- npm --prefix backend run test:branding
+
+Frontend production build notes:
+- frontend build runs TypeScript project build plus Vite bundle generation
+- Vite splits vendor output into separate chunks for React, router, charts, lucide, and remaining vendor code
+
 ### Health check backend
 
 - GET http://localhost:4000/api/health
@@ -179,6 +207,11 @@ Website lead to reporting:
 ### Example smoke checks (PowerShell)
 
 - Invoke-RestMethod -Method Get -Uri 'http://localhost:4000/api/health'
+
+- Check subdomain availability:
+```powershell
+Invoke-RestMethod -Method Get -Uri 'http://localhost:4000/api/parlours/availability/subdomain?value=ubuntu-funerals'
+```
 
 You can run additional endpoint checks using x-user-* headers to verify role-scoped behavior.
 
@@ -191,9 +224,17 @@ You can run additional endpoint checks using x-user-* headers to verify role-sco
 - CORS errors:
   - ensure FRONTEND_ORIGIN in backend/.env matches frontend URL
 
+- Branding images do not load:
+  - ensure backend dev server is running and serving `/uploads`
+  - check that the stored logo path points to the same backend configured in `VITE_API_BASE_URL`
+
 - Empty UI data:
   - run backend seed script
   - confirm role/parlour context is not filtering results out
+
+- Branding publish blocked:
+  - ensure required branding fields are complete in the branding workspace
+  - confirm the chosen SAFPA-hosted subdomain is valid and available
 
 - Prisma client/runtime errors:
   - run `npm --prefix backend run prisma:generate`

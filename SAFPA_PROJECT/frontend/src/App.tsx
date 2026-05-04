@@ -17,6 +17,7 @@ import Branches from './pages/parlour/Branches';
 import UserManagement from './pages/parlour/UserManagement';
 import Products from './pages/parlour/Products';
 import CommunicationTemplates from './pages/parlour/CommunicationTemplates';
+import Branding from './pages/parlour/Branding';
 
 // Website
 import WebsitePreview from './pages/website/WebsitePreview';
@@ -101,6 +102,7 @@ function AppRoutes() {
         <Route path="/parlour/branches" element={withAccess(['parlour_owner'], <Branches />)} />
         <Route path="/parlour/users" element={withAccess(['parlour_owner'], <UserManagement />)} />
         <Route path="/parlour/products" element={withAccess(['parlour_owner'], <Products />)} />
+        <Route path="/parlour/branding" element={withAccess(['parlour_owner'], <Branding />)} />
         <Route path="/parlour/comm-templates" element={withAccess(['parlour_owner'], <CommunicationTemplates />)} />
 
         {/* Website */}

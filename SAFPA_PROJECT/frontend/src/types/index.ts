@@ -32,6 +32,22 @@ export interface Parlour {
   contactPhone: string;
   logo?: string;
   primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  businessDescription?: string | null;
+  tagline?: string | null;
+  supportEmail?: string | null;
+  supportPhone?: string | null;
+  physicalAddress?: string | null;
+  websiteTemplate: 'heritage' | 'modern' | 'community';
+  websiteSubdomain?: string | null;
+  customDomain?: string | null;
+  customDomainStatus: 'not_requested' | 'requested' | 'configured';
+  customDomainDnsTarget?: string | null;
+  customDomainNotes?: string | null;
+  websitePublished: boolean;
+  websitePublishStatus: 'draft' | 'ready' | 'published' | 'needs_review';
+  brandingCompletedAt?: string | null;
   joinedDate: string;
 }
 

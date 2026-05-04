@@ -98,6 +98,11 @@ async function resolveActor(req: Request): Promise<Express.SessionActor | null> 
 
 function ruleAllows(path: string, method: string, role: string): boolean {
   const normalizedRole = normalizeRole(role);
+
+  if (/^\/api\/parlours\/[^/]+\/(branding|logo)$/.test(path)) {
+    return ['safpa_admin', 'parlour_owner'].includes(normalizedRole);
+  }
+
   const rules = ROLE_PERMISSIONS.filter((rule) => path.startsWith(rule.prefix));
   if (rules.length === 0) {
     return true;

@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import path from 'node:path';
 import { authScopeMiddleware } from './lib/session';
 import { authRouter } from './routes/auth';
 import { auditRouter } from './routes/audit';
@@ -19,11 +20,12 @@ import { subscriptionsRouter } from './routes/subscriptions';
 import { templatesRouter } from './routes/templates';
 import { usersRouter } from './routes/users';
 
-const app = express();
+export const app = express();
 const port = Number(process.env.PORT || 4000);
 
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.use(authScopeMiddleware);
 
@@ -49,7 +51,9 @@ app.use('/api/audit', auditRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
 
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Backend listening on http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Backend listening on http://localhost:${port}`);
+  });
+}
