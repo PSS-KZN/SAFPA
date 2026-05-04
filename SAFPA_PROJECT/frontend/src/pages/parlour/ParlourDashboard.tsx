@@ -8,7 +8,10 @@ import { fetchReportsDashboard } from '../../services/reportsApi';
 import { fetchLeads } from '../../services/leadsApi';
 import { fetchAuditEntries } from '../../services/auditApi';
 
-const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
+const formatCurrencyTooltip = (value: unknown) => {
+  const amount = Array.isArray(value) ? value[0] : value;
+  return `R${Number(amount ?? 0).toLocaleString()}`;
+};
 
 interface DashboardState {
   totalMembers: number;

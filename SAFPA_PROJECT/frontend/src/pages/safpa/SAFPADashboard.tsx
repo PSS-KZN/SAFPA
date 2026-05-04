@@ -5,8 +5,23 @@ import { fetchNetworkDashboard, type NetworkDashboardData } from '../../services
 
 // Premium SAFPA Palette
 const COLORS = ['#e31837', '#f59e0b', '#0f172a', '#475569', '#94a3b8'];
-const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
-const renderPolicyStatusLabel = ({ status, count }: NetworkDashboardData['policyStatusBreakdown'][number]) => `${status}: ${count.toLocaleString()}`;
+const formatCurrencyTooltip = (value: unknown) => {
+  const amount = Array.isArray(value) ? value[0] : value;
+  return `R${Number(amount ?? 0).toLocaleString()}`;
+};
+
+const renderPolicyStatusLabel = (props: unknown) => {
+  if (!props || typeof props !== 'object' || !('payload' in props)) {
+    return '';
+  }
+
+  const payload = (props as { payload?: NetworkDashboardData['policyStatusBreakdown'][number] }).payload;
+  if (!payload) {
+    return '';
+  }
+
+  return `${payload.status}: ${payload.count.toLocaleString()}`;
+};
 
 export default function SAFPADashboard() {
   const [stats, setStats] = useState<NetworkDashboardData | null>(null);

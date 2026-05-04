@@ -7,7 +7,10 @@ import type { PaymentTransaction, Policy } from '../../types';
 import { createPayment, createReconciliationImport, fetchPayments, fetchReconciliationImports, generateBillingEvents, type ReconciliationImportRecord } from '../../services/paymentsApi';
 import { fetchPolicies } from '../../services/policiesApi';
 
-const formatCurrencyTooltip = (value: number | string) => `R${Number(value).toLocaleString()}`;
+const formatCurrencyTooltip = (value: unknown) => {
+  const amount = Array.isArray(value) ? value[0] : value;
+  return `R${Number(amount ?? 0).toLocaleString()}`;
+};
 
 export default function CollectionsDashboard() {
   const { currentUser } = useRole();
