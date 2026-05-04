@@ -104,12 +104,12 @@ export default function ParlourDashboard() {
   }
 
   const cards = [
-    { label: 'Active Members', value: stats.totalMembers.toLocaleString(), icon: <Users size={20} />, color: 'bg-slate-100 text-slate-600' },
-    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: <FileText size={20} />, color: 'bg-slate-100 text-slate-600' },
-    { label: 'Collection Rate', value: `${stats.collectionRate}%`, icon: <Wallet size={20} />, color: 'bg-amber-50 text-amber-600' },
-    { label: 'Arrears', value: `R${stats.totalArrears.toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'bg-red-50 text-red-600' },
-    { label: 'Open Cases', value: stats.openCases, icon: <HeartHandshake size={20} />, color: 'bg-slate-100 text-slate-600' },
-    { label: 'New Leads', value: stats.newLeads, icon: <UserPlus size={20} />, color: 'bg-amber-50 text-amber-600' },
+    { label: 'Active Members', value: stats.totalMembers.toLocaleString(), icon: <Users size={24} className="text-white" />, gradient: 'from-blue-600 to-blue-800' },
+    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: <FileText size={24} className="text-white" />, gradient: 'from-emerald-500 to-emerald-700' },
+    { label: 'Collection Rate', value: `${stats.collectionRate}%`, icon: <Wallet size={24} className="text-white" />, gradient: 'from-amber-500 to-amber-600' },
+    { label: 'Arrears', value: `R${stats.totalArrears.toLocaleString()}`, icon: <TrendingUp size={24} className="text-white" />, gradient: 'from-red-600 to-red-800' },
+    { label: 'Open Cases', value: stats.openCases, icon: <HeartHandshake size={24} className="text-white" />, gradient: 'from-slate-700 to-slate-800' },
+    { label: 'New Leads', value: stats.newLeads, icon: <UserPlus size={24} className="text-white" />, gradient: 'from-slate-800 to-slate-900' },
   ];
 
   return (
@@ -121,10 +121,12 @@ export default function ParlourDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {cards.map((c, i) => (
-          <div key={c.label} className="glass-panel glass-panel-interactive rounded-2xl p-6 flex items-start gap-5" style={{ animationDelay: `${i * 0.05}s` }}>
-            <div className={`${c.color} p-3 rounded-xl border border-slate-200/60 shadow-sm`}>{c.icon}</div>
+          <div key={c.label} className="card card-hover p-6 flex items-center gap-5" style={{ animationDelay: `${i * 0.05}s` }}>
+            <div className={`flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${c.gradient} shadow-lg shrink-0`}>
+              {c.icon}
+            </div>
             <div>
-              <p className="text-sm text-slate-500 font-medium">{c.label}</p>
+              <p className="text-[13px] text-slate-500 font-semibold uppercase tracking-wider">{c.label}</p>
               <p className="text-3xl font-bold text-slate-800 mt-1 tracking-tight">{c.value}</p>
             </div>
           </div>
@@ -132,7 +134,7 @@ export default function ParlourDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <div className="glass-panel rounded-2xl p-6">
+        <div className="card p-6">
           <h3 className="font-semibold text-slate-800 mb-6 text-lg">Monthly Collections</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={stats.monthlyCollections}>
@@ -146,7 +148,7 @@ export default function ParlourDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-panel rounded-2xl p-6">
+        <div className="card p-6">
           <h3 className="font-semibold text-slate-800 mb-6 text-lg">Member Growth</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={memberGrowth}>
@@ -161,7 +163,7 @@ export default function ParlourDashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="glass-panel rounded-2xl p-6">
+      <div className="card p-6">
         <h3 className="font-semibold text-slate-800 mb-6 text-lg">Recent Activity</h3>
         <div className="space-y-4 text-sm">
           {activity.map((a, i) => (
