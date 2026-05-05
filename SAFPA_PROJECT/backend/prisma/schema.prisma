@@ -270,6 +270,14 @@ model FuneralCase {
   deceasedName     String
   deceasedIdNumber String
   dateOfDeath      String
+  deathNoticeLoggedAt String?
+  deathNoticeLoggedBy String?
+  informantName    String?
+  informantPhone   String?
+  placeOfDeath     String?
+  causeOfDeath     String?
+  bodyCollected    Boolean  @default(false)
+  bodyCollectionLocation String?
   policyId         String?
   policyNumber     String?
   memberId         String?
@@ -284,6 +292,11 @@ model FuneralCase {
   staff            Json?
   vehicles         Json?
   suppliers        Json?
+  milestones       Json?
+  closedAt         String?
+  closedBy         String?
+  closureSummary   String?
+  closureChecklistComplete Boolean @default(false)
   createdOn        String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

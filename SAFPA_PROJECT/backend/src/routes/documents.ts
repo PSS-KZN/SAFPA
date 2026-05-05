@@ -21,6 +21,30 @@ const createDocumentSchema = z.object({
 export const documentsRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+function allowedEntityTypesForRole(role?: string): Array<'member' | 'policy' | 'funeral_case'> {
+  if (role === 'operations_coordinator') {
+    return ['funeral_case'];
+  }
+
+  if (role === 'policy_admin') {
+    return ['member', 'policy'];
+  }
+
+  return ['member', 'policy', 'funeral_case'];
+}
+
+function actorCanAccessEntityType(actor: Express.SessionActor | undefined, entityType: 'member' | 'policy' | 'funeral_case'): boolean {
+  return allowedEntityTypesForRole(actor?.role).includes(entityType);
+}
+
+function actorCanAccessDocument(actor: Express.SessionActor | undefined, record: { parlourId: string; entityType: 'member' | 'policy' | 'funeral_case' }): boolean {
+  if (actor?.parlourId && actor.parlourId !== record.parlourId) {
+    return false;
+  }
+
+  return actorCanAccessEntityType(actor, record.entityType);
+}
+
 function uploadsDir(): string {
   const dir = path.resolve(process.cwd(), 'uploads');
   if (!fs.existsSync(dir)) {
@@ -33,11 +57,16 @@ documentsRouter.get('/', async (req, res) => {
   const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
   const entityType = typeof req.query.entityType === 'string' ? req.query.entityType : undefined;
   const entityId = typeof req.query.entityId === 'string' ? req.query.entityId : undefined;
+  const allowedEntityTypes = allowedEntityTypesForRole(req.actor?.role);
+
+  if (entityType && !allowedEntityTypes.includes(entityType as 'member' | 'policy' | 'funeral_case')) {
+    return res.json([]);
+  }
 
   const records = await prisma.documentRecord.findMany({
     where: {
-      parlourId: parlourId || undefined,
-      entityType: entityType || undefined,
+      parlourId: req.actor?.parlourId || parlourId || undefined,
+      entityType: entityType || { in: allowedEntityTypes },
       entityId: entityId || undefined,
     },
     orderBy: { createdAt: 'desc' },
@@ -50,6 +79,14 @@ documentsRouter.post('/', async (req, res) => {
   const parsed = createDocumentSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid document payload', errors: parsed.error.flatten() });
+  }
+
+  if (!actorCanAccessEntityType(req.actor, parsed.data.entityType)) {
+    return res.status(403).json({ message: 'You are not allowed to manage this document type' });
+  }
+
+  if (req.actor?.parlourId && req.actor.parlourId !== parsed.data.parlourId) {
+    return res.status(403).json({ message: 'You are not allowed to manage documents outside your parlour' });
   }
 
   const record = await prisma.documentRecord.create({
@@ -90,6 +127,14 @@ documentsRouter.post('/upload', upload.single('file'), async (req, res) => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid upload payload', errors: parsed.error.flatten() });
+  }
+
+  if (!actorCanAccessEntityType(req.actor, parsed.data.entityType)) {
+    return res.status(403).json({ message: 'You are not allowed to manage this document type' });
+  }
+
+  if (req.actor?.parlourId && req.actor.parlourId !== parsed.data.parlourId) {
+    return res.status(403).json({ message: 'You are not allowed to manage documents outside your parlour' });
   }
 
   if (!req.file) {
@@ -136,6 +181,10 @@ documentsRouter.get('/:id/download', async (req, res) => {
     return res.status(404).json({ message: 'Document not found' });
   }
 
+  if (!actorCanAccessDocument(req.actor, { parlourId: record.parlourId, entityType: record.entityType as 'member' | 'policy' | 'funeral_case' })) {
+    return res.status(403).json({ message: 'You are not allowed to access this document' });
+  }
+
   if (!record.storagePath || !fs.existsSync(record.storagePath)) {
     return res.status(404).json({ message: 'File not found on disk' });
   }
@@ -147,6 +196,15 @@ documentsRouter.get('/:id/download', async (req, res) => {
 
 documentsRouter.delete('/:id', async (req, res) => {
   try {
+    const existing = await prisma.documentRecord.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    if (!actorCanAccessDocument(req.actor, { parlourId: existing.parlourId, entityType: existing.entityType as 'member' | 'policy' | 'funeral_case' })) {
+      return res.status(403).json({ message: 'You are not allowed to delete this document' });
+    }
+
     const record = await prisma.documentRecord.delete({ where: { id: req.params.id } });
 
     if (record.storagePath && fs.existsSync(record.storagePath)) {

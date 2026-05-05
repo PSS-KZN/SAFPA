@@ -4,43 +4,78 @@ import { ArrowLeft, Search } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import { createFuneralCase } from '../../services/funeralCasesApi';
 import { fetchMembers } from '../../services/membersApi';
-import type { Member } from '../../types';
+import { fetchUsers } from '../../services/usersApi';
+import type { Member, User } from '../../types';
 
 export default function NewFuneralCase() {
   const { currentUser } = useRole();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    deceasedName: '', deceasedIdNumber: '', dateOfDeath: '',
-    caseType: 'policy', funeralDate: '', venue: '',
-    memberId: '', coordinatorName: '',
+    deceasedName: '',
+    deceasedIdNumber: '',
+    dateOfDeath: '',
+    informantName: '',
+    informantPhone: '',
+    placeOfDeath: '',
+    causeOfDeath: '',
+    bodyCollected: false,
+    bodyCollectionLocation: '',
+    caseType: 'policy',
+    funeralDate: '',
+    venue: '',
+    memberId: '',
+    coordinatorId: currentUser.id,
+    coordinatorName: currentUser.name,
   });
   const [searchMember, setSearchMember] = useState('');
   const [showMemberSearch, setShowMemberSearch] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [staffOptions, setStaffOptions] = useState<User[]>([]);
 
   useEffect(() => {
     const loadMembers = async () => {
       try {
-        const records = await fetchMembers(currentUser.parlourId || 'p1');
-        setMembers(records);
+        const parlourId = currentUser.parlourId || 'p1';
+        const [memberRecords, userRecords] = await Promise.all([
+          fetchMembers(parlourId),
+          fetchUsers(parlourId),
+        ]);
+
+        setMembers(memberRecords);
+        setStaffOptions(
+          userRecords.filter((user) => user.status === 'active' && user.parlourId === parlourId)
+        );
       } catch {
         setMembers([]);
+        setStaffOptions([]);
       }
     };
 
     void loadMembers();
-  }, [currentUser.parlourId]);
+  }, [currentUser.id, currentUser.name, currentUser.parlourId]);
 
   const filteredMembers = members.filter((m) =>
     `${m.firstName} ${m.lastName} ${m.idNumber}`.toLowerCase().includes(searchMember.toLowerCase())
   );
 
-  const update = (field: string, value: string) => setForm({ ...form, [field]: value });
+  const update = (field: string, value: string | boolean) => setForm({ ...form, [field]: value });
+
+  const coordinatorChoices = staffOptions.filter((user) => {
+    if (user.role === 'safpa_admin') {
+      return false;
+    }
+
+    if (currentUser.branchId && user.branchId && user.branchId !== currentUser.branchId && currentUser.role === 'branch_manager') {
+      return false;
+    }
+
+    return true;
+  });
 
   const saveCase = async () => {
-    if (!form.deceasedName || !form.deceasedIdNumber || !form.dateOfDeath || !form.coordinatorName) {
+    if (!form.deceasedName || !form.deceasedIdNumber || !form.dateOfDeath || !form.informantName || !form.informantPhone || !form.placeOfDeath || !form.coordinatorName) {
       setError('Please complete required case fields.');
       return;
     }
@@ -55,10 +90,18 @@ export default function NewFuneralCase() {
         deceasedName: form.deceasedName,
         deceasedIdNumber: form.deceasedIdNumber,
         dateOfDeath: form.dateOfDeath,
+        deathNoticeLoggedAt: new Date().toISOString().slice(0, 10),
+        deathNoticeLoggedBy: currentUser.name,
+        informantName: form.informantName,
+        informantPhone: form.informantPhone,
+        placeOfDeath: form.placeOfDeath,
+        causeOfDeath: form.causeOfDeath || undefined,
+        bodyCollected: form.bodyCollected,
+        bodyCollectionLocation: form.bodyCollectionLocation || undefined,
         policyId: undefined,
         policyNumber: undefined,
         memberId: form.memberId || undefined,
-        coordinatorId: currentUser.id,
+        coordinatorId: form.coordinatorId,
         coordinatorName: form.coordinatorName,
         status: 'logged',
         funeralDate: form.funeralDate || undefined,
@@ -66,6 +109,12 @@ export default function NewFuneralCase() {
         caseType: form.caseType as 'policy' | 'cash' | 'private',
         tasks: [],
         notes: [],
+        staff: [],
+        vehicles: [],
+        suppliers: [],
+        milestones: [],
+        closureSummary: undefined,
+        closureChecklistComplete: false,
         createdAt: new Date().toISOString().slice(0, 10),
       });
 
@@ -87,7 +136,7 @@ export default function NewFuneralCase() {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 max-w-2xl">
         {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
         <div className="space-y-4">
-          <h3 className="font-semibold">Death Notice Information</h3>
+          <h3 className="font-semibold">Death Notice Intake</h3>
           <div><label className="block text-sm text-slate-600 mb-1">Deceased Full Name*</label>
             <input type="text" value={form.deceasedName} onChange={(e) => update('deceasedName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
           <div className="grid grid-cols-2 gap-4">
@@ -95,6 +144,29 @@ export default function NewFuneralCase() {
               <input type="text" value={form.deceasedIdNumber} onChange={(e) => update('deceasedIdNumber', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" maxLength={13} /></div>
             <div><label className="block text-sm text-slate-600 mb-1">Date of Death*</label>
               <input type="date" value={form.dateOfDeath} onChange={(e) => update('dateOfDeath', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div><label className="block text-sm text-slate-600 mb-1">Informant Name*</label>
+              <input type="text" value={form.informantName} onChange={(e) => update('informantName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+            <div><label className="block text-sm text-slate-600 mb-1">Informant Phone*</label>
+              <input type="tel" value={form.informantPhone} onChange={(e) => update('informantPhone', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div><label className="block text-sm text-slate-600 mb-1">Place Of Death*</label>
+              <input type="text" value={form.placeOfDeath} onChange={(e) => update('placeOfDeath', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+            <div><label className="block text-sm text-slate-600 mb-1">Cause Of Death</label>
+              <input type="text" value={form.causeOfDeath} onChange={(e) => update('causeOfDeath', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto,1fr] md:items-end">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={form.bodyCollected} onChange={(e) => update('bodyCollected', e.target.checked)} />
+              Body already collected
+            </label>
+            <div><label className="block text-sm text-slate-600 mb-1">Body Collection Location</label>
+              <input type="text" value={form.bodyCollectionLocation} onChange={(e) => update('bodyCollectionLocation', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
           </div>
 
           <div><label className="block text-sm text-slate-600 mb-1">Case Type</label>
@@ -133,11 +205,19 @@ export default function NewFuneralCase() {
             <div><label className="block text-sm text-slate-600 mb-1">Funeral Date</label>
               <input type="date" value={form.funeralDate} onChange={(e) => update('funeralDate', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             <div><label className="block text-sm text-slate-600 mb-1">Coordinator</label>
-              <select value={form.coordinatorName} onChange={(e) => update('coordinatorName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+              <select
+                value={form.coordinatorId}
+                onChange={(e) => {
+                  const selected = coordinatorChoices.find((user) => user.id === e.target.value);
+                  update('coordinatorId', e.target.value);
+                  update('coordinatorName', selected?.name || '');
+                }}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              >
                 <option value="">Select...</option>
-                <option value="Sibongile Mthembu">Sibongile Mthembu</option>
-                <option value="Zanele Mkhize">Zanele Mkhize</option>
-                <option value="Noxolo Mtshali">Noxolo Mtshali</option>
+                {coordinatorChoices.map((user) => (
+                  <option key={user.id} value={user.id}>{user.name}</option>
+                ))}
               </select>
             </div>
           </div>

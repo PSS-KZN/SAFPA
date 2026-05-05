@@ -263,20 +263,40 @@ async function main() {
   const baseFuneralCases = [
     {
       id: 'fc1', caseNumber: 'FC-2026-001', parlourId: 'p1', branchId: 'b1', deceasedName: 'Elizabeth Mahlangu', deceasedIdNumber: '5501015800050',
-      dateOfDeath: '2026-04-10', policyId: 'pol1', policyNumber: 'UBT-2025-0001', memberId: 'm1', coordinatorId: 'u7', coordinatorName: 'Sibongile Mthembu',
+      dateOfDeath: '2026-04-10', deathNoticeLoggedAt: '2026-04-10', deathNoticeLoggedBy: 'Sibongile Mthembu', informantName: 'Grace Mahlangu', informantPhone: '072 345 6789',
+      placeOfDeath: 'Chris Hani Baragwanath Hospital', causeOfDeath: 'Natural causes', bodyCollected: true, bodyCollectionLocation: 'Chris Hani Baragwanath Hospital',
+      policyId: 'pol1', policyNumber: 'UBT-2025-0001', memberId: 'm1', coordinatorId: 'u7', coordinatorName: 'Sibongile Mthembu',
       status: 'in_progress', funeralDate: '2026-04-20', venue: 'Avalon Cemetery, Soweto', caseType: 'policy',
       tasks: [
-        { id: 't1', title: 'Collect death certificate', completed: true },
-        { id: 't2', title: 'Arrange hearse', completed: true },
-        { id: 't3', title: 'Order flowers', completed: false },
+        { id: 't1', title: 'Collect death certificate', completed: true, category: 'documentation', completedAt: '2026-04-11T08:00:00.000Z', completedBy: 'Sibongile Mthembu' },
+        { id: 't2', title: 'Arrange hearse', completed: true, category: 'logistics', completedAt: '2026-04-11T10:00:00.000Z', completedBy: 'Sibongile Mthembu' },
+        { id: 't3', title: 'Order flowers', completed: false, category: 'ceremony', dueDate: '2026-04-18' },
       ],
       notes: ['Family requested white casket'],
+      staff: [
+        { id: 'stf1', staffUserId: 'u7', displayName: 'Sibongile Mthembu', name: 'Sibongile Mthembu', role: 'Coordinator' },
+        { id: 'stf2', staffUserId: 'u4', displayName: 'Thabo Mokoena', name: 'Thabo Mokoena', role: 'Family Liaison' },
+      ],
+      vehicles: [
+        { id: 'vhc1', reg: 'GP 123-456', type: 'Hearse', driver: 'Solomon Dube', capacity: 4, purpose: 'service', availabilityStatus: 'allocated' },
+      ],
+      milestones: [
+        { id: 'ms1', type: 'death_notice_logged', title: 'Death Notice Logged', scheduledDate: '2026-04-10', status: 'completed', completedAt: '2026-04-10T08:00:00.000Z' },
+        { id: 'ms2', type: 'body_collection', title: 'Body Collection', scheduledDate: '2026-04-10', scheduledTime: '10:00', status: 'completed', assignedVehicleId: 'vhc1', assignedStaffId: 'stf1', completedAt: '2026-04-10T10:30:00.000Z' },
+        { id: 'ms3', type: 'funeral_service', title: 'Funeral Service', scheduledDate: '2026-04-20', scheduledTime: '09:00', status: 'scheduled', assignedVehicleId: 'vhc1', assignedStaffId: 'stf1', notes: 'Main service at Avalon Cemetery' },
+      ],
       createdOn: '2026-04-10',
     },
     {
       id: 'fc2', caseNumber: 'FC-2026-002', parlourId: 'p1', branchId: 'b2', deceasedName: 'Petrus Botha', deceasedIdNumber: '4301015800051',
-      dateOfDeath: '2026-04-05', coordinatorId: 'u7', coordinatorName: 'Sibongile Mthembu', status: 'completed', funeralDate: '2026-04-12',
-      venue: 'Rebecca Street Cemetery, Pretoria', caseType: 'cash', tasks: [], notes: [], createdOn: '2026-04-05',
+      dateOfDeath: '2026-04-05', deathNoticeLoggedAt: '2026-04-05', deathNoticeLoggedBy: 'Sibongile Mthembu', informantName: 'Anna Botha', informantPhone: '082 555 1111',
+      placeOfDeath: 'Pretoria East Hospital', bodyCollected: true, bodyCollectionLocation: 'Pretoria East Hospital', coordinatorId: 'u7', coordinatorName: 'Sibongile Mthembu',
+      status: 'completed', funeralDate: '2026-04-12', venue: 'Rebecca Street Cemetery, Pretoria', caseType: 'cash', tasks: [], notes: [],
+      milestones: [
+        { id: 'ms4', type: 'funeral_service', title: 'Funeral Service', scheduledDate: '2026-04-12', scheduledTime: '11:00', status: 'completed', completedAt: '2026-04-12T12:00:00.000Z' },
+        { id: 'ms5', type: 'case_closure', title: 'Case Closure', scheduledDate: '2026-04-13', status: 'completed', completedAt: '2026-04-13T09:00:00.000Z' },
+      ],
+      closedAt: '2026-04-13T09:00:00.000Z', closedBy: 'Sibongile Mthembu', closureSummary: 'Service delivered and accounts settled.', closureChecklistComplete: true, createdOn: '2026-04-05',
     },
   ] as const;
 

@@ -35,9 +35,15 @@ const entityLabels: Record<string, string> = {
   funeral_case: 'Funeral Case',
 };
 
+const entityTypesByRole: Partial<Record<string, Document['entityType'][]>> = {
+  operations_coordinator: ['funeral_case'],
+  policy_admin: ['member', 'policy'],
+};
+
 export default function DocumentsList() {
   const { currentUser } = useRole();
   const parlourId = currentUser.parlourId || 'p1';
+  const allowedEntityTypes = entityTypesByRole[currentUser.role] || ['member', 'policy', 'funeral_case'];
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +74,7 @@ export default function DocumentsList() {
         ...members.map((member) => ({ id: member.id, label: `${member.firstName} ${member.lastName}`, entityType: 'member' as const })),
         ...policies.map((policy) => ({ id: policy.id, label: policy.policyNumber, entityType: 'policy' as const })),
         ...funeralCases.map((funeralCase) => ({ id: funeralCase.id, label: funeralCase.caseNumber, entityType: 'funeral_case' as const })),
-      ];
+      ].filter((option) => allowedEntityTypes.includes(option.entityType));
       setEntityOptions(options);
       if (!uploadEntityId && options.length > 0) {
         setUploadEntityType(options[0].entityType);
@@ -79,13 +85,13 @@ export default function DocumentsList() {
     } finally {
       setLoading(false);
     }
-  }, [parlourId, uploadEntityId]);
+  }, [allowedEntityTypes, parlourId, uploadEntityId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const parlourDocs = documents;
+  const parlourDocs = documents.filter((doc) => allowedEntityTypes.includes(doc.entityType));
 
   const entityLabelById = useMemo(() => {
     return new Map(entityOptions.map((item) => [`${item.entityType}:${item.id}`, item.label]));
@@ -146,7 +152,7 @@ export default function DocumentsList() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Document Management</h1>
-          <p className="text-sm text-slate-500 mt-1">Upload and manage documents linked to members, policies, and funeral cases</p>
+          <p className="text-sm text-slate-500 mt-1">Upload and manage documents linked to {allowedEntityTypes.map((type) => entityLabels[type]).join(', ').toLowerCase()}</p>
         </div>
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 disabled:opacity-60">
           <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload Document'}
@@ -173,7 +179,7 @@ export default function DocumentsList() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {(['member', 'policy', 'funeral_case'] as const).map((et) => {
+        {allowedEntityTypes.map((et) => {
           const count = parlourDocs.filter((d) => d.entityType === et).length;
           return (
             <div key={et} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
@@ -209,9 +215,9 @@ export default function DocumentsList() {
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none"
         >
           <option value="all">All Entity Types</option>
-          <option value="member">Members</option>
-          <option value="policy">Policies</option>
-          <option value="funeral_case">Funeral Cases</option>
+          {allowedEntityTypes.includes('member') && <option value="member">Members</option>}
+          {allowedEntityTypes.includes('policy') && <option value="policy">Policies</option>}
+          {allowedEntityTypes.includes('funeral_case') && <option value="funeral_case">Funeral Cases</option>}
         </select>
         <select value={filterEntityId} onChange={(e) => setFilterEntityId(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none">
           <option value="all">All Linked Records</option>
@@ -246,9 +252,9 @@ export default function DocumentsList() {
           }}
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         >
-          <option value="member">Member</option>
-          <option value="policy">Policy</option>
-          <option value="funeral_case">Funeral Case</option>
+          {allowedEntityTypes.includes('member') && <option value="member">Member</option>}
+          {allowedEntityTypes.includes('policy') && <option value="policy">Policy</option>}
+          {allowedEntityTypes.includes('funeral_case') && <option value="funeral_case">Funeral Case</option>}
         </select>
         <select
           value={uploadEntityId}
@@ -335,7 +341,7 @@ export default function DocumentsList() {
       <div className="mt-6 border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
         <FileText size={32} className="mx-auto text-slate-300 mb-3" />
         <p className="text-slate-500 font-medium mb-1">Upload a new document</p>
-        <p className="text-xs text-slate-400 mb-4">PDF, JPG or PNG · Max 10 MB · Linked to a member, policy, or funeral case</p>
+        <p className="text-xs text-slate-400 mb-4">PDF, JPG or PNG · Max 10 MB · Linked to {allowedEntityTypes.map((type) => entityLabels[type]).join(', ').toLowerCase()}</p>
         <button onClick={() => fileInputRef.current?.click()} className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-red-700">
           Choose File
         </button>

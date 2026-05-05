@@ -167,6 +167,14 @@ export interface FuneralCase {
   deceasedName: string;
   deceasedIdNumber: string;
   dateOfDeath: string;
+  deathNoticeLoggedAt: string;
+  deathNoticeLoggedBy: string;
+  informantName: string;
+  informantPhone: string;
+  placeOfDeath: string;
+  causeOfDeath?: string;
+  bodyCollected: boolean;
+  bodyCollectionLocation?: string;
   policyId?: string;
   policyNumber?: string;
   memberId?: string;
@@ -181,11 +189,18 @@ export interface FuneralCase {
   staff?: FuneralCaseStaff[];
   vehicles?: FuneralCaseVehicle[];
   suppliers?: FuneralCaseSupplier[];
+  milestones?: FuneralCaseMilestone[];
+  closedAt?: string;
+  closedBy?: string;
+  closureSummary?: string;
+  closureChecklistComplete?: boolean;
   createdAt: string;
 }
 
 export interface FuneralCaseStaff {
   id: string;
+  staffUserId?: string;
+  displayName: string;
   name: string;
   role: string;
 }
@@ -195,6 +210,9 @@ export interface FuneralCaseVehicle {
   reg: string;
   type: string;
   driver: string;
+  capacity?: number;
+  purpose?: string;
+  availabilityStatus?: 'available' | 'allocated' | 'maintenance';
 }
 
 export interface FuneralCaseSupplier {
@@ -210,6 +228,31 @@ export interface CaseTask {
   completed: boolean;
   assignee?: string;
   dueDate?: string;
+  category?: 'documentation' | 'logistics' | 'family_support' | 'ceremony' | 'finance';
+  milestoneId?: string;
+  completedAt?: string;
+  completedBy?: string;
+}
+
+export interface FuneralCaseMilestone {
+  id: string;
+  type:
+    | 'death_notice_logged'
+    | 'body_collection'
+    | 'family_meeting'
+    | 'documentation_collection'
+    | 'funeral_service'
+    | 'burial_or_cremation'
+    | 'post_funeral_followup'
+    | 'case_closure';
+  title: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  status: 'pending' | 'scheduled' | 'completed';
+  assignedStaffId?: string;
+  assignedVehicleId?: string;
+  notes?: string;
+  completedAt?: string;
 }
 
 export interface Lead {

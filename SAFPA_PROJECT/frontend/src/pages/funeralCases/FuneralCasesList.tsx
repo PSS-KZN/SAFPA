@@ -42,7 +42,14 @@ export default function FuneralCasesList() {
   const cases = currentUser.role === 'branch_manager' && currentUser.branchId
     ? items.filter((item) => item.branchId === currentUser.branchId)
     : items;
-  const filtered = filterStatus === 'all' ? cases : cases.filter((c) => c.status === filterStatus);
+  const filtered = filterStatus === 'all'
+    ? cases
+    : filterStatus === 'open'
+      ? cases.filter((c) => c.status !== 'completed' && c.status !== 'archived')
+      : cases.filter((c) => c.status === filterStatus);
+  const openCases = cases.filter((c) => c.status !== 'completed' && c.status !== 'archived').length;
+  const scheduledCases = cases.filter((c) => c.status === 'scheduled').length;
+  const closedCases = cases.filter((c) => c.status === 'completed' || c.status === 'archived').length;
 
   const onDeleteCase = async (id: string) => {
     const confirmed = window.confirm('Delete this funeral case? This action cannot be undone.');
@@ -66,8 +73,23 @@ export default function FuneralCasesList() {
         <Link to="/funeral-cases/new" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ New Case</Link>
       </div>
 
+      <div className="grid grid-cols-1 gap-3 mb-4 md:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-slate-400">Open Cases</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{openCases}</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-slate-400">Scheduled Services</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{scheduledCases}</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-slate-400">Closed Cases</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{closedCases}</div>
+        </div>
+      </div>
+
       <div className="flex gap-2 mb-4 flex-wrap">
-        {['all', 'logged', 'in_progress', 'scheduled', 'completed', 'archived'].map((s) => (
+        {['all', 'open', 'logged', 'in_progress', 'scheduled', 'completed', 'archived'].map((s) => (
           <button key={s} onClick={() => setFilterStatus(s)}
             className={`px-3 py-1.5 rounded-lg text-sm ${filterStatus === s ? 'bg-red-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
             {s.replace('_', ' ')}
@@ -88,9 +110,11 @@ export default function FuneralCasesList() {
               <th className="px-4 py-3">Deceased</th>
               <th className="px-4 py-3">Date of Death</th>
               <th className="px-4 py-3">Funeral Date</th>
+              <th className="px-4 py-3">Informant</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Coordinator</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Closure</th>
               <th className="px-4 py-3">Tasks</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
@@ -104,10 +128,14 @@ export default function FuneralCasesList() {
                   <td className="px-4 py-3 font-medium">{c.deceasedName}</td>
                   <td className="px-4 py-3 text-slate-500">{c.dateOfDeath}</td>
                   <td className="px-4 py-3 text-slate-500">{c.funeralDate || '—'}</td>
+                  <td className="px-4 py-3 text-slate-500">{c.informantName || '—'}</td>
                   <td className="px-4 py-3 capitalize">{c.caseType}</td>
                   <td className="px-4 py-3">{c.coordinatorName}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${statusColors[c.status]}`}>{c.status.replace('_', ' ')}</span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-500">
+                    {c.closedAt ? `${c.closedAt.slice(0, 10)}${c.closedBy ? ` · ${c.closedBy}` : ''}` : 'Open'}
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs">{completedTasks}/{c.tasks.length}</span>
@@ -134,7 +162,7 @@ export default function FuneralCasesList() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-slate-400">No funeral cases found</td>
+                <td colSpan={11} className="px-4 py-12 text-center text-slate-400">No funeral cases found</td>
               </tr>
             )}
           </tbody>
