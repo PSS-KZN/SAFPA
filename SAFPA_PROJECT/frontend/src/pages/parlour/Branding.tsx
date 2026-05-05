@@ -117,7 +117,7 @@ export default function Branding() {
     };
 
     void load();
-  }, [parlourId]);
+  }, [parlourId, setParlourBranding]);
 
   useEffect(() => {
     if (!websiteSubdomain || !currentParlourId) {

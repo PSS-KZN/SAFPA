@@ -43,7 +43,10 @@ const entityTypesByRole: Partial<Record<string, Document['entityType'][]>> = {
 export default function DocumentsList() {
   const { currentUser } = useRole();
   const parlourId = currentUser.parlourId || 'p1';
-  const allowedEntityTypes = entityTypesByRole[currentUser.role] || ['member', 'policy', 'funeral_case'];
+  const allowedEntityTypes = useMemo(
+    () => entityTypesByRole[currentUser.role] || ['member', 'policy', 'funeral_case'],
+    [currentUser.role],
+  );
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
