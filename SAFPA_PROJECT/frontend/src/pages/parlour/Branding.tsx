@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Globe, Mail, MapPin, Palette, Phone, RefreshCcw, Save } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
+import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { checkParlourSubdomainAvailability, fetchParlourById, updateParlourBranding, uploadParlourLogo } from '../../services/parloursApi';
 import { resolveAssetUrl } from '../../services/http';
 import type { Parlour } from '../../types';
@@ -81,6 +82,7 @@ function contrastRatio(firstHex: string, secondHex: string) {
 
 export default function Branding() {
   const { currentUser } = useRole();
+  const { setParlourBranding } = useTenantBranding();
   const parlourId = currentUser.parlourId || 'p1';
 
   const [parlour, setParlour] = useState<Parlour | null>(null);
@@ -104,6 +106,7 @@ export default function Branding() {
         const record = await fetchParlourById(parlourId);
         const nextForm = createFormFromParlour(record);
         setParlour(record);
+        setParlourBranding(record);
         setForm(nextForm);
         setInitialForm(nextForm);
       } catch (loadError) {
@@ -218,6 +221,7 @@ export default function Branding() {
 
       const nextForm = createFormFromParlour(updated);
       setParlour(updated);
+      setParlourBranding(updated);
       setForm(nextForm);
       setInitialForm(nextForm);
       setNotice(
@@ -259,6 +263,7 @@ export default function Branding() {
       const updated = await uploadParlourLogo(parlour.id, selectedLogoFile);
       const nextForm = createFormFromParlour(updated);
       setParlour(updated);
+      setParlourBranding(updated);
       setForm(nextForm);
       setInitialForm(nextForm);
       setSelectedLogoFile(null);
@@ -306,7 +311,7 @@ export default function Branding() {
                 <div className="mt-3">
                   <label className="mb-1 block text-sm text-slate-600">Upload logo file</label>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setSelectedLogoFile(e.target.files?.[0] || null)} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700" />
+                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setSelectedLogoFile(e.target.files?.[0] || null)} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-red-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white file:transition-colors hover:file:bg-red-700" />
                     <button onClick={() => void handleLogoUpload()} disabled={!selectedLogoFile || uploadingLogo} className="inline-flex h-[42px] items-center justify-center self-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-red-700 sm:self-auto disabled:cursor-not-allowed disabled:bg-red-300 disabled:text-white/90">
                     {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
                     </button>

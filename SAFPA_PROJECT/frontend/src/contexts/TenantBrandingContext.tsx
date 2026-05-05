@@ -36,7 +36,7 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }): R
   }, [currentUser.parlourId, currentUser.role]);
 
   return (
-    <TenantBrandingContext.Provider value={{ parlourBrand, loading, isTenantBranded: currentUser.role !== 'safpa_admin' && Boolean(parlourBrand) }}>
+    <TenantBrandingContext.Provider value={{ parlourBrand, loading, isTenantBranded: currentUser.role !== 'safpa_admin' && Boolean(parlourBrand), setParlourBranding: setParlourBrand }}>
       {children}
     </TenantBrandingContext.Provider>
   );

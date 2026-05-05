@@ -56,7 +56,7 @@ export default function BulkImportPolicies() {
               setResult(null);
               setMessage(nextFile ? `Selected file: ${nextFile.name}` : null);
             }}
-            className="block mx-auto text-sm"
+            className="block mx-auto text-sm file:mr-3 file:rounded-md file:border-0 file:bg-red-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white file:transition-colors hover:file:bg-red-700"
           />
           <div className="mt-4">
             <button
