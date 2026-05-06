@@ -18,6 +18,10 @@ The demo now enforces role permissions at both navigation and route level.
 - **Policy Admin document scope**: On the Documents page, Policy Admin sees only member and policy documents.
 - **Operations Coordinator document scope**: On the Documents page, Operations Coordinator sees only funeral case documents.
 
+Developer note:
+
+- Backend API reference endpoints such as `/api/docs` and `/api/routes` are developer-facing surfaces and are not part of the end-user role navigation described in this document.
+
 ---
 
 ## Aesthetic & Theme
@@ -39,6 +43,7 @@ To align with the sensitive and professional nature of the funeral industry, the
 | `policy_admin` | Policy Admin | Members | Handles member registration, policy lifecycle, dependants, beneficiaries, and document management. |
 | `collections_clerk` | Collections Clerk | Collections | Monitors premiums, processes failed payments, manages arrears follow-up, and imports reconciliation files. |
 | `operations_coordinator` | Operations Coordinator | Funeral Cases | Manages funeral case workflow from death notice to closure, including tasks, staff, vehicles, and family communications. |
+| `reporting_analyst` | Reporting Analyst | Reports | Read-only reporting specialist focused on collections, member growth, and operational analytics. |
 
 ---
 
@@ -530,28 +535,58 @@ Manages funeral service delivery from first contact to case closure. Lands on Fu
 
 ---
 
+### 7. Reporting Analyst (`reporting_analyst`)
+
+Focused on analytics and reporting only. Lands on Reports.
+
+**Demo user:** Neo Mahlasela
+
+**Accessible pages:**
+
+| Page | Notes |
+|------|-------|
+| Reports `/reports` | Read-only access to reporting dashboards and exports |
+
+**Not accessible:** SAFPA Admin pages, Parlour config, Leads, Members, Policies, Collections, Funeral Cases, Communications, Documents, Audit Log.
+
+---
+
 ## Summary Matrix
 
-| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator |
-|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|
-| SAFPA Dashboard | ✓ | — | — | — | — | — |
-| Parlour Management | ✓ | — | — | — | — | — |
-| Resources & Notices | ✓ | — | — | — | — | — |
-| Parlour Dashboard | — | ✓ | ✓ | — | — | — |
-| Branches | — | ✓ | — | — | — | — |
-| Users | — | ✓ | — | — | — | — |
-| Products | — | ✓ | — | — | — | — |
-| Comm. Templates | — | ✓ | — | — | — | — |
-| Website Preview | — | ✓ | — | — | — | — |
-| Leads | — | ✓ | ✓ | ✓ | — | — |
-| Members | — | ✓ | ✓ | ✓ | — | — |
-| Policies | — | ✓ | ✓ | ✓ | — | — |
-| Collections | — | ✓ | ✓ | — | ✓ | — |
-| Funeral Cases | — | ✓ | ✓ | — | — | ✓ |
-| Communications | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Documents | — | ✓ | ✓ | ✓ | — | ✓ |
-| Reports | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Audit Log | ✓ | ✓ | — | — | — | — |
+| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator | Reporting Analyst |
+|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|:-----------------:|
+| SAFPA Dashboard | ✓ | — | — | — | — | — | — |
+| Parlour Management | ✓ | — | — | — | — | — | — |
+| Resources & Notices | ✓ | — | — | — | — | — | — |
+| Parlour Dashboard | — | ✓ | ✓ | — | — | — | — |
+| Branches | — | ✓ | — | — | — | — | — |
+| Users | — | ✓ | — | — | — | — | — |
+| Products | — | ✓ | — | — | — | — | — |
+| Comm. Templates | — | ✓ | — | — | — | — | — |
+| Website Preview | — | ✓ | — | — | — | — | — |
+| Leads | — | ✓ | ✓ | ✓ | — | — | — |
+| Members | — | ✓ | ✓ | ✓ | — | — | — |
+| Policies | — | ✓ | ✓ | ✓ | — | — | — |
+| Collections | — | ✓ | ✓ | — | ✓ | — | — |
+| Funeral Cases | — | ✓ | ✓ | — | — | ✓ | — |
+| Communications | — | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Documents | — | ✓ | ✓ | ✓ | — | ✓ | — |
+| Reports | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| Audit Log | ✓ | ✓ | — | — | — | — | — |
+
+---
+
+## Developer Reference
+
+The role and page access model described above applies to the SAFPA frontend application.
+
+Separate backend developer endpoints are now available for implementation and integration reference:
+
+- Swagger UI: `http://localhost:4000/api/docs`
+- OpenAPI JSON: `http://localhost:4000/api/docs/openapi.json`
+- Development route index: `http://localhost:4000/api/routes`
+
+These endpoints are not user-facing application pages and should not be treated as part of the product navigation model.
 
 ---
 
@@ -562,4 +597,4 @@ The demo includes a **Role Switcher** in the top navigation bar. Selecting a dif
 2. Navigate automatically to that role's default landing page.
 3. Update the sidebar to show only the pages accessible to that role.
 
-This allows a single demo session to demonstrate all six user perspectives without separate logins.
+This allows a single demo session to demonstrate all seven user perspectives without separate logins.

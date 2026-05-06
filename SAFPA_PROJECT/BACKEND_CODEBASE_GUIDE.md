@@ -31,6 +31,7 @@ Default frontend origin expected by CORS:
 - Upload handling: multer
 - Image validation/inspection for branding logos: sharp
 - Spreadsheet parsing for imports: xlsx
+- API documentation UI: swagger-ui-express
 
 ## 3) Backend layout
 
@@ -64,6 +65,8 @@ Default frontend origin expected by CORS:
   - prisma.ts: shared Prisma client
   - audit.ts: centralized audit writer
   - id.ts: ID generation helper
+  - openapi.ts: generated OpenAPI document builder for Swagger UI
+  - routeCatalog.ts: route enumeration helper used by `/api/routes` and `/api/docs`
   - session.ts: actor/session resolution + role/scope middleware
   - subscription.ts: tier limit checks
 
@@ -151,8 +154,10 @@ Current middleware order in server.ts:
 1. CORS
 2. express.json()
 3. Static /uploads file serving
-4. authScopeMiddleware
-5. Route handlers
+4. Public Swagger/OpenAPI endpoints
+5. Dev-only `/api/routes` endpoint
+6. authScopeMiddleware
+7. Route handlers
 
 How authScopeMiddleware works (session.ts):
 
@@ -174,6 +179,7 @@ How authScopeMiddleware works (session.ts):
 Special case rules:
 - Parlour branding and logo routes under /api/parlours/:id/(branding|logo) are explicitly limited to safpa_admin and parlour_owner
 - Website inquiry intake remains public through /api/leads/website-inquiry
+- Reporting endpoints under `/api/reports` are available to `safpa_admin`, `parlour_owner`, `branch_manager`, `policy_admin`, `collections_clerk`, and `reporting_analyst`
 
 Headers commonly used:
 - x-user-id
@@ -188,6 +194,9 @@ Headers commonly used:
 Mounted in server.ts:
 
 - /uploads (static files)
+- /api/docs
+- /api/docs/openapi.json
+- /api/routes (development only)
 - /api/health
 - /api/auth
 - /api/parlours
@@ -243,6 +252,24 @@ Parlour now also carries branding and website fields such as:
 - websitePublished, websitePublishStatus, brandingCompletedAt
 
 ## 10) Cross-cutting backend features
+
+### 10.0 API discovery and documentation
+
+The backend now provides two developer-facing API discovery surfaces:
+
+- Swagger UI at `/api/docs`
+- Generated OpenAPI JSON at `/api/docs/openapi.json`
+
+It also provides a development-only route index:
+
+- `/api/routes`
+
+Behavior:
+
+- Swagger UI is public so the docs page can load without auth headers
+- `/api/routes` is only mounted when `NODE_ENV` is not `production`
+- The OpenAPI document is generated from the backend's mounted routers rather than maintained manually
+- Swagger operations are grouped by business module such as Authentication, Parlour Management, Collections & Payments, Funeral Operations, and Reporting & Analytics
 
 ### 10.1 Audit logging
 
@@ -321,6 +348,9 @@ Implemented in auth.ts:
 For branding or upload changes, also run:
 8. npm run test:branding
 
+For route catalog or Swagger documentation changes, also:
+9. Verify `/api/routes` and `/api/docs` locally
+
 ## 13) Quick troubleshooting
 
 - Prisma client errors:
@@ -338,6 +368,10 @@ For branding or upload changes, also run:
 - Root terminal dev command fails:
   - use `npm --prefix backend run dev`
   - run frontend separately with `npm --prefix frontend run dev`
+
+- Need to inspect available backend endpoints quickly:
+  - open `http://localhost:4000/api/routes` for the development route index
+  - open `http://localhost:4000/api/docs` for Swagger UI
 
 - File upload/download issues:
   - ensure backend process can read/write backend/uploads
@@ -361,3 +395,4 @@ Validated flows include:
 - Funeral case updates and task progression
 - Reporting endpoints including network and filtered dashboards
 - Audit logging across core mutations
+- Generated route index and Swagger API docs

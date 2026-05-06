@@ -18,6 +18,9 @@ Default frontend URL:
 Default backend base URL used by frontend:
 - http://localhost:4000
 
+Developer API reference also available from the backend:
+- http://localhost:4000/api/docs
+
 ## 2) Stack
 
 - React 19
@@ -97,6 +100,7 @@ Additional route groups currently exposed:
 - SAFPA admin: parlours, subscriptions, resources
 - Parlour owner: branches, users, products, branding workspace, communication templates, website preview
 - Shared operational routes: leads, members, policies, collections, funeral cases, communications, reports, documents
+- Reporting analyst: reports only
 - Audit log route: /audit-log for safpa_admin and parlour_owner
 
 ## 5) Session and request behavior
@@ -127,6 +131,8 @@ This header model aligns with backend auth/scope middleware.
 ## 6) Service layer design
 
 Each service file in frontend/src/services maps to backend domain routes.
+
+During frontend integration or debugging, the backend Swagger UI at `http://localhost:4000/api/docs` can be used to inspect available endpoints grouped by business module.
 
 Examples:
 - parloursApi.ts -> /api/parlours, /api/parlours/:id/branding, /api/parlours/:id/logo, /api/parlours/availability/subdomain
@@ -219,6 +225,7 @@ Note:
 - API calls still use backend for domain data and mutations
 - The provider primes a default safpa_session on first load so initial API requests include actor headers
 - Tenant branding is not mocked in the layout; it is fetched from the backend parlour record for the active parlour context
+- Demo user data includes a dedicated `reporting_analyst` user for reports-only access
 - This keeps role-switching quick for demo while using backend persistence for flows
 
 ## 12) Quick troubleshooting
@@ -226,6 +233,7 @@ Note:
 - Frontend loads but API calls fail:
   - Ensure backend is running on port 4000
   - Verify `VITE_API_BASE_URL` if using a non-default backend URL
+  - Use `http://localhost:4000/api/docs` or `http://localhost:4000/api/routes` to confirm the backend endpoint exists
 
 - 401 or 403 responses:
   - Ensure `safpa_session` exists and includes role/parlour context
