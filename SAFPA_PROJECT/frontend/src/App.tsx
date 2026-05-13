@@ -34,6 +34,7 @@ import AddLead from './pages/leads/AddLead';
 import LeadDetail from './pages/leads/LeadDetail';
 
 // Members
+import PolicyAdminOverview from './pages/members/PolicyAdminOverview';
 import MembersList from './pages/members/MembersList';
 import MemberDetail from './pages/members/MemberDetail';
 import AddMember from './pages/members/AddMember';
@@ -50,6 +51,7 @@ import CollectionsDashboard from './pages/collections/CollectionsDashboard';
 import ReceiptView from './pages/collections/ReceiptView';
 
 // Funeral Cases
+import OperationsOverview from './pages/funeralCases/OperationsOverview';
 import FuneralCasesList from './pages/funeralCases/FuneralCasesList';
 import FuneralCaseDetail from './pages/funeralCases/FuneralCaseDetail';
 import NewFuneralCase from './pages/funeralCases/NewFuneralCase';
@@ -77,9 +79,9 @@ const roleDefaultPath: Record<string, string> = {
   safpa_admin: '/safpa',
   parlour_owner: '/parlour',
   branch_manager: '/parlour',
-  policy_admin: '/members',
+  policy_admin: '/policy-admin',
   collections_clerk: '/collections',
-  operations_coordinator: '/funeral-cases',
+  operations_coordinator: '/operations',
   reporting_analyst: '/reports',
   policyholder_customer: '/customer',
 };
@@ -136,6 +138,7 @@ function AppRoutes() {
         <Route path="/website" element={withAccess(['parlour_owner'], <WebsitePreview />)} />
 
         {/* Leads */}
+        <Route path="/policy-admin" element={withAccess(['policy_admin'], <PolicyAdminOverview />)} />
         <Route path="/leads" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <LeadsList />)} />
         <Route path="/leads/new" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <AddLead />)} />
         <Route path="/leads/:id" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <LeadDetail />)} />
@@ -157,6 +160,7 @@ function AppRoutes() {
         <Route path="/collections/receipt/:id" element={withAccess(['parlour_owner', 'branch_manager', 'collections_clerk'], <ReceiptView />)} />
 
         {/* Funeral Cases */}
+        <Route path="/operations" element={withAccess(['operations_coordinator'], <OperationsOverview />)} />
         <Route path="/funeral-cases" element={withAccess(['parlour_owner', 'branch_manager', 'operations_coordinator'], <FuneralCasesList />)} />
         <Route path="/funeral-cases/new" element={withAccess(['parlour_owner', 'branch_manager', 'operations_coordinator'], <NewFuneralCase />)} />
         <Route path="/funeral-cases/:id" element={withAccess(['parlour_owner', 'branch_manager', 'operations_coordinator'], <FuneralCaseDetail />)} />

@@ -21,9 +21,9 @@ const roleDefaultPath: Record<UserRole, string> = {
   safpa_admin: '/safpa',
   parlour_owner: '/parlour',
   branch_manager: '/parlour',
-  policy_admin: '/members',
+  policy_admin: '/policy-admin',
   collections_clerk: '/collections',
-  operations_coordinator: '/funeral-cases',
+  operations_coordinator: '/operations',
   reporting_analyst: '/reports',
   policyholder_customer: '/customer',
 };

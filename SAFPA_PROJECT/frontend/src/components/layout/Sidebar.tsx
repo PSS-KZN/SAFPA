@@ -27,6 +27,8 @@ const navItems: NavItem[] = [
 
   // Parlour Admin
   { label: 'Dashboard', path: '/parlour', icon: <LayoutDashboard size={18} />, roles: ['parlour_owner', 'branch_manager'], group: 'Overview' },
+  { label: 'Policy Overview', path: '/policy-admin', icon: <LayoutDashboard size={18} />, roles: ['policy_admin'], group: 'Overview' },
+  { label: 'Operations Overview', path: '/operations', icon: <LayoutDashboard size={18} />, roles: ['operations_coordinator'], group: 'Overview' },
   { label: 'Branches', path: '/parlour/branches', icon: <Building2 size={18} />, roles: ['parlour_owner'], group: 'Overview' },
   { label: 'Users', path: '/parlour/users', icon: <Users size={18} />, roles: ['parlour_owner'], group: 'Overview' },
   { label: 'Products', path: '/parlour/products', icon: <FileText size={18} />, roles: ['parlour_owner'], group: 'Overview' },
