@@ -647,6 +647,17 @@ policiesRouter.post('/:id/record-payment', async (req, res) => {
   const member = await prisma.member.findUnique({ where: { id: policy.memberId } });
 
   const reference = parsed.data.reference || `PAY-${Date.now()}`;
+  const providerMeta = parsed.data.method === 'cash'
+    ? {
+        providerCode: 'manual_branch_capture',
+        providerName: 'Manual Branch Capture',
+        captureChannel: 'branch_manual',
+      }
+    : {
+        providerCode: 'safpa_mvp_static',
+        providerName: 'SAFPA Static Provider',
+        captureChannel: 'provider_static',
+      };
 
   const payment = await prisma.paymentTransaction.create({
     data: {
@@ -658,6 +669,9 @@ policiesRouter.post('/:id/record-payment', async (req, res) => {
       amount: parsed.data.amount,
       date: parsed.data.date,
       method: parsed.data.method,
+      providerCode: providerMeta.providerCode,
+      providerName: providerMeta.providerName,
+      captureChannel: providerMeta.captureChannel,
       status: parsed.data.status,
       reference,
       parlourId: policy.parlourId,

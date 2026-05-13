@@ -156,6 +156,9 @@ export interface PaymentTransaction {
   amount: number;
   date: string;
   method: 'debit_order' | 'eft' | 'card' | 'cash';
+  providerCode: string;
+  providerName: string;
+  captureChannel: 'provider_static' | 'branch_manual';
   status: 'successful' | 'failed' | 'pending' | 'reversed';
   reference: string;
   parlourId: string;

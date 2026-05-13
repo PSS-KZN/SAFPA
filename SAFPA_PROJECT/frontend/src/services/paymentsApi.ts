@@ -12,8 +12,21 @@ export interface ReconciliationImportRecord {
   status: 'completed' | 'processing' | 'failed';
 }
 
+export interface PaymentProvider {
+  code: string;
+  name: string;
+  mode: 'static' | 'manual';
+  status: 'configured';
+  methods: Array<'debit_order' | 'eft' | 'card' | 'cash'>;
+  notes: string;
+}
+
 export function fetchPayments(parlourId: string): Promise<PaymentTransaction[]> {
   return request<PaymentTransaction[]>(`/api/payments?parlourId=${encodeURIComponent(parlourId)}`);
+}
+
+export function fetchPaymentProviders(): Promise<{ providers: PaymentProvider[] }> {
+  return request<{ providers: PaymentProvider[] }>('/api/payments/providers');
 }
 
 export function createPayment(input: {

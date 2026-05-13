@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PaymentTransaction, Policy } from '../../types';
-import { createPayment, createReconciliationImport, fetchPayments, fetchReconciliationImports, generateBillingEvents, type ReconciliationImportRecord } from '../../services/paymentsApi';
+import { createPayment, createReconciliationImport, fetchPaymentProviders, fetchPayments, fetchReconciliationImports, generateBillingEvents, type PaymentProvider, type ReconciliationImportRecord } from '../../services/paymentsApi';
 import { fetchPolicies } from '../../services/policiesApi';
 
 const formatCurrencyTooltip = (value: unknown) => {
@@ -18,6 +18,7 @@ export default function CollectionsDashboard() {
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [reconImports, setReconImports] = useState<ReconciliationImportRecord[]>([]);
+  const [providers, setProviders] = useState<PaymentProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [capturingPayment, setCapturingPayment] = useState(false);
@@ -37,15 +38,17 @@ export default function CollectionsDashboard() {
       setLoading(true);
       setError(null);
 
-      const [paymentRecords, policyRecords, importRecords] = await Promise.all([
+      const [paymentRecords, policyRecords, importRecords, providerResponse] = await Promise.all([
         fetchPayments(parlourId),
         fetchPolicies(parlourId),
         fetchReconciliationImports(parlourId),
+        fetchPaymentProviders(),
       ]);
 
       setPayments(paymentRecords);
       setPolicies(policyRecords);
       setReconImports(importRecords);
+      setProviders(providerResponse.providers);
       if (policyRecords.length > 0) {
         const firstPolicy = policyRecords[0];
         setPortalForm((previous) => ({
@@ -124,9 +127,13 @@ export default function CollectionsDashboard() {
 
   const totalCollected = successful.reduce((sum, p) => sum + p.amount, 0);
   const totalFailed = failed.reduce((sum, p) => sum + p.amount, 0);
+  const totalPending = pending.reduce((sum, p) => sum + p.amount, 0);
 
   const parlourPolicies = policies;
   const arrearsMembers = parlourPolicies.filter((p) => p.arrearsAmount > 0);
+  const overdueBalance = arrearsMembers.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
+  const collectionRate = totalCollected + totalFailed > 0 ? Math.round((totalCollected / (totalCollected + totalFailed)) * 100) : 100;
+  const activeProviderName = providers.find((provider) => provider.code === 'safpa_mvp_static')?.name || 'SAFPA Static Provider';
 
   const chartData = [
     { month: 'Jan', collected: 14500, failed: 1200 },
@@ -136,11 +143,53 @@ export default function CollectionsDashboard() {
   ];
 
   const cards = [
-    { label: 'Collected', value: `R${totalCollected.toLocaleString()}`, icon: <CheckCircle size={20} />, color: 'bg-slate-100 text-slate-600' },
-    { label: 'Failed', value: `R${totalFailed.toLocaleString()}`, icon: <XCircle size={20} />, color: 'bg-red-50 text-red-600' },
-    { label: 'Pending', value: `R${pending.reduce((s, p) => s + p.amount, 0).toLocaleString()}`, icon: <Clock size={20} />, color: 'bg-amber-50 text-amber-600' },
-    { label: 'In Arrears', value: `${arrearsMembers.length} policies`, icon: <AlertTriangle size={20} />, color: 'bg-red-50 text-red-600' },
+    {
+      label: 'Collected',
+      value: `R${totalCollected.toLocaleString()}`,
+      detail: `${collectionRate}% success rate this cycle`,
+      icon: <CheckCircle size={20} />,
+      shell: 'border-slate-200 bg-white',
+      iconSurface: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
+    },
+    {
+      label: 'Failed',
+      value: `R${totalFailed.toLocaleString()}`,
+      detail: `${failed.length} transactions need follow-up`,
+      icon: <XCircle size={20} />,
+      shell: 'border-slate-200 bg-white',
+      iconSurface: 'bg-rose-50 text-rose-700 ring-1 ring-rose-100',
+    },
+    {
+      label: 'Pending',
+      value: `R${totalPending.toLocaleString()}`,
+      detail: `${pending.length} items awaiting confirmation`,
+      icon: <Clock size={20} />,
+      shell: 'border-slate-200 bg-white',
+      iconSurface: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+    },
+    {
+      label: 'In Arrears',
+      value: `${arrearsMembers.length} policies`,
+      detail: `Overdue balance at R${overdueBalance.toLocaleString()}`,
+      icon: <AlertTriangle size={20} />,
+      shell: 'border-slate-200 bg-white',
+      iconSurface: 'bg-orange-50 text-orange-700 ring-1 ring-orange-100',
+    },
   ];
+
+  const retryPayment = (payment: PaymentTransaction) => {
+    setPortalForm((previous) => ({
+      ...previous,
+      policyId: payment.policyId,
+      amount: payment.amount,
+      date: new Date().toISOString().slice(0, 10),
+      method: payment.method,
+      status: 'successful',
+      reference: '',
+    }));
+    setActiveTab('portal');
+    setError(null);
+  };
 
   return (
     <div>
@@ -162,29 +211,86 @@ export default function CollectionsDashboard() {
 
       {activeTab === 'overview' && (
         <>
-          <div className="mb-4 flex justify-end">
-            <button onClick={() => void runBillingGeneration()} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50">Generate Billing Events</button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <section className="mb-8 rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.28)]">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr),minmax(0,0.85fr)] lg:items-end">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Collections Overview
+                </div>
+                <h2 className="max-w-xl text-3xl font-semibold tracking-tight text-slate-900">Track recovery performance, provider flow, and overdue pressure from one view.</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Collections is currently running with <span className="font-semibold text-slate-900">{activeProviderName}</span> for digital methods, while branch cash stays manual. Use this overview to see where revenue is landing and where follow-up is required.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Success Rate</div>
+                  <div className="mt-2 text-3xl font-semibold text-slate-900">{collectionRate}%</div>
+                  <div className="mt-2 text-xs text-slate-500">Based on successful versus failed captured transactions.</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Overdue Balance</div>
+                  <div className="mt-2 text-3xl font-semibold text-slate-900">R{overdueBalance.toLocaleString()}</div>
+                  <div className="mt-2 text-xs text-slate-500">Outstanding across policies already in arrears.</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-3 lg:col-span-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Operational Next Step</div>
+                      <div className="mt-2 text-sm font-medium text-slate-900">Refresh billing demand before reconciling new settlements.</div>
+                    </div>
+                    <button onClick={() => void runBillingGeneration()} className="shrink-0 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Generate Billing Events</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 mb-8">
             {cards.map((c) => (
-              <div key={c.label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-start gap-4">
-                <div className={`${c.color} p-2.5 rounded-lg border border-slate-200/60`}>{c.icon}</div>
-                <div><p className="text-sm text-slate-500">{c.label}</p><p className="text-xl font-bold">{c.value}</p></div>
+              <div key={c.label} className={`rounded-[20px] border p-5 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.26)] transition hover:border-slate-300 ${c.shell}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{c.label}</p>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{c.value}</p>
+                    <p className="mt-2 max-w-[18rem] text-sm leading-5 text-slate-600">{c.detail}</p>
+                  </div>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.iconSurface}`}>{c.icon}</div>
+                </div>
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
-            <h3 className="font-semibold mb-4">Collections Trend</h3>
-            <ResponsiveContainer width="100%" height={300}>
+
+          <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_36px_-28px_rgba(15,23,42,0.28)]">
+              <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-6 py-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Collections Trend</h3>
+                    <p className="mt-1 text-sm text-slate-500">Compare settled revenue against failed attempts across the recent cycle.</p>
+                  </div>
+                  <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">Live from collections activity</div>
+                </div>
+              </div>
+              <div className="px-4 py-4 sm:px-6 sm:py-6">
+                <ResponsiveContainer width="100%" height={320}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={(v) => `R${v.toLocaleString()}`} />
-                <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                <Bar dataKey="collected" fill="#22c55e" name="Collected" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="failed" fill="#ef4444" name="Failed" radius={[4, 4, 0, 0]} />
+                <defs>
+                  <linearGradient id="collectionsBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0.72} />
+                  </linearGradient>
+                  <linearGradient id="failedBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#e11d48" stopOpacity={0.78} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => `R${v.toLocaleString()}`} axisLine={false} tickLine={false} width={72} />
+                <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 18px 40px -24px rgba(15, 23, 42, 0.45)' }} />
+                <Bar dataKey="collected" fill="url(#collectionsBar)" name="Collected" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="failed" fill="url(#failedBar)" name="Failed" radius={[8, 8, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+                </ResponsiveContainer>
+              </div>
           </div>
         </>
       )}
@@ -193,6 +299,10 @@ export default function CollectionsDashboard() {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 max-w-2xl">
           <h3 className="font-semibold mb-1">Payment Portal</h3>
           <p className="text-sm text-slate-500 mb-5">Capture an over-the-counter or manual payment against a policy.</p>
+          <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <div className="font-medium text-slate-800">MVP Provider Setup</div>
+            <div className="mt-1">Digital methods route through <span className="font-medium">{providers.find((provider) => provider.code === 'safpa_mvp_static')?.name || 'SAFPA Static Provider'}</span>. Cash stays on manual branch capture.</div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm text-slate-600 mb-1">Policy</label>
@@ -259,6 +369,7 @@ export default function CollectionsDashboard() {
                 <th className="px-4 py-3">Policy #</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Method</th>
+                <th className="px-4 py-3">Provider</th>
                 <th className="px-4 py-3">Reference</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Actions</th>
@@ -272,12 +383,18 @@ export default function CollectionsDashboard() {
                   <td className="px-4 py-3 font-mono text-xs">{p.policyNumber}</td>
                   <td className="px-4 py-3">R{p.amount}</td>
                   <td className="px-4 py-3 capitalize">{p.method.replace('_', ' ')}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{p.providerName}</td>
                   <td className="px-4 py-3 font-mono text-xs">{p.reference}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'successful' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <Link to={`/collections/receipt/${p.id}`} className="text-red-600 hover:text-red-800 text-xs">Receipt</Link>
+                    <div className="flex items-center gap-3">
+                      {p.status === 'successful' ? <Link to={`/collections/receipt/${p.id}`} className="text-red-600 hover:text-red-800 text-xs">Receipt</Link> : <span className="text-slate-300 text-xs">Receipt</span>}
+                      {(p.status === 'failed' || p.status === 'pending') && (
+                        <button onClick={() => retryPayment(p)} className="text-slate-600 hover:text-slate-900 text-xs">Retry</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

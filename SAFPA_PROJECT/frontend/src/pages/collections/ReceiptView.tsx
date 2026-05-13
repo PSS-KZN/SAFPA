@@ -53,6 +53,7 @@ export default function ReceiptView() {
             <div className="flex justify-between"><span className="text-slate-500">Member</span><span className="font-medium">{payment.memberName}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Policy Number</span><span className="font-mono text-xs">{payment.policyNumber}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Payment Method</span><span className="capitalize">{payment.method.replace('_', ' ')}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Provider</span><span>{payment.providerName}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Status</span>
               <span className={`px-2 py-0.5 rounded-full text-xs ${payment.status === 'successful' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{payment.status}</span>
             </div>
