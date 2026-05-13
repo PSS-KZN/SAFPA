@@ -2,25 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import type { Parlour } from '../../types';
-import { createParlour, fetchParlours, setParlourStatus } from '../../services/parloursApi';
+import { fetchParlours, setParlourStatus } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
 
 export default function ParlourList() {
   const [parlours, setParlours] = useState<Parlour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [branchCounts, setBranchCounts] = useState<Record<string, number>>({});
-  const [form, setForm] = useState({
-    name: '',
-    region: '',
-    province: '',
-    tier: 'basic' as Parlour['tier'],
-    contactEmail: '',
-    contactPhone: '',
-    primaryColor: '#1e3a5f',
-  });
 
   const loadParlours = async () => {
     try {
@@ -44,39 +33,6 @@ export default function ParlourList() {
     void loadParlours();
   }, []);
 
-  const updateForm = (field: keyof typeof form, value: string) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
-  };
-
-  const submit = async () => {
-    if (!form.name || !form.region || !form.province || !form.contactEmail || !form.contactPhone) {
-      setError('Please complete all required fields before saving.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-      const created = await createParlour(form);
-      setParlours((previous) => [created, ...previous]);
-      setBranchCounts((previous) => ({ ...previous, [created.id]: 0 }));
-      setShowModal(false);
-      setForm({
-        name: '',
-        region: '',
-        province: '',
-        tier: 'basic',
-        contactEmail: '',
-        contactPhone: '',
-        primaryColor: '#1e3a5f',
-      });
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Failed to create parlour');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const toggleStatus = async (parlour: Parlour) => {
     try {
       const nextStatus: Parlour['status'] = parlour.status === 'suspended' ? 'active' : 'suspended';
@@ -91,7 +47,9 @@ export default function ParlourList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Parlour Management</h1>
-        <button onClick={() => setShowModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ Add Parlour</button>
+        <Link to="/safpa/parlours/new" className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
+          + Add Parlour
+        </Link>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
@@ -155,55 +113,6 @@ export default function ParlourList() {
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-
-      {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-semibold">Add Parlour</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Parlour Name*</label>
-                <input value={form.name} onChange={(e) => updateForm('name', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Region*</label>
-                <input value={form.region} onChange={(e) => updateForm('region', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Province*</label>
-                <input value={form.province} onChange={(e) => updateForm('province', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Tier*</label>
-                <select value={form.tier} onChange={(e) => updateForm('tier', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="basic">Basic</option>
-                  <option value="standard">Standard</option>
-                  <option value="premium">Premium</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Brand Color*</label>
-                <input type="color" value={form.primaryColor} onChange={(e) => updateForm('primaryColor', e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 p-1" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Contact Email*</label>
-                <input type="email" value={form.contactEmail} onChange={(e) => updateForm('contactEmail', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Contact Phone*</label>
-                <input value={form.contactPhone} onChange={(e) => updateForm('contactPhone', e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">Cancel</button>
-              <button onClick={() => void submit()} disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Parlour'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

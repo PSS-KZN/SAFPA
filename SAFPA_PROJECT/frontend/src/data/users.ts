@@ -12,4 +12,5 @@ export const users: User[] = [
   { id: 'u9', name: 'Zanele Mkhize', email: 'zanele@dignitymemorial.co.za', role: 'branch_manager', parlourId: 'p2', branchId: 'b4', status: 'active' },
   { id: 'u10', name: 'Noxolo Mtshali', email: 'noxolo@phakamafunerals.co.za', role: 'parlour_owner', parlourId: 'p3', status: 'active' },
   { id: 'u11', name: 'Neo Mahlasela', email: 'neo.reports@ubuntufunerals.co.za', role: 'reporting_analyst', parlourId: 'p1', branchId: 'b1', status: 'active' },
+  { id: 'u12', name: 'Sibusiso Mahlangu', email: 'sibusiso.m@gmail.com', role: 'policyholder_customer', parlourId: 'p1', memberId: 'm1', status: 'active' },
 ];

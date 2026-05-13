@@ -3,7 +3,7 @@ import { useRole } from '../../contexts/RoleContext';
 import { Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import type { Lead } from '../../types';
-import { createLead, fetchLeads } from '../../services/leadsApi';
+import { fetchLeads } from '../../services/leadsApi';
 
 const statusColors: Record<string, string> = {
   new: 'bg-red-100 text-red-700',
@@ -19,17 +19,6 @@ export default function LeadsList() {
   const [items, setItems] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    source: 'website' as Lead['source'],
-    assignedTo: '',
-    notes: '',
-  });
 
   const parlourId = currentUser.parlourId || 'p1';
 
@@ -55,52 +44,11 @@ export default function LeadsList() {
     : items;
   const filtered = filterStatus === 'all' ? parlourLeads : parlourLeads.filter((l) => l.status === filterStatus);
 
-  const createLeadRecord = async () => {
-    if (!form.firstName || !form.lastName || !form.phone) {
-      setError('Please complete first name, last name, and phone.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-      const created = await createLead({
-        parlourId,
-        branchId: currentUser.branchId || undefined,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        phone: form.phone,
-        email: form.email || undefined,
-        source: form.source,
-        status: 'new',
-        assignedTo: form.assignedTo || undefined,
-        notes: form.notes || undefined,
-        createdAt: new Date().toISOString().slice(0, 10),
-      });
-
-      setItems((previous) => [created, ...previous]);
-      setShowModal(false);
-      setForm({
-        firstName: '',
-        lastName: '',
-        phone: '',
-        email: '',
-        source: 'website',
-        assignedTo: '',
-        notes: '',
-      });
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Failed to create lead');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Leads</h1>
-        <button onClick={() => setShowModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ Add Lead</button>
+        <Link to="/leads/new" className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">+ Add Lead</Link>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
@@ -150,53 +98,6 @@ export default function LeadsList() {
           </tbody>
         </table>
       </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-semibold">Add Lead</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">First Name*</label>
-                <input value={form.firstName} onChange={(e) => setForm((previous) => ({ ...previous, firstName: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Last Name*</label>
-                <input value={form.lastName} onChange={(e) => setForm((previous) => ({ ...previous, lastName: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Phone*</label>
-                <input value={form.phone} onChange={(e) => setForm((previous) => ({ ...previous, phone: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Email</label>
-                <input value={form.email} onChange={(e) => setForm((previous) => ({ ...previous, email: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Source</label>
-                <select value={form.source} onChange={(e) => setForm((previous) => ({ ...previous, source: e.target.value as Lead['source'] }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="website">Website</option>
-                  <option value="branch">Branch</option>
-                  <option value="agent">Agent</option>
-                  <option value="referral">Referral</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Assigned To</label>
-                <input value={form.assignedTo} onChange={(e) => setForm((previous) => ({ ...previous, assignedTo: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Notes</label>
-                <textarea value={form.notes} onChange={(e) => setForm((previous) => ({ ...previous, notes: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" rows={3} />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">Cancel</button>
-              <button onClick={() => void createLeadRecord()} disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save Lead'}</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useRole } from '../../contexts/RoleContext';
 import { useEffect, useState } from 'react';
 import { MessageSquare, Mail, Plus, Edit, ToggleLeft, ToggleRight, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { CommunicationTemplate } from '../../types';
 import { fetchTemplates, setTemplateStatus } from '../../services/templatesApi';
 
@@ -61,9 +62,9 @@ export default function CommunicationTemplates() {
           <h1 className="text-2xl font-bold">Communication Templates</h1>
           <p className="text-sm text-slate-500 mt-1">Manage SMS and email templates for automated and manual communications</p>
         </div>
-        <button className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
+        <Link to="/parlour/comm-templates/new" className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
           <Plus size={16} /> New Template
-        </button>
+        </Link>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
@@ -144,9 +145,9 @@ export default function CommunicationTemplates() {
                 >
                   <Eye size={16} />
                 </button>
-                <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg" title="Edit">
+                <Link to={`/parlour/comm-templates/${tpl.id}/edit`} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100" title="Edit">
                   <Edit size={16} />
-                </button>
+                </Link>
                 <button onClick={() => void toggleStatus(tpl)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg" title={tpl.isActive ? 'Deactivate' : 'Activate'}>
                   {tpl.isActive ? <ToggleRight size={16} className="text-green-600" /> : <ToggleLeft size={16} />}
                 </button>

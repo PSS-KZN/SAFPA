@@ -20,6 +20,7 @@ const roleToDefaultUser: Record<UserRole, string> = {
   collections_clerk: 'u6',
   operations_coordinator: 'u7',
   reporting_analyst: 'u11',
+  policyholder_customer: 'u12',
 };
 
 const SESSION_KEY = 'safpa_session';

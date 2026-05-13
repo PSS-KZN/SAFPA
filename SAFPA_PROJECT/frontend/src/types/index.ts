@@ -5,7 +5,8 @@ export type UserRole =
   | 'policy_admin'
   | 'collections_clerk'
   | 'operations_coordinator'
-  | 'reporting_analyst';
+  | 'reporting_analyst'
+  | 'policyholder_customer';
 
 export interface User {
   id: string;
@@ -14,6 +15,7 @@ export interface User {
   role: UserRole;
   parlourId?: string;
   branchId?: string;
+  memberId?: string;
   avatar?: string;
   status: 'active' | 'inactive';
 }

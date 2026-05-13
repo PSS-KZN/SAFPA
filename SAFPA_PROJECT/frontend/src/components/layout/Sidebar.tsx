@@ -50,6 +50,11 @@ const navItems: NavItem[] = [
   // Communications
   { label: 'Communications', path: '/communications', icon: <MessageSquare size={18} />, roles: ['parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator'], group: 'Operations' },
 
+  // Customer Portal
+  { label: 'My Policy', path: '/customer/policy', icon: <FileText size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
+  { label: 'Payments', path: '/customer/payments', icon: <Wallet size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
+  { label: 'Support', path: '/customer/support', icon: <MessageSquare size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
+
   // Documents
   { label: 'Documents', path: '/documents', icon: <FolderOpen size={18} />, roles: ['parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator'], group: 'Operations' },
 

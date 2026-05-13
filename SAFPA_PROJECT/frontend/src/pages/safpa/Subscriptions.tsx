@@ -1,57 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Parlour, ParlourSubscription } from '../../types';
-import { fetchParlours } from '../../services/parloursApi';
-import {
-  createSubscription,
-  deleteSubscription,
-  fetchSubscriptions,
-  updateSubscription,
-  type CreateSubscriptionInput,
-} from '../../services/subscriptionsApi';
-
-interface SubscriptionForm {
-  parlourId: string;
-  tier: ParlourSubscription['tier'];
-  status: ParlourSubscription['status'];
-  billingCycle: ParlourSubscription['billingCycle'];
-  amount: number;
-  startDate: string;
-  endDate: string;
-  autoRenew: boolean;
-  notes: string;
-}
-
-const initialFormState: SubscriptionForm = {
-  parlourId: '',
-  tier: 'basic',
-  status: 'active',
-  billingCycle: 'monthly',
-  amount: 0,
-  startDate: new Date().toISOString().slice(0, 10),
-  endDate: '',
-  autoRenew: true,
-  notes: '',
-};
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { ParlourSubscription } from '../../types';
+import { deleteSubscription, fetchSubscriptions } from '../../services/subscriptionsApi';
 
 export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState<ParlourSubscription[]>([]);
-  const [parlours, setParlours] = useState<Parlour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<ParlourSubscription | null>(null);
-  const [form, setForm] = useState<SubscriptionForm>(initialFormState);
-
-  const parlourOptions = useMemo(() => parlours.map((parlour) => ({ id: parlour.id, name: parlour.name })), [parlours]);
 
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [subscriptionRows, parlourRows] = await Promise.all([fetchSubscriptions(), fetchParlours()]);
+      const subscriptionRows = await fetchSubscriptions();
       setSubscriptions(subscriptionRows);
-      setParlours(parlourRows);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load subscriptions');
     } finally {
@@ -62,88 +24,6 @@ export default function Subscriptions() {
   useEffect(() => {
     void load();
   }, []);
-
-  const resetForm = () => {
-    setForm({
-      ...initialFormState,
-      parlourId: parlourOptions[0]?.id || '',
-    });
-    setEditing(null);
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setShowModal(true);
-  };
-
-  const openEditModal = (subscription: ParlourSubscription) => {
-    setEditing(subscription);
-    setForm({
-      parlourId: subscription.parlourId,
-      tier: subscription.tier,
-      status: subscription.status,
-      billingCycle: subscription.billingCycle,
-      amount: subscription.amount,
-      startDate: subscription.startDate,
-      endDate: subscription.endDate || '',
-      autoRenew: subscription.autoRenew,
-      notes: subscription.notes || '',
-    });
-    setShowModal(true);
-  };
-
-  const onChange = <K extends keyof SubscriptionForm>(field: K, value: SubscriptionForm[K]) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
-  };
-
-  const save = async () => {
-    if (!form.parlourId || !form.startDate) {
-      setError('Parlour and start date are required.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-
-      if (editing) {
-        const updated = await updateSubscription(editing.id, {
-          tier: form.tier,
-          status: form.status,
-          billingCycle: form.billingCycle,
-          amount: form.amount,
-          startDate: form.startDate,
-          endDate: form.endDate || undefined,
-          autoRenew: form.autoRenew,
-          notes: form.notes || undefined,
-        });
-
-        setSubscriptions((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
-      } else {
-        const payload: CreateSubscriptionInput = {
-          parlourId: form.parlourId,
-          tier: form.tier,
-          status: form.status,
-          billingCycle: form.billingCycle,
-          amount: form.amount,
-          startDate: form.startDate,
-          endDate: form.endDate || undefined,
-          autoRenew: form.autoRenew,
-          notes: form.notes || undefined,
-        };
-
-        const created = await createSubscription(payload);
-        setSubscriptions((previous) => [created, ...previous]);
-      }
-
-      setShowModal(false);
-      resetForm();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Failed to save subscription');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const remove = async (subscription: ParlourSubscription) => {
     const confirmed = window.confirm(`Delete subscription for ${subscription.parlourName}?`);
@@ -164,9 +44,9 @@ export default function Subscriptions() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Parlour Subscriptions</h1>
-        <button onClick={openCreateModal} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
+        <Link to="/safpa/subscriptions/new" className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
           + New Subscription
-        </button>
+        </Link>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
@@ -208,9 +88,9 @@ export default function Subscriptions() {
                   <td className="px-4 py-3">{subscription.autoRenew ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <button onClick={() => openEditModal(subscription)} className="text-xs text-red-600 hover:text-red-800">
+                      <Link to={`/safpa/subscriptions/${subscription.id}/edit`} className="text-xs text-red-600 hover:text-red-800">
                         Edit
-                      </button>
+                      </Link>
                       <button onClick={() => void remove(subscription)} className="text-xs text-slate-600 hover:text-slate-900">
                         Delete
                       </button>
@@ -228,102 +108,6 @@ export default function Subscriptions() {
               )}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-semibold">{editing ? 'Edit Subscription' : 'New Subscription'}</h2>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Parlour*</label>
-                <select
-                  disabled={Boolean(editing)}
-                  value={form.parlourId}
-                  onChange={(event) => onChange('parlourId', event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
-                >
-                  <option value="">Select parlour</option>
-                  {parlourOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Tier*</label>
-                <select value={form.tier} onChange={(event) => onChange('tier', event.target.value as ParlourSubscription['tier'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="basic">Basic</option>
-                  <option value="standard">Standard</option>
-                  <option value="premium">Premium</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Status*</label>
-                <select value={form.status} onChange={(event) => onChange('status', event.target.value as ParlourSubscription['status'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Billing Cycle*</label>
-                <select value={form.billingCycle} onChange={(event) => onChange('billingCycle', event.target.value as ParlourSubscription['billingCycle'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annually">Annually</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Amount (ZAR)*</label>
-                <input type="number" min={0} value={form.amount} onChange={(event) => onChange('amount', Number(event.target.value))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Start Date*</label>
-                <input type="date" value={form.startDate} onChange={(event) => onChange('startDate', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">End Date</label>
-                <input type="date" value={form.endDate} onChange={(event) => onChange('endDate', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-
-              <div className="md:col-span-2 flex items-center gap-2">
-                <input id="autoRenew" type="checkbox" checked={form.autoRenew} onChange={(event) => onChange('autoRenew', event.target.checked)} />
-                <label htmlFor="autoRenew" className="text-sm text-slate-600">
-                  Auto renew subscription
-                </label>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Notes</label>
-                <textarea value={form.notes} onChange={(event) => onChange('notes', event.target.value)} className="min-h-20 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600"
-              >
-                Cancel
-              </button>
-              <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Subscription'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

@@ -2,10 +2,9 @@ import { useRole } from '../../contexts/RoleContext';
 import { Link } from 'react-router-dom';
 import { Eye, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Member, Policy, Product } from '../../types';
+import type { Member, Policy } from '../../types';
 import { fetchMembers } from '../../services/membersApi';
-import { createPolicy, fetchPolicies } from '../../services/policiesApi';
-import { fetchProducts } from '../../services/productsApi';
+import { fetchPolicies } from '../../services/policiesApi';
 
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -23,21 +22,8 @@ export default function PolicyList() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [items, setItems] = useState<Policy[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    memberId: '',
-    productId: '',
-    billingFrequency: 'monthly' as Policy['billingFrequency'],
-    premiumAmount: 0,
-    coverAmount: 0,
-    waitingPeriodDays: 0,
-    startDate: new Date().toISOString().slice(0, 10),
-    nextDueDate: new Date().toISOString().slice(0, 10),
-  });
 
   const parlourId = currentUser.parlourId || 'p1';
 
@@ -46,23 +32,9 @@ export default function PolicyList() {
       try {
         setLoading(true);
         setError(null);
-        const [policyRecords, memberRecords] = await Promise.all([
-          fetchPolicies(parlourId),
-          fetchMembers(parlourId),
-        ]);
-        const productRecords = await fetchProducts(parlourId);
+        const [policyRecords, memberRecords] = await Promise.all([fetchPolicies(parlourId), fetchMembers(parlourId)]);
         setItems(policyRecords);
         setMembers(memberRecords);
-        const activeProducts = productRecords.filter((product) => product.isActive);
-        setProducts(activeProducts);
-        if (activeProducts.length > 0) {
-          setForm((previous) => ({
-            ...previous,
-            productId: activeProducts[0].id,
-            premiumAmount: activeProducts[0].premiumFrom,
-            coverAmount: activeProducts[0].coverFrom,
-          }));
-        }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load policies');
       } finally {
@@ -76,49 +48,8 @@ export default function PolicyList() {
   const parlourPolicies = currentUser.role === 'branch_manager' && currentUser.branchId
     ? items.filter((policy) => members.some((member) => member.id === policy.memberId && member.branchId === currentUser.branchId))
     : items;
-  const scopedMembers = currentUser.role === 'branch_manager' && currentUser.branchId
-    ? members.filter((member) => member.branchId === currentUser.branchId)
-    : members;
   const filtered = filterStatus === 'all' ? parlourPolicies : parlourPolicies.filter((p) => p.status === filterStatus);
   const canCreatePolicy = currentUser.role === 'parlour_owner' || currentUser.role === 'policy_admin';
-
-  const createPolicyRecord = async () => {
-    if (!form.memberId || !form.productId || form.premiumAmount <= 0 || form.coverAmount <= 0) {
-      setError('Please complete member, product, premium, and cover before saving.');
-      return;
-    }
-
-    const selectedProduct = products.find((product) => product.id === form.productId);
-    if (!selectedProduct) {
-      setError('Selected product not found.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-      const created = await createPolicy({
-        memberId: form.memberId,
-        parlourId,
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        status: 'pending',
-        premiumAmount: form.premiumAmount,
-        waitingPeriodDays: Math.max(0, form.waitingPeriodDays),
-        billingFrequency: form.billingFrequency,
-        nextDueDate: form.nextDueDate,
-        startDate: form.startDate,
-        coverAmount: form.coverAmount,
-        arrearsAmount: 0,
-      });
-      setItems((previous) => [created, ...previous]);
-      setShowModal(false);
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Failed to create policy');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div>
@@ -129,7 +60,7 @@ export default function PolicyList() {
             <Link to="/policies/import" className="border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-1">
               <Upload size={14} /> Bulk Import
             </Link>
-            <button onClick={() => setShowModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">+ Create Policy</button>
+            <Link to="/policies/new" className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">+ Create Policy</Link>
           </div>
         )}
       </div>
@@ -185,80 +116,6 @@ export default function PolicyList() {
           </tbody>
         </table>
       </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-semibold">Create Policy</h2>
-            <p className="mb-4 text-sm text-slate-500">Policy creation is handled by Parlour Owners and Policy Admin users.</p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Member</label>
-                <select value={form.memberId} onChange={(e) => setForm((previous) => ({ ...previous, memberId: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="">Select member...</option>
-                  {scopedMembers.map((member) => (
-                    <option key={member.id} value={member.id}>{member.firstName} {member.lastName}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Product</label>
-                <select
-                  value={form.productId}
-                  onChange={(e) => {
-                    const nextProductId = e.target.value;
-                    const nextProduct = products.find((product) => product.id === nextProductId);
-                    setForm((previous) => ({
-                      ...previous,
-                      productId: nextProductId,
-                      premiumAmount: nextProduct ? nextProduct.premiumFrom : previous.premiumAmount,
-                      coverAmount: nextProduct ? nextProduct.coverFrom : previous.coverAmount,
-                    }));
-                  }}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Select product...</option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>{product.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Premium Amount</label>
-                <input type="number" value={form.premiumAmount} onChange={(e) => setForm((previous) => ({ ...previous, premiumAmount: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Cover Amount</label>
-                <input type="number" value={form.coverAmount} onChange={(e) => setForm((previous) => ({ ...previous, coverAmount: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Billing Frequency</label>
-                <select value={form.billingFrequency} onChange={(e) => setForm((previous) => ({ ...previous, billingFrequency: e.target.value as Policy['billingFrequency'] }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option value="monthly">Monthly</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="annually">Annually</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Start Date</label>
-                <input type="date" value={form.startDate} onChange={(e) => setForm((previous) => ({ ...previous, startDate: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Waiting Period (days)</label>
-                <input type="number" min={0} value={form.waitingPeriodDays} onChange={(e) => setForm((previous) => ({ ...previous, waitingPeriodDays: Number(e.target.value) }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Next Due Date</label>
-                <input type="date" value={form.nextDueDate} onChange={(e) => setForm((previous) => ({ ...previous, nextDueDate: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">Cancel</button>
-              <button onClick={() => void createPolicyRecord()} disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">{saving ? 'Saving...' : 'Create Policy'}</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
