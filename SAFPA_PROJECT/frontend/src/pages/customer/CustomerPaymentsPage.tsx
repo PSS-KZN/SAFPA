@@ -1,6 +1,6 @@
 import { CreditCard } from 'lucide-react';
 import type { PaymentTransaction } from '../../types';
-import { useCustomerPortal } from './CustomerPortal';
+import { useCustomerPortal } from './customerPortalContext';
 
 export default function CustomerPaymentsPage() {
   const { policies, payments, paymentForm, paying, setPaymentForm, payNow } = useCustomerPortal();

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { NavLink, Outlet, useOutletContext } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import type { Communication, Member, Parlour, PaymentTransaction, Policy } from '../../types';
@@ -8,40 +8,7 @@ import { fetchMembers, updateMember } from '../../services/membersApi';
 import { fetchPayments, createPayment } from '../../services/paymentsApi';
 import { fetchParlourById } from '../../services/parloursApi';
 import { fetchPolicies } from '../../services/policiesApi';
-
-export type ProfileFormState = {
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  province: string;
-};
-
-export type PaymentFormState = {
-  policyId: string;
-  amount: number;
-  method: PaymentTransaction['method'];
-  date: string;
-};
-
-type CustomerPortalContextValue = {
-  member: Member;
-  parlour: Parlour;
-  policies: Policy[];
-  payments: PaymentTransaction[];
-  communications: Communication[];
-  activePolicy: Policy | null;
-  profileForm: ProfileFormState;
-  paymentForm: PaymentFormState;
-  savingProfile: boolean;
-  paying: boolean;
-  error: string | null;
-  notice: string | null;
-  setPaymentForm: Dispatch<SetStateAction<PaymentFormState>>;
-  updateProfileField: <K extends keyof ProfileFormState>(field: K, value: ProfileFormState[K]) => void;
-  saveProfile: () => Promise<void>;
-  payNow: () => Promise<void>;
-};
+import type { CustomerPortalContextValue, PaymentFormState, ProfileFormState } from './customerPortalContext';
 
 const emptyProfile: ProfileFormState = {
   phone: '',
@@ -56,10 +23,6 @@ const tabLinks = [
   { label: 'Payments', to: '/customer/payments' },
   { label: 'Support', to: '/customer/support' },
 ];
-
-export function useCustomerPortal() {
-  return useOutletContext<CustomerPortalContextValue>();
-}
 
 export default function CustomerPortal() {
   const { currentUser } = useRole();

@@ -1,5 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
-import { useCustomerPortal } from './CustomerPortal';
+import { useCustomerPortal } from './customerPortalContext';
 
 export default function CustomerPolicyPage() {
   const { activePolicy, payments } = useCustomerPortal();

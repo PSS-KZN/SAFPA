@@ -1,5 +1,5 @@
 import { Mail, MapPin, Phone } from 'lucide-react';
-import { useCustomerPortal } from './CustomerPortal';
+import { useCustomerPortal } from './customerPortalContext';
 
 export default function CustomerSupportPage() {
   const { parlour, communications, profileForm, savingProfile, updateProfileField, saveProfile } = useCustomerPortal();
