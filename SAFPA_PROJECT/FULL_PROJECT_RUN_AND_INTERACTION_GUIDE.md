@@ -114,6 +114,7 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 
 - RoleContext stores selected session in localStorage key: safpa_session
 - RoleContext primes a default session on first load so initial API requests include actor headers
+- RoleContext also exposes default demo sessions for `reporting_analyst` and `policyholder_customer`
 - TenantBrandingContext fetches the active parlour record for non-SAFPA users so tenant shell branding stays in sync with backend parlour data
 - services/http.ts reads safpa_session and sends headers:
   - x-user-id
@@ -130,6 +131,8 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 - Falls back to header-only actor resolution for demo role switching when a valid role header is present
 - Applies role-based route permissions
 - Applies tenant restrictions by parlour and branch where relevant
+- Reports are available to operations_coordinator as well as the other reporting-capable staff roles
+- A dedicated `policyholder_customer` backend permission profile is not yet defined in authScopeMiddleware
 - Static `/uploads` serving exposes uploaded documents and branding logos from backend storage
 - Rejects unauthorized requests with 401/403
 
@@ -139,7 +142,8 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 
 - SAFPA admin: parlours, subscriptions, resources, network reporting, audit
 - Parlour admin: branches, users, products, templates, branding workspace, website config
-- Operations/CRM: leads, members, policies, payments, collections, funeral cases
+- Operations/CRM: leads, members, policies, payments, collections, funeral cases, policy-admin overview, operations overview
+- Customer self-service: customer policy, payments, and support pages driven from the same frontend service layer
 - Shared records: documents, communications, reports, audit
 
 ### Typical flow example
@@ -172,6 +176,10 @@ Website lead to reporting:
 - Tenant branding state:
   - Loaded from the backend parlour record, not just frontend mock data
   - Consumed by tenant shell components, branding workspace, parlour dashboard, and website preview
+
+- Customer portal state:
+  - Aggregates member, policy, payment, communication, and parlour data in the frontend
+  - Uses the same shared frontend service layer rather than a separate backend customer API surface
 
 ## 11) Automation interactions
 

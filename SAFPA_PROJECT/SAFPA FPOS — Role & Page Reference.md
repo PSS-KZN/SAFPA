@@ -40,10 +40,11 @@ To align with the sensitive and professional nature of the funeral industry, the
 | `safpa_admin` | SAFPA Admin | SAFPA Dashboard | National association administrator. Manages member parlours, aggregate reporting, and resources. |
 | `parlour_owner` | Parlour Owner | Parlour Dashboard | Owner of a funeral parlour. Full access to their tenant including branches, staff, products, collections, and reporting. |
 | `branch_manager` | Branch Manager | Parlour Dashboard | Manages a single branch. Can see members, policies, collections, funeral cases, and communications scoped to their branch. |
-| `policy_admin` | Policy Admin | Members | Handles member registration, policy lifecycle, dependants, beneficiaries, and document management. |
+| `policy_admin` | Policy Admin | Policy Overview | Handles member registration, policy lifecycle, dependants, beneficiaries, and document management. |
 | `collections_clerk` | Collections Clerk | Collections | Monitors premiums, processes failed payments, manages arrears follow-up, and imports reconciliation files. |
-| `operations_coordinator` | Operations Coordinator | Funeral Cases | Manages funeral case workflow from death notice to closure, including tasks, staff, vehicles, and family communications. |
+| `operations_coordinator` | Operations Coordinator | Operations Overview | Manages funeral case workflow from death notice to closure, including tasks, staff, vehicles, family communications, and operations analytics. |
 | `reporting_analyst` | Reporting Analyst | Reports | Read-only reporting specialist focused on collections, member growth, and operational analytics. |
+| `policyholder_customer` | Policyholder / Customer | Customer Portal | Self-service portal user for policy summary, payment capture, and support/contact updates. |
 
 ---
 
@@ -332,6 +333,7 @@ Premium collection monitoring and reconciliation.
 | Tab | What it shows |
 |-----|--------------|
 | **Overview** | 4 KPI cards (Collected, Failed, Pending, In Arrears); Collections Trend bar chart (collected vs failed by month) |
+| **Portal** | Manual payment capture form with policy selector, amount, method, date, and quick routing back to transactions after payment is recorded |
 | **Transactions** | Payment table: date, member, policy number, amount, method, reference, status badge, Receipt link |
 | **Arrears** | Policies with outstanding balances: policy number, product, premium, arrears amount, status badge, last payment date, Send Reminder and View Policy actions |
 | **Reconciliation** | File upload dropzone for provider settlement files; Download Template button; Previous Imports table (file name, imported by, date, matched count, exceptions count, status) |
@@ -447,7 +449,7 @@ The Branch Manager sees the same parlour dashboard and operational pages as the 
 | Leads `/leads` and `/leads/:id` | Branch-scoped leads |
 | Members `/members` and `/members/:id` | Branch-scoped member list and detail |
 | Policies `/policies` and `/policies/:id` | Branch-scoped policy list and detail |
-| Collections `/collections` | Branch-scoped data across all 4 tabs: Overview, Transactions, Arrears, Reconciliation |
+| Collections `/collections` | Branch-scoped data across all 5 tabs: Overview, Portal, Transactions, Arrears, Reconciliation |
 | Funeral Cases `/funeral-cases` and detail | Full case workflow |
 | Communications `/communications` | Delivery log |
 | Documents `/documents` | Branch-scoped documents |
@@ -459,7 +461,7 @@ The Branch Manager sees the same parlour dashboard and operational pages as the 
 
 ### 4. Policy Admin (`policy_admin`)
 
-Focused on the member and policy lifecycle. Lands on Members.
+Focused on the member and policy lifecycle. Lands on Policy Overview.
 
 **Demo user:** Lindiwe Sithole
 
@@ -467,6 +469,7 @@ Focused on the member and policy lifecycle. Lands on Members.
 
 | Page | Notes |
 |------|-------|
+| Policy Overview `/policy-admin` | Role-specific dashboard for work queues, lead conversion, policy follow-up, and member communication activity |
 | Leads `/leads` and `/leads/:id` | Capture and convert leads |
 | Members `/members`, `/members/new`, `/members/import`, `/members/:id` | Full member management including wizard and bulk import |
 | Policies `/policies` and `/policies/:id` | Full policy lifecycle management |
@@ -488,7 +491,7 @@ Focused entirely on premium collection and financial reconciliation. Lands on Co
 
 | Page | Notes |
 |------|-------|
-| Collections `/collections` | Full access to all 4 tabs |
+| Collections `/collections` | Full access to all 5 tabs |
 | Communications `/communications` | View and send payment reminders |
 | Reports `/reports` | Collections-focused reporting |
 
@@ -497,6 +500,7 @@ Focused entirely on premium collection and financial reconciliation. Lands on Co
 | Tab | Clerk's actions |
 |-----|----------------|
 | Overview | Monitor daily collection KPIs and trends |
+| Portal | Capture a manual payment against a selected policy |
 | Transactions | Review each payment; open receipts |
 | Arrears | Identify overdue policies; trigger Send Reminder |
 | Reconciliation | Import provider settlement file; review matched/exception counts; view import history |
@@ -507,7 +511,7 @@ Focused entirely on premium collection and financial reconciliation. Lands on Co
 
 ### 6. Operations Coordinator (`operations_coordinator`)
 
-Manages funeral service delivery from first contact to case closure. Lands on Funeral Cases.
+Manages funeral service delivery from first contact to case closure. Lands on Operations Overview.
 
 **Demo user:** Sibongile Mthembu
 
@@ -515,9 +519,11 @@ Manages funeral service delivery from first contact to case closure. Lands on Fu
 
 | Page | Notes |
 |------|-------|
+| Operations Overview `/operations` | Role-specific dashboard for open cases, scheduled services, overdue tasks, pending messages, and recent document activity |
 | Funeral Cases `/funeral-cases`, `/funeral-cases/new`, `/funeral-cases/:id` | Full case workflow |
 | Communications `/communications` | View and send case-related messages |
 | Documents `/documents` | Upload and manage case documents (member/policy docs hidden for this role) |
+| Reports `/reports` | Operations analytics focused on funeral volume, case status, document coverage, and pending communications |
 
 **Funeral Case Detail sections in detail:**
 
@@ -551,28 +557,53 @@ Focused on analytics and reporting only. Lands on Reports.
 
 ---
 
+### 8. Policyholder / Customer (`policyholder_customer`)
+
+Customer-facing self-service user. Lands on Customer Portal.
+
+**Demo user:** Sibusiso Mahlangu
+
+**Accessible pages:**
+
+| Page | Notes |
+|------|-------|
+| Customer Portal `/customer` | Shell route that redirects into the self-service tabs |
+| My Policy `/customer/policy` | Policy summary, premium, cover amount, next due date, arrears, and recent payment snapshot |
+| Payments `/customer/payments` | Customer payment form plus recent payment history across linked policies |
+| Support `/customer/support` | Contact detail updates, recent reminders, and parlour contact information |
+
+Implementation note:
+
+- These frontend routes are implemented and included in the role switcher.
+- Backend authScopeMiddleware does not yet define a dedicated customer permission profile, so this role should still be treated as a demo self-service surface rather than a separately secured API role.
+
+---
+
 ## Summary Matrix
 
-| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator | Reporting Analyst |
-|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|:-----------------:|
-| SAFPA Dashboard | ✓ | — | — | — | — | — | — |
-| Parlour Management | ✓ | — | — | — | — | — | — |
-| Resources & Notices | ✓ | — | — | — | — | — | — |
-| Parlour Dashboard | — | ✓ | ✓ | — | — | — | — |
-| Branches | — | ✓ | — | — | — | — | — |
-| Users | — | ✓ | — | — | — | — | — |
-| Products | — | ✓ | — | — | — | — | — |
-| Comm. Templates | — | ✓ | — | — | — | — | — |
-| Website Preview | — | ✓ | — | — | — | — | — |
-| Leads | — | ✓ | ✓ | ✓ | — | — | — |
-| Members | — | ✓ | ✓ | ✓ | — | — | — |
-| Policies | — | ✓ | ✓ | ✓ | — | — | — |
-| Collections | — | ✓ | ✓ | — | ✓ | — | — |
-| Funeral Cases | — | ✓ | ✓ | — | — | ✓ | — |
-| Communications | — | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Documents | — | ✓ | ✓ | ✓ | — | ✓ | — |
-| Reports | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
-| Audit Log | ✓ | ✓ | — | — | — | — | — |
+| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator | Reporting Analyst | Policyholder / Customer |
+|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|:-----------------:|:-----------------------:|
+| SAFPA Dashboard | ✓ | — | — | — | — | — | — | — |
+| Parlour Management | ✓ | — | — | — | — | — | — | — |
+| Resources & Notices | ✓ | — | — | — | — | — | — | — |
+| Parlour Dashboard | — | ✓ | ✓ | — | — | — | — | — |
+| Policy Overview | — | — | — | ✓ | — | — | — | — |
+| Operations Overview | — | — | — | — | — | ✓ | — | — |
+| Branches | — | ✓ | — | — | — | — | — | — |
+| Users | — | ✓ | — | — | — | — | — | — |
+| Products | — | ✓ | — | — | — | — | — | — |
+| Comm. Templates | — | ✓ | — | — | — | — | — | — |
+| Website Preview | — | ✓ | — | — | — | — | — | — |
+| Leads | — | ✓ | ✓ | ✓ | — | — | — | — |
+| Members | — | ✓ | ✓ | ✓ | — | — | — | — |
+| Policies | — | ✓ | ✓ | ✓ | — | — | — | — |
+| Collections | — | ✓ | ✓ | — | ✓ | — | — | — |
+| Funeral Cases | — | ✓ | ✓ | — | — | ✓ | — | — |
+| Communications | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| Documents | — | ✓ | ✓ | ✓ | — | ✓ | — | — |
+| Reports | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Customer Portal | — | — | — | — | — | — | — | ✓ |
+| Audit Log | ✓ | ✓ | — | — | — | — | — | — |
 
 ---
 
@@ -597,4 +628,4 @@ The demo includes a **Role Switcher** in the top navigation bar. Selecting a dif
 2. Navigate automatically to that role's default landing page.
 3. Update the sidebar to show only the pages accessible to that role.
 
-This allows a single demo session to demonstrate all seven user perspectives without separate logins.
+This allows a single demo session to demonstrate all eight user perspectives without separate logins.

@@ -7,6 +7,8 @@ The frontend is a React + TypeScript + Vite application for SAFPA FPOS.
 It provides:
 - Role-based dashboards and workflows
 - CRUD screens for core domains (parlours, branches, users, products, leads, members, policies, collections, funeral cases, documents, communications, reports)
+- Role-specific overview landing pages for policy administration and funeral operations
+- Customer self-service pages for policy, payments, and support details
 - Parlour branding management, logo upload, and hosted website readiness/publishing flows
 - Tenant-aware shell branding for parlour-scoped users
 - HTTP client integration to the backend API
@@ -53,6 +55,7 @@ Developer API reference also available from the backend:
     - audit
     - collections
     - communications
+    - customer
     - documents
     - funeralCases
     - leads
@@ -89,18 +92,22 @@ Main role landing routes:
 - safpa_admin -> /safpa
 - parlour_owner -> /parlour
 - branch_manager -> /parlour
-- policy_admin -> /members
+- policy_admin -> /policy-admin
 - collections_clerk -> /collections
-- operations_coordinator -> /funeral-cases
+- operations_coordinator -> /operations
 - reporting_analyst -> /reports
+- policyholder_customer -> /customer
 
 If a user visits a route they are not allowed to access, they are redirected to the role default route.
 
 Additional route groups currently exposed:
 - SAFPA admin: parlours, subscriptions, resources
 - Parlour owner: branches, users, products, branding workspace, communication templates, website preview
+- Policy admin: dedicated /policy-admin overview plus leads, members, policies, communications, documents, reports
+- Operations coordinator: dedicated /operations overview plus funeral cases, communications, documents, reports
 - Shared operational routes: leads, members, policies, collections, funeral cases, communications, reports, documents
 - Reporting analyst: reports only
+- Customer self-service: /customer/policy, /customer/payments, /customer/support
 - Audit log route: /audit-log for safpa_admin and parlour_owner
 
 ## 5) Session and request behavior
@@ -110,6 +117,7 @@ RoleContext.tsx:
 - Provides switchRole for demo role changes
 - Restores session on refresh from localStorage
 - Primes a default session on first load so initial API calls carry actor headers immediately
+- Includes dedicated demo users for both reporting_analyst and policyholder_customer
 
 TenantBrandingContext.tsx:
 - Loads the active parlour record for non-admin users with a parlourId
@@ -127,6 +135,9 @@ services/http.ts:
 - Resolves relative asset paths such as /uploads/branding/... against the backend origin for logo rendering
 
 This header model aligns with backend auth/scope middleware.
+
+Current customer portal caveat:
+- The frontend includes a `policyholder_customer` role and self-service routes, but backend authScopeMiddleware does not yet define a dedicated customer permission profile
 
 ## 6) Service layer design
 
@@ -160,6 +171,10 @@ Branding-specific behavior:
 - Branding.tsx loads the current parlour profile, edits brand colors/contact/profile fields, checks SAFPA-hosted subdomain availability, and can publish when readiness requirements are met
 - Logo uploads use multipart FormData through parloursApi.ts and are then rendered via resolveAssetUrl
 - WebsitePreview.tsx renders a tenant website preview from saved branding fields rather than static mock-only content
+
+Collections-specific behavior:
+- CollectionsDashboard includes five tabs: overview, portal, transactions, arrears, and reconciliation
+- The portal tab supports manual payment capture against a selected policy before returning the user to transaction history
 
 ## 7) Styling and UI behavior
 
@@ -226,6 +241,8 @@ Note:
 - The provider primes a default safpa_session on first load so initial API requests include actor headers
 - Tenant branding is not mocked in the layout; it is fetched from the backend parlour record for the active parlour context
 - Demo user data includes a dedicated `reporting_analyst` user for reports-only access
+- Demo user data also includes a dedicated `policyholder_customer` user and customer self-service navigation
+- The customer portal UI is routed in the frontend, but the backend still needs a dedicated customer authorization profile for full end-to-end support
 - This keeps role-switching quick for demo while using backend persistence for flows
 
 ## 12) Quick troubleshooting
