@@ -178,7 +178,7 @@ function AppRoutes() {
         </Route>
 
         {/* Reports */}
-        <Route path="/reports" element={withAccess(['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'reporting_analyst'], <ReportsDashboard />)} />
+        <Route path="/reports" element={withAccess(['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator', 'reporting_analyst'], <ReportsDashboard />)} />
 
         {/* Documents */}
         <Route path="/documents" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator'], <DocumentsList />)} />
