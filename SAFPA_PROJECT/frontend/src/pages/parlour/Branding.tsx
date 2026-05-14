@@ -98,6 +98,14 @@ export default function Branding() {
   const websiteSubdomain = form?.websiteSubdomain;
   const currentParlourId = parlour?.id;
 
+  const applyBrandingState = (nextParlour: Parlour) => {
+    const nextForm = createFormFromParlour(nextParlour);
+    setParlour(nextParlour);
+    setParlourBranding(nextParlour);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -152,7 +160,7 @@ export default function Branding() {
     return () => clearTimeout(timer);
   }, [currentParlourId, websiteSubdomain]);
 
-  const isDirty = Boolean(form && initialForm && !formsEqual(form, initialForm));
+  const isDirty = Boolean(selectedLogoFile || (form && initialForm && !formsEqual(form, initialForm)));
   const publishStatus = parlour?.websitePublishStatus ?? 'draft';
 
   const publishBadge = useMemo(() => {
@@ -210,20 +218,27 @@ export default function Branding() {
       setError(null);
       setNotice(null);
 
-      const updated = await updateParlourBranding(parlour.id, {
-        ...form,
-        customDomain: form.customDomain || undefined,
-        logo: form.logo || undefined,
-        websiteSubdomain: form.websiteSubdomain || undefined,
+      let activeParlour = parlour;
+      let activeForm = form;
+
+      if (selectedLogoFile) {
+        const logoUpdated = await uploadParlourLogo(activeParlour.id, selectedLogoFile);
+        activeParlour = logoUpdated;
+        activeForm = createFormFromParlour(logoUpdated);
+        applyBrandingState(logoUpdated);
+      }
+
+      const updated = await updateParlourBranding(activeParlour.id, {
+        ...activeForm,
+        customDomain: activeForm.customDomain || undefined,
+        logo: activeForm.logo || undefined,
+        websiteSubdomain: activeForm.websiteSubdomain || undefined,
         websitePublishStatus: mode === 'published' ? 'published' : undefined,
         brandingCompletedAt: new Date().toISOString().slice(0, 10),
       });
 
-      const nextForm = createFormFromParlour(updated);
-      setParlour(updated);
-      setParlourBranding(updated);
-      setForm(nextForm);
-      setInitialForm(nextForm);
+      applyBrandingState(updated);
+      setSelectedLogoFile(null);
       setNotice(
         updated.websitePublishStatus === 'published'
           ? 'Branding saved and website published.'
@@ -261,11 +276,7 @@ export default function Branding() {
       setError(null);
       setNotice(null);
       const updated = await uploadParlourLogo(parlour.id, selectedLogoFile);
-      const nextForm = createFormFromParlour(updated);
-      setParlour(updated);
-      setParlourBranding(updated);
-      setForm(nextForm);
-      setInitialForm(nextForm);
+      applyBrandingState(updated);
       setSelectedLogoFile(null);
       setNotice('Logo uploaded successfully. The new asset is now available across branded surfaces.');
     } catch (uploadError) {
