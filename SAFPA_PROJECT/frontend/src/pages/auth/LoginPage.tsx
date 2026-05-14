@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { LockKeyhole } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import type { UserRole } from '../../types';
 
@@ -24,6 +23,43 @@ const roleDefaultPath: Record<UserRole, string> = {
   policyholder_customer: '/customer',
 };
 
+const roleDescriptions: Record<UserRole, string> = {
+  safpa_admin: 'Govern federation reporting, onboarding oversight, and tenant-wide operations from the national SAFPA control layer.',
+  parlour_owner: 'Lead parlour performance, branding, users, and branch operations from the owner workspace.',
+  branch_manager: 'Coordinate branch activity, member servicing, and front-office execution with local oversight.',
+  policy_admin: 'Manage policy servicing, member updates, and product-linked administration with precision.',
+  collections_clerk: 'Track premium collections, receipts, arrears follow-up, and repayment activity from one queue.',
+  operations_coordinator: 'Run funeral case logistics, scheduling, suppliers, and service delivery communication.',
+  policyholder_customer: 'Access the customer portal for policies, payments, documents, and communication history.',
+};
+
+function getLoginTheme(selectedRole: UserRole): CSSProperties {
+  const isSafpaAdmin = selectedRole === 'safpa_admin';
+
+  return {
+    '--page-bg': isSafpaAdmin ? '#f5f0e8' : '#f4f7fb',
+    '--page-overlay-a': isSafpaAdmin ? 'rgba(122, 46, 46, 0.04)' : 'rgba(227, 24, 55, 0.06)',
+    '--page-overlay-b': isSafpaAdmin ? 'rgba(139, 90, 60, 0.05)' : 'rgba(15, 23, 42, 0.05)',
+    '--panel-bg': isSafpaAdmin ? '#1f1815' : '#0a0f1c',
+    '--panel-overlay-a': isSafpaAdmin ? 'rgba(122, 46, 46, 0.25)' : 'rgba(227, 24, 55, 0.28)',
+    '--panel-overlay-b': isSafpaAdmin ? 'rgba(139, 90, 60, 0.12)' : 'rgba(227, 24, 55, 0.12)',
+    '--panel-ink': isSafpaAdmin ? '#f5f0e8' : '#f8fafc',
+    '--panel-muted': isSafpaAdmin ? '#d6ccc0' : '#cbd5e1',
+    '--accent': isSafpaAdmin ? '#7a2e2e' : '#e31837',
+    '--accent-strong': isSafpaAdmin ? '#5e2323' : '#be123c',
+    '--accent-soft': isSafpaAdmin ? '#c89a6d' : '#fda4af',
+    '--ink': isSafpaAdmin ? '#2a221c' : '#0f172a',
+    '--ink-muted': isSafpaAdmin ? '#6b5d4f' : '#475569',
+    '--line': isSafpaAdmin ? '#c9bba6' : '#cbd5e1',
+    '--line-soft': isSafpaAdmin ? 'rgba(122, 46, 46, 0.14)' : 'rgba(227, 24, 55, 0.14)',
+    '--surface': isSafpaAdmin ? 'rgba(255, 252, 248, 0.82)' : 'rgba(255, 255, 255, 0.84)',
+    '--surface-strong': isSafpaAdmin ? '#fffaf2' : '#ffffff',
+    '--surface-soft': isSafpaAdmin ? 'rgba(122, 46, 46, 0.04)' : 'rgba(227, 24, 55, 0.05)',
+    '--shadow': isSafpaAdmin ? '0 24px 70px -34px rgba(42, 34, 28, 0.38)' : '0 24px 70px -34px rgba(15, 23, 42, 0.34)',
+    '--button-ink': '#f8fafc',
+  } as CSSProperties;
+}
+
 export default function LoginPage() {
   const { currentUser, isAuthenticated, login, availableUsers, authLoading } = useRole();
   const navigate = useNavigate();
@@ -32,9 +68,17 @@ export default function LoginPage() {
   const [role, setRole] = useState<UserRole>('safpa_admin');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (authLoading) {
-    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-200">Loading session...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f0e8] px-6 text-center text-[#6b5d4f]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+        <div>
+          <div className="mx-auto mb-4 h-px w-16 bg-[#7a2e2e]" />
+          <p className="text-2xl italic">Preparing your workspace</p>
+        </div>
+      </div>
+    );
   }
 
   if (isAuthenticated) {
@@ -42,6 +86,7 @@ export default function LoginPage() {
   }
 
   const matchingUsers = availableUsers.filter((user) => user.role === role);
+  const theme = getLoginTheme(role);
 
   const handleSubmit = async () => {
     try {
@@ -57,99 +102,398 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-[#f8fafc] text-slate-900">
-      <div className="grid h-full" style={{ gridTemplateColumns: 'minmax(360px, 0.9fr) minmax(420px, 1.1fr)' }}>
-        <section className="relative flex h-full min-h-0 overflow-hidden bg-[#0a0f1c] text-white items-center justify-center px-8 lg:px-16">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(227,24,55,0.28),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(227,24,55,0.12),transparent_24%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:32px_32px] opacity-70" />
-          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-          <div className="absolute -right-20 top-16 h-64 w-64 rounded-full bg-[#e31837]/10 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-44 w-44 border-l border-t border-white/10 bg-white/4" style={{ clipPath: 'polygon(100% 0, 0 100%, 100% 100%)' }} />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap');
 
-          <div className="relative z-10 mx-auto flex max-w-[430px] flex-col items-center text-center">
-            <div className="flex h-32 w-32 items-center justify-center rounded-[30px] bg-white p-2 shadow-[0_20px_70px_-30px_rgba(227,24,55,0.55)] ring-1 ring-white/10">
-              <img src="/safpa-logo.png" alt="SAFPA Logo" className="h-full w-full object-contain" />
-            </div>
-            <div className="mt-6 rounded-full border border-[#e31837]/35 bg-[#e31837]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-200">
-              SAFPA FPOS secure access
-            </div>
-            <h1 className="mt-8 text-[clamp(2.8rem,5vw,4.2rem)] font-semibold leading-[0.98] tracking-[-0.05em] text-white">
-              <span className="block">Funeral Parlour</span>
-              <span className="mt-2 block text-[#f4f7fb]">Operations</span>
-              <span className="mt-2 block text-[#e31837]">Platform</span>
-            </h1>
-            <p className="mt-6 max-w-[420px] text-[17px] leading-8 text-slate-300">
-              SAFPA&apos;s unified workspace for administration, policy servicing, collections, case management, and customer support.
-            </p>
-          </div>
-        </section>
+        @keyframes gentleFade {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
-        <section className="flex h-full min-h-0 items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-6 py-3 md:px-8 lg:px-12">
-          <div className="w-full max-w-[440px]">
-            <div className="rounded-[28px] border border-slate-300 bg-white px-5 py-3.5 shadow-[0_22px_60px_-28px_rgba(15,23,42,0.32),0_0_0_1px_rgba(148,163,184,0.22)] ring-1 ring-slate-200/80 md:px-6 md:py-4">
-              <div className="mx-auto w-fit rounded-full bg-rose-50 px-4 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#be123c]">
-                Backend-backed demo login
-              </div>
-              <div className="mt-2.5 text-center">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-[#e31837]">
-                  <LockKeyhole size={19} />
+        @keyframes softFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes drawLine {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+
+        .login-page {
+          background-color: var(--page-bg);
+          background-image:
+            radial-gradient(at 20% 30%, var(--page-overlay-a) 0px, transparent 50%),
+            radial-gradient(at 80% 70%, var(--page-overlay-b) 0px, transparent 52%),
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        .login-panel {
+          background-color: var(--panel-bg);
+          background-image:
+            radial-gradient(at 30% 20%, var(--panel-overlay-a) 0px, transparent 55%),
+            radial-gradient(at 70% 80%, var(--panel-overlay-b) 0px, transparent 50%),
+            linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+          background-size: auto, auto, 32px 32px, 32px 32px;
+        }
+
+        .animate-gentleFade { animation: gentleFade 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+        .animate-softFade { animation: softFade 1.2s ease-out forwards; opacity: 0; }
+        .animate-drawLine { animation: drawLine 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; transform-origin: left; transform: scaleX(0); }
+
+        .label-text {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 15px;
+          font-style: italic;
+          letter-spacing: 0.02em;
+          color: var(--accent);
+        }
+
+        .field-line {
+          width: 100%;
+          border: none;
+          border-bottom: 1px solid var(--line);
+          background: transparent;
+          color: var(--ink);
+          padding: 10px 0 12px;
+          font-family: 'Lora', serif;
+          font-size: 17px;
+          outline: none;
+          transition: border-color 0.25s ease;
+        }
+
+        .field-line:focus {
+          border-bottom-color: var(--accent);
+        }
+
+        .field-line::placeholder {
+          color: var(--ink-muted);
+          opacity: 0.7;
+          font-style: italic;
+        }
+
+        .select-line {
+          appearance: none;
+          cursor: pointer;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%237a2e2e' stroke-width='1.2'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 0 center;
+        }
+
+        .select-line option {
+          background: var(--surface-strong);
+          color: var(--ink);
+        }
+
+        .submit-engraved {
+          position: relative;
+          width: 100%;
+          border: none;
+          background: linear-gradient(135deg, var(--accent-strong) 0%, var(--panel-bg) 100%);
+          color: var(--button-ink);
+          padding: 18px 32px;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: transform 0.25s ease, letter-spacing 0.25s ease, filter 0.25s ease;
+        }
+
+        .submit-engraved::before {
+          content: '';
+          position: absolute;
+          inset: 4px;
+          border: 1px solid rgba(255,255,255,0.22);
+          transition: inset 0.25s ease;
+          pointer-events: none;
+        }
+
+        .submit-engraved:hover:not(:disabled) {
+          transform: translateY(-1px);
+          letter-spacing: 0.28em;
+          filter: brightness(1.05);
+        }
+
+        .submit-engraved:hover:not(:disabled)::before {
+          inset: 6px;
+        }
+
+        .submit-engraved:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .quick-chip {
+          border: 1px solid var(--line-soft);
+          background: var(--surface-soft);
+          color: var(--ink-muted);
+          padding: 6px 12px;
+          font-family: 'Lora', serif;
+          font-size: 12px;
+          transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+        }
+
+        .quick-chip:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: color-mix(in srgb, var(--surface-soft) 60%, white 40%);
+        }
+      `}</style>
+
+      <div className="login-page relative min-h-screen w-full overflow-x-hidden" style={{ ...theme, fontFamily: "'Lora', serif" }}>
+        <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_1fr]">
+          <section className="login-panel relative hidden overflow-hidden px-16 py-16 text-[var(--panel-ink)] lg:flex lg:flex-col lg:justify-between xl:px-24">
+            <div className="pointer-events-none absolute inset-8 border border-white/5" />
+            <div className="pointer-events-none absolute inset-10 border border-white/[0.03]" />
+
+            <div className="relative z-10 animate-softFade" style={{ animationDelay: '0.1s' }}>
+              <div className="flex items-center gap-5">
+                <div className="flex h-16 w-16 items-center justify-center rounded-sm bg-white p-2 shadow-2xl">
+                  <img src="/safpa-logo.png" alt="SAFPA" className="h-full w-full object-contain" />
                 </div>
-                <h2 className="mt-2.5 text-[1.85rem] font-semibold tracking-[-0.05em] text-slate-950">Welcome Back</h2>
-                <p className="mt-1 text-[15px] text-slate-600">Sign in to access your SAFPA workspace.</p>
+                <div>
+                  <div className="h-px w-5 bg-[var(--accent-soft)]" />
+                  <div className="mt-3 text-xs uppercase tracking-[0.34em] text-[var(--panel-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    SAFPA Federation
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 my-auto py-12">
+              <div className="animate-drawLine mb-8 h-px w-24 bg-[var(--accent-soft)]" style={{ animationDelay: '0.25s' }} />
+              <div className="animate-gentleFade mb-8" style={{ animationDelay: '0.32s' }}>
+                <p
+                  className="uppercase text-[var(--accent-soft)]"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 'clamp(0.9rem, 1.4vw, 1.15rem)',
+                    letterSpacing: '0.22em',
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  The Funeral Parlour
+                  <br />
+                  Operations Platform
+                </p>
+                <div className="mt-3 h-px bg-gradient-to-r from-[var(--accent-soft)]/60 via-[var(--accent-soft)]/20 to-transparent" />
               </div>
 
-              {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+              <h1
+                className="animate-gentleFade text-[var(--panel-ink)]"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 'clamp(2.75rem, 5vw, 4.5rem)',
+                  lineHeight: 1.05,
+                  fontWeight: 400,
+                  letterSpacing: '-0.01em',
+                  animationDelay: '0.38s',
+                }}
+              >
+                Honouring lives,
+                <br />
+                <em style={{ fontWeight: 300, color: 'var(--accent-soft)' }}>serving families,</em>
+                <br />
+                with care.
+              </h1>
 
-              <div className="mt-4 space-y-3">
+              <p className="mt-8 max-w-md text-lg leading-relaxed text-[var(--panel-muted)] animate-gentleFade" style={{ animationDelay: '0.5s' }}>
+                {roleDescriptions[role]}
+              </p>
+
+              <div className="mt-10 grid max-w-md grid-cols-2 gap-x-8 gap-y-4 animate-gentleFade" style={{ animationDelay: '0.62s' }}>
+                {[
+                  { num: 'I', label: 'Administration' },
+                  { num: 'II', label: 'Policy Servicing' },
+                  { num: 'III', label: 'Collections' },
+                  { num: 'IV', label: 'Case Management' },
+                ].map((item) => (
+                  <div key={item.num} className="flex items-baseline gap-3">
+                    <span className="text-sm text-[var(--accent-soft)]" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}>
+                      {item.num}.
+                    </span>
+                    <span className="text-base text-[var(--panel-ink)]" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400 }}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-10 animate-gentleFade" style={{ animationDelay: '0.75s' }}>
+                <div className="h-px w-6 bg-[var(--accent-soft)]" />
+                <p className="mt-3 text-base italic text-[var(--panel-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  Where memory is held, dignity remains.
+                </p>
+              </div>
+
+              <div className="mt-12 animate-gentleFade text-right" style={{ animationDelay: '0.82s' }}>
+                <div className="text-xs uppercase tracking-[0.3em] text-[var(--panel-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  Republic of
+                </div>
+                <div className="mt-1 text-3xl text-[var(--panel-ink)]" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400 }}>
+                  South Africa
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="relative flex items-center justify-center px-6 py-16 sm:px-12 lg:px-20">
+            <div className="absolute left-1/2 top-10 -translate-x-1/2 lg:hidden">
+              <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-white p-1.5 shadow-md">
+                <img src="/safpa-logo.png" alt="SAFPA" className="h-full w-full object-contain" />
+              </div>
+            </div>
+
+            <div className="w-full max-w-md animate-gentleFade pt-10 lg:pt-0" style={{ animationDelay: '0.28s' }}>
+              <div className="text-center">
+                <div className="mb-8 inline-flex items-center gap-2.5 border border-[var(--line-soft)] bg-[var(--surface-soft)] px-4 py-2">
+                  <span className="block h-1.5 w-1.5 rounded-full bg-[var(--accent)] opacity-60" />
+                  <span className="text-xs uppercase tracking-[0.35em] text-[var(--accent)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    SAFPA · FPOS
+                  </span>
+                  <span className="block h-1.5 w-1.5 rounded-full bg-[var(--accent)] opacity-60" />
+                </div>
+
+                <h2
+                  className="text-[var(--ink)]"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 'clamp(1.7rem, 3.2vw, 2.4rem)',
+                    fontWeight: 500,
+                    lineHeight: 1.1,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Funeral Parlour
+                  <br />
+                  Operations Platform
+                </h2>
+
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[var(--line)]" />
+                  <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+                  <div className="h-px flex-1 bg-[var(--line)]" />
+                </div>
+
+                <p className="mt-5 text-base italic text-[var(--ink-muted)]">Please sign in to access your workspace</p>
+              </div>
+
+              {error && (
+                <div className="mt-8 border-l-2 border-[var(--accent)] bg-[var(--surface-soft)] px-5 py-4 animate-softFade">
+                  <p className="label-text mb-1">A note</p>
+                  <p className="text-sm text-[var(--ink-muted)]">{error}</p>
+                </div>
+              )}
+
+              <div className="mt-10 space-y-8">
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-800">Select Role</label>
-                  <select value={role} onChange={(event) => { setRole(event.target.value as UserRole); setEmail(availableUsers.find((user) => user.role === event.target.value)?.email || ''); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-[#e31837] focus:bg-white">
+                  <label htmlFor="login-role" className="label-text mb-2 block">Your role</label>
+                  <select
+                    id="login-role"
+                    value={role}
+                    onChange={(event) => {
+                      setRole(event.target.value as UserRole);
+                      setEmail(availableUsers.find((user) => user.role === event.target.value)?.email || '');
+                    }}
+                    className="field-line select-line"
+                  >
                     {roleOptions.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-800">Email</label>
-                  <input list="demo-role-emails" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-[#e31837] focus:bg-white" placeholder="staff@example.com" />
+                  <label htmlFor="login-email" className="label-text mb-2 block">Email address</label>
+                  <input
+                    id="login-email"
+                    list="demo-role-emails"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="field-line"
+                    placeholder="your.name@safpa.org.za"
+                  />
                   <datalist id="demo-role-emails">
                     {matchingUsers.map((user) => (
                       <option key={user.id} value={user.email}>{user.name}</option>
                     ))}
                   </datalist>
                 </div>
+
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-800">Password</label>
-                  <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-[#e31837] focus:bg-white" placeholder="Enter password" />
+                  <label htmlFor="login-password" className="label-text mb-2 block">Password</label>
+                  <div className="relative">
+                    <input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className="field-line pr-16"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-0 top-2 text-sm italic text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)]"
+                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                    >
+                      {showPassword ? 'hide' : 'show'}
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => void handleSubmit()} disabled={submitting} className="mt-0.5 w-full rounded-2xl bg-[linear-gradient(135deg,#e31837_0%,#be123c_100%)] px-5 py-3 text-base font-semibold text-white shadow-[0_12px_28px_-16px_rgba(227,24,55,0.7)] transition hover:brightness-105 disabled:opacity-50">
-                  {submitting ? 'Signing in...' : 'Sign In'}
+
+                <button type="button" onClick={() => void handleSubmit()} disabled={submitting} className="submit-engraved mt-4">
+                  {submitting ? 'Signing in...' : 'Enter Workspace'}
                 </button>
               </div>
 
-              <div className="mt-3 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="font-semibold tracking-[-0.02em] text-slate-950">Demo access</div>
-                    <div className="mt-0.5 text-sm text-slate-600">Password: <span className="font-semibold text-slate-800">demo123</span></div>
-                  </div>
-                  <div className="text-right leading-tight">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Suggested</div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">emails</div>
-                  </div>
+              <div className="mt-12">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[var(--line)]" />
+                  <span className="text-xs italic text-[var(--ink-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    demonstration access
+                  </span>
+                  <div className="h-px flex-1 bg-[var(--line)]" />
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {matchingUsers.map((user) => (
-                    <span key={user.id} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 shadow-sm">
-                      {user.email}
-                    </span>
-                  ))}
+
+                <div className="text-center">
+                  <p className="text-sm text-[var(--ink-muted)]">
+                    Use password <span className="italic text-[var(--accent)]">demo123</span> with any account below
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    {matchingUsers.slice(0, 3).map((user) => (
+                      <button key={user.id} type="button" onClick={() => setEmail(user.email)} className="quick-chip">
+                        {user.email}
+                      </button>
+                    ))}
+                    {matchingUsers.length > 3 && (
+                      <span className="px-3 py-1.5 text-xs italic text-[var(--ink-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                        and {matchingUsers.length - 3} more
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              <div className="mt-12 text-center">
+                <p className="text-xs italic text-[var(--ink-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  In service of South African families · POPIA compliant
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

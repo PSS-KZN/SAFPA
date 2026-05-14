@@ -72,6 +72,7 @@ export default function Sidebar() {
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const isSafpaAdmin = currentUser.role === 'safpa_admin';
 
   const filtered = navItems.filter((item) => item.roles.includes(currentUser.role));
 
@@ -89,12 +90,16 @@ export default function Sidebar() {
 
   const sidebarBackground = isTenantBranded
     ? { background: `linear-gradient(180deg, ${parlourBrand?.secondaryColor ?? '#0a0f1c'} 0%, #080c17 100%)`, borderRightColor: `${parlourBrand?.primaryColor ?? '#1e293b'}33` }
+    : isSafpaAdmin
+      ? { background: 'linear-gradient(180deg, #1f1815 0%, #2a221c 100%)', borderRightColor: 'rgba(200, 154, 109, 0.18)' }
     : undefined;
-  const accentColor = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
+  const accentColor = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : isSafpaAdmin ? '#c89a6d' : '#e31837';
   const logoSurface = isTenantBranded
     ? { background: `linear-gradient(135deg, ${parlourBrand?.primaryColor ?? '#ffffff'}22, ${parlourBrand?.accentColor ?? '#ffffff'}22)` }
+    : isSafpaAdmin
+      ? { background: 'linear-gradient(135deg, rgba(200, 154, 109, 0.26), rgba(255, 250, 242, 0.16))' }
     : undefined;
-  const tenantTitle = isTenantBranded ? parlourBrand?.name ?? 'Tenant Workspace' : 'SAFPA FPOS';
+  const tenantTitle = isTenantBranded ? parlourBrand?.name ?? 'Tenant Workspace' : isSafpaAdmin ? 'SAFPA Federation' : 'SAFPA FPOS';
 
   const handleLogout = () => {
     logout();
@@ -102,9 +107,9 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} bg-[#0a0f1c] text-slate-300 flex flex-col transition-all duration-300 min-h-screen relative z-20 shadow-2xl border-r border-slate-800/50`} style={sidebarBackground}>
+    <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} ${isSafpaAdmin ? 'bg-[#1f1815] text-[#d6ccc0] border-[#c89a6d]/15' : 'bg-[#0a0f1c] text-slate-300 border-slate-800/50'} flex flex-col transition-all duration-300 min-h-screen relative z-20 shadow-2xl border-r`} style={sidebarBackground}>
       {/* Logo */}
-      <div className="flex items-center justify-between px-5 h-20 border-b border-slate-800/50 flex-shrink-0">
+      <div className={`flex items-center justify-between px-5 h-20 flex-shrink-0 border-b ${isSafpaAdmin ? 'border-[#c89a6d]/10' : 'border-slate-800/50'}`}>
         {!collapsed && (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1 shadow-[0_0_15px_rgba(255,255,255,0.1)]" style={logoSurface}>
@@ -115,8 +120,9 @@ export default function Sidebar() {
               )}
             </div>
             <div>
-              <div className="text-[17px] font-bold tracking-tight text-white font-['Outfit']">{tenantTitle}</div>
+              <div className={`text-[17px] font-bold tracking-tight ${isSafpaAdmin ? 'text-[#fffaf2] font-serif' : 'text-white font-[\'Outfit\']'}`}>{tenantTitle}</div>
               {isTenantBranded && <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Tenant Workspace</div>}
+              {isSafpaAdmin && <div className="text-[11px] uppercase tracking-[0.24em] text-[#c89a6d]">National Workspace</div>}
             </div>
           </div>
         )}
@@ -130,14 +136,14 @@ export default function Sidebar() {
           </div>
         )}
         {!collapsed && (
-          <button onClick={() => setCollapsed(true)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors">
+          <button onClick={() => setCollapsed(true)} className={`p-1.5 rounded-lg transition-colors ${isSafpaAdmin ? 'text-[#a89886] hover:bg-white/5 hover:text-[#fffaf2]' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}>
             <ChevronLeft size={18} />
           </button>
         )}
       </div>
 
       {collapsed && (
-        <button onClick={() => setCollapsed(false)} className="mx-auto mt-4 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+        <button onClick={() => setCollapsed(false)} className={`mx-auto mt-4 p-2 rounded-lg transition-colors ${isSafpaAdmin ? 'bg-white/5 text-[#a89886] hover:bg-white/10 hover:text-[#fffaf2]' : 'bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
           <ChevronRight size={18} />
         </button>
       )}
@@ -147,11 +153,11 @@ export default function Sidebar() {
         {grouped.map((section, si) => (
           <div key={si} className={si > 0 ? 'mt-6' : ''}>
             {!collapsed && section.group && (
-              <div className="px-6 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              <div className={`px-6 mb-2 text-[11px] font-bold uppercase tracking-widest ${isSafpaAdmin ? 'text-[#a89886]' : 'text-slate-500'}`}>
                 {section.group}
               </div>
             )}
-            {collapsed && si > 0 && <div className="mx-4 my-4 border-t border-slate-800/50" />}
+            {collapsed && si > 0 && <div className={`mx-4 my-4 border-t ${isSafpaAdmin ? 'border-[#c89a6d]/10' : 'border-slate-800/50'}`} />}
             
             <div className="space-y-1">
               {section.items.map((item) => (
@@ -170,15 +176,15 @@ export default function Sidebar() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 mx-3 rounded-xl text-[14px] font-medium transition-all duration-200 group ${
                       isActive
-                        ? 'bg-gradient-to-r from-red-600/10 to-transparent text-red-500 relative'
-                        : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                        ? `${isSafpaAdmin ? 'bg-gradient-to-r from-[#c89a6d]/15 to-transparent text-[#f8e8c9]' : 'bg-gradient-to-r from-red-600/10 to-transparent text-red-500'} relative`
+                        : `${isSafpaAdmin ? 'text-[#cbbfad] hover:bg-white/5 hover:text-[#fffaf2]' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'}`
                     }`
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full" style={{ backgroundColor: isTenantBranded ? accentColor : '#dc2626' }} />}
-                      <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-red-500' : 'text-slate-500 group-hover:text-slate-300'}`} style={isActive && isTenantBranded ? { color: accentColor } : undefined}>
+                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full" style={{ backgroundColor: isTenantBranded ? accentColor : isSafpaAdmin ? '#c89a6d' : '#dc2626' }} />}
+                      <span className={`flex-shrink-0 transition-colors ${isActive ? (isSafpaAdmin ? 'text-[#c89a6d]' : 'text-red-500') : isSafpaAdmin ? 'text-[#8f7e68] group-hover:text-[#e8dbc6]' : 'text-slate-500 group-hover:text-slate-300'}`} style={isActive && isTenantBranded ? { color: accentColor } : undefined}>
                         {item.icon}
                       </span>
                       {!collapsed && <span>{item.label}</span>}
@@ -193,14 +199,14 @@ export default function Sidebar() {
 
       {/* Footer */}
       {!collapsed && (
-        <div className="px-4 py-4 border-t border-slate-800/50 bg-[#080c17]">
+        <div className={`px-4 py-4 border-t ${isSafpaAdmin ? 'border-[#c89a6d]/10 bg-[#191311]' : 'border-slate-800/50 bg-[#080c17]'}`}>
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition ${isSafpaAdmin ? 'border border-[#c89a6d]/35 bg-[#7a2e2e] hover:bg-[#5e2323]' : 'border border-red-500/35 bg-red-600 hover:bg-red-500'}`}
           >
             <LogOut size={16} /> Logout
           </button>
-          <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-slate-500">
+          <div className={`mt-4 flex items-center justify-between text-[12px] font-medium ${isSafpaAdmin ? 'text-[#9f8f7a]' : 'text-slate-500'}`}>
             <span>{isTenantBranded ? 'Tenant branded shell' : 'v1.0.0 Production'}</span>
             <div className="flex items-center gap-2">
               <span className="text-emerald-500">System Online</span>
@@ -211,10 +217,10 @@ export default function Sidebar() {
       )}
 
       {collapsed && (
-        <div className="border-t border-slate-800/50 bg-[#080c17] px-3 py-4">
+        <div className={`border-t px-3 py-4 ${isSafpaAdmin ? 'border-[#c89a6d]/10 bg-[#191311]' : 'border-slate-800/50 bg-[#080c17]'}`}>
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center rounded-xl border border-red-500/35 bg-red-600 px-3 py-3 text-white transition hover:bg-red-500"
+            className={`flex w-full items-center justify-center rounded-xl px-3 py-3 text-white transition ${isSafpaAdmin ? 'border border-[#c89a6d]/35 bg-[#7a2e2e] hover:bg-[#5e2323]' : 'border border-red-500/35 bg-red-600 hover:bg-red-500'}`}
             aria-label="Logout"
           >
             <LogOut size={18} />
