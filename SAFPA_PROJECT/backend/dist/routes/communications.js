@@ -4,6 +4,7 @@ exports.communicationsRouter = void 0;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const audit_1 = require("../lib/audit");
+const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const sendMessageSchema = zod_1.z.object({
@@ -11,10 +12,23 @@ const sendMessageSchema = zod_1.z.object({
     type: zod_1.z.enum(['sms', 'email']),
     recipientName: zod_1.z.string().min(2),
     recipientContact: zod_1.z.string().min(2),
+    trigger: zod_1.z.enum([
+        'payment_reminder',
+        'payment_receipt',
+        'payment_failed_notice',
+        'policy_activated',
+        'policy_suspended',
+        'policy_lapsed',
+        'policy_reinstated',
+        'policy_cancelled',
+        'funeral_case_update',
+        'welcome',
+        'custom',
+    ]).default('custom'),
+    templateId: zod_1.z.string().min(1).optional(),
+    templateName: zod_1.z.string().min(2).optional(),
     subject: zod_1.z.string().optional(),
-    template: zod_1.z.string().min(2),
-    status: zod_1.z.enum(['sent', 'delivered', 'failed', 'pending']).default('delivered'),
-    sentAt: zod_1.z.string().optional(),
+    message: zod_1.z.string().min(2),
     metadata: zod_1.z.record(zod_1.z.string(), zod_1.z.unknown()).optional(),
 });
 const runRemindersSchema = zod_1.z.object({
@@ -57,19 +71,18 @@ exports.communicationsRouter.post('/send', async (req, res) => {
     if (!parsed.success) {
         return res.status(400).json({ message: 'Invalid communication payload', errors: parsed.error.flatten() });
     }
-    const record = await prisma_1.prisma.communicationLog.create({
-        data: {
-            id: (0, id_1.generateId)('c'),
-            parlourId: parsed.data.parlourId,
-            type: parsed.data.type,
-            recipientName: parsed.data.recipientName,
-            recipientContact: parsed.data.recipientContact,
-            subject: parsed.data.subject,
-            template: parsed.data.template,
-            status: parsed.data.status,
-            sentAt: parsed.data.sentAt || new Date().toISOString().slice(0, 16).replace('T', ' '),
-            metadata: parsed.data.metadata,
-        },
+    const record = await (0, communications_1.dispatchCommunication)(prisma_1.prisma, {
+        parlourId: parsed.data.parlourId,
+        type: parsed.data.type,
+        recipientName: parsed.data.recipientName,
+        recipientContact: parsed.data.recipientContact,
+        trigger: parsed.data.trigger,
+        templateId: parsed.data.templateId,
+        templateName: parsed.data.templateName,
+        subject: parsed.data.subject,
+        body: parsed.data.message,
+        metadata: parsed.data.metadata,
+        createdBy: req.actor?.userName || req.actor?.userId,
     });
     await (0, audit_1.writeAuditLog)(req, {
         action: 'COMMUNICATION_SENT',
@@ -96,25 +109,32 @@ exports.communicationsRouter.post('/run-reminders', async (req, res) => {
     let sent = 0;
     for (const policy of policies) {
         const member = await prisma_1.prisma.member.findUnique({ where: { id: policy.memberId } });
-        if (!member) {
+        if (!member || !member.phone) {
             continue;
         }
-        await prisma_1.prisma.communicationLog.create({
-            data: {
-                id: (0, id_1.generateId)('c'),
-                parlourId: parsed.data.parlourId,
-                type: 'sms',
-                recipientName: `${member.firstName} ${member.lastName}`,
-                recipientContact: member.phone,
-                template: 'Payment Reminder',
-                status: 'delivered',
-                sentAt: `${dueDate} 08:00`,
-                metadata: {
-                    policyId: policy.id,
-                    policyNumber: policy.policyNumber,
-                    amount: policy.premiumAmount,
-                },
+        await (0, communications_1.dispatchCommunication)(prisma_1.prisma, {
+            parlourId: parsed.data.parlourId,
+            type: 'sms',
+            recipientName: `${member.firstName} ${member.lastName}`.trim(),
+            recipientContact: member.phone,
+            trigger: 'payment_reminder',
+            body: 'Dear {member_name}, your premium of R{amount} for policy {policy_number} is due on {due_date}. Please ensure funds are available.',
+            variables: {
+                member_name: `${member.firstName} ${member.lastName}`.trim(),
+                amount: policy.premiumAmount,
+                policy_number: policy.policyNumber,
+                due_date: dueDate,
+                contact_number: member.phone,
             },
+            metadata: {
+                policyId: policy.id,
+                policyNumber: policy.policyNumber,
+                amount: policy.premiumAmount,
+                dueDate,
+                relatedEntityType: 'policy',
+                relatedEntityId: policy.id,
+            },
+            createdBy: req.actor?.userName || req.actor?.userId,
         });
         sent += 1;
     }

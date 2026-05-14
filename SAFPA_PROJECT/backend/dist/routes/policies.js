@@ -42,6 +42,7 @@ const multer_1 = __importDefault(require("multer"));
 const XLSX = __importStar(require("xlsx"));
 const zod_1 = require("zod");
 const audit_1 = require("../lib/audit");
+const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const subscription_1 = require("../lib/subscription");
@@ -290,6 +291,68 @@ async function createPolicyFromImportRow(params) {
     return { policy, dedupeKey, policyNumber: normalizedPolicyNumber };
 }
 exports.policiesRouter = (0, express_1.Router)();
+const policyStatusTriggers = {
+    active: 'policy_activated',
+    suspended: 'policy_suspended',
+    lapsed: 'policy_lapsed',
+    reinstated: 'policy_reinstated',
+    cancelled: 'policy_cancelled',
+};
+async function dispatchPolicyStatusCommunication(params) {
+    if (params.oldStatus === params.newStatus) {
+        return;
+    }
+    const trigger = policyStatusTriggers[params.newStatus];
+    if (!trigger) {
+        return;
+    }
+    const member = await prisma_1.prisma.member.findUnique({ where: { id: params.policy.memberId } });
+    if (!member) {
+        return;
+    }
+    const preferEmail = trigger === 'policy_suspended' && Boolean(member.email);
+    const contact = preferEmail ? member.email : (member.phone || member.email);
+    if (!contact) {
+        return;
+    }
+    await (0, communications_1.dispatchCommunication)(prisma_1.prisma, {
+        parlourId: params.policy.parlourId,
+        type: preferEmail ? 'email' : 'sms',
+        recipientName: `${member.firstName} ${member.lastName}`.trim(),
+        recipientContact: contact,
+        trigger,
+        subject: trigger === 'policy_suspended' ? 'Action required for policy {policy_number}' : undefined,
+        body: trigger === 'policy_activated'
+            ? 'Dear {member_name}, your policy {policy_number} is now active. Cover amount: R{cover_amount}.'
+            : trigger === 'policy_suspended'
+                ? 'Dear {member_name}, your policy {policy_number} has been suspended due to arrears of R{arrears}. Please contact us to restore cover.'
+                : trigger === 'policy_lapsed'
+                    ? 'Dear {member_name}, your policy {policy_number} has lapsed. Current arrears: R{arrears}.'
+                    : trigger === 'policy_reinstated'
+                        ? 'Dear {member_name}, your policy {policy_number} has been reinstated and cover is active again.'
+                        : 'Dear {member_name}, your policy {policy_number} has been cancelled.',
+        variables: {
+            member_name: `${member.firstName} ${member.lastName}`.trim(),
+            policy_number: params.policy.policyNumber,
+            cover_amount: params.policy.coverAmount,
+            arrears: params.policy.arrearsAmount,
+            product_name: params.policy.productName,
+            premium_amount: params.policy.premiumAmount,
+            start_date: params.policy.startDate,
+            contact_email: member.email,
+            contact_number: member.phone,
+        },
+        metadata: {
+            oldStatus: params.oldStatus,
+            newStatus: params.newStatus,
+            policyNumber: params.policy.policyNumber,
+            memberId: params.policy.memberId,
+            relatedEntityType: 'policy',
+            relatedEntityId: params.policy.id,
+        },
+        createdBy: params.actorName,
+    });
+}
 exports.policiesRouter.get('/', async (req, res) => {
     const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
     const actor = req.actor;
@@ -379,6 +442,12 @@ exports.policiesRouter.patch('/:id', async (req, res) => {
             where: { id: req.params.id },
             data,
         });
+        await dispatchPolicyStatusCommunication({
+            oldStatus: existing.status,
+            newStatus: policy.status,
+            policy,
+            actorName: req.actor?.userName || req.actor?.userId,
+        });
         await (0, audit_1.writeAuditLog)(req, {
             action: 'POLICY_UPDATED',
             entityType: 'Policy',
@@ -419,6 +488,12 @@ exports.policiesRouter.patch('/:id/status', async (req, res) => {
     const updated = await prisma_1.prisma.policy.update({
         where: { id: req.params.id },
         data: { status: parsed.data.status },
+    });
+    await dispatchPolicyStatusCommunication({
+        oldStatus: existing.status,
+        newStatus: updated.status,
+        policy: updated,
+        actorName: req.actor?.userName || req.actor?.userId,
     });
     await (0, audit_1.writeAuditLog)(req, {
         action: 'POLICY_STATUS_CHANGED',

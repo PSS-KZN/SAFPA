@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Building2, CheckSquare, File, FileText, MessageSquare, Square, Truck, Upload, Users } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
-import type { CaseTask, Document, FuneralCase, FuneralCaseMilestone, FuneralCaseStaff, FuneralCaseSupplier, FuneralCaseVehicle, User } from '../../types';
+import type { CaseTask, Communication, Document, FuneralCase, FuneralCaseMilestone, FuneralCaseStaff, FuneralCaseSupplier, FuneralCaseVehicle, User } from '../../types';
+import { fetchCommunications } from '../../services/communicationsApi';
 import { fetchDocuments } from '../../services/documentsApi';
 import {
   addFuneralCaseMilestone,
@@ -126,6 +127,7 @@ export default function FuneralCaseDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [fc, setFc] = useState<FuneralCase | null>(null);
+  const [communications, setCommunications] = useState<Communication[]>([]);
   const [caseDocs, setCaseDocs] = useState<Document[]>([]);
   const [staffOptions, setStaffOptions] = useState<User[]>([]);
   const [caseForm, setCaseForm] = useState({
@@ -188,8 +190,9 @@ export default function FuneralCaseDetail() {
         setLoading(true);
         setError(null);
         const parlourId = currentUser.parlourId || 'p1';
-        const [caseRecord, documentRecords, users] = await Promise.all([
+        const [caseRecord, communicationRecords, documentRecords, users] = await Promise.all([
           fetchFuneralCase(id),
+          fetchCommunications(parlourId),
           fetchDocuments({ parlourId, entityType: 'funeral_case', entityId: id }),
           fetchUsers(parlourId),
         ]);
@@ -220,6 +223,7 @@ export default function FuneralCaseDetail() {
         }
 
         setFc(resolvedCase);
+        setCommunications(communicationRecords);
         setCaseForm(syncCaseForm(resolvedCase));
         setCaseDocs(documentRecords);
         setStaffOptions(users.filter((user) => user.status === 'active'));
@@ -242,6 +246,7 @@ export default function FuneralCaseDetail() {
   }
 
   const tasks = fc.tasks || [];
+  const caseCommunications = communications.filter((item) => item.metadata?.funeralCaseId === fc.id || item.metadata?.relatedEntityId === fc.id);
   const milestones = [...(fc.milestones || [])].sort((left, right) => (left.scheduledDate || '').localeCompare(right.scheduledDate || ''));
   const vehicles = fc.vehicles || [];
   const availableStaff = staffOptions.filter((user) => {
@@ -1090,22 +1095,20 @@ export default function FuneralCaseDetail() {
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="mb-4 flex items-center gap-2 font-semibold"><MessageSquare size={16} /> Communication Log</h3>
         <div className="mb-4 space-y-2">
-          {[
-            { type: 'SMS', recipient: `${fc.informantName || 'Family contact'} (${fc.informantPhone || 'no phone'})`, msg: `Death notice for ${fc.deceasedName} has been logged. Coordinator: ${fc.coordinatorName}.`, date: fc.deathNoticeLoggedAt },
-            { type: 'SMS', recipient: `${fc.informantName || 'Family contact'} (${fc.informantPhone || 'no phone'})`, msg: `Update: Funeral scheduled for ${fc.funeralDate || 'TBC'} at ${fc.venue || 'venue pending'}.`, date: fc.funeralDate || '' },
-          ].filter((entry) => entry.date).map((entry, index) => (
-            <div key={`${entry.type}-${index}`} className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm">
-              <span className={`rounded px-2 py-0.5 text-xs font-medium ${entry.type === 'SMS' ? 'bg-red-100 text-red-700' : 'bg-violet-100 text-violet-700'}`}>{entry.type}</span>
+          {caseCommunications.map((entry) => (
+            <div key={entry.id} className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm">
+              <span className={`rounded px-2 py-0.5 text-xs font-medium uppercase ${entry.type === 'sms' ? 'bg-red-100 text-red-700' : 'bg-violet-100 text-violet-700'}`}>{entry.type}</span>
               <div className="flex-1">
-                <div className="mb-0.5 text-xs font-medium text-slate-500">To: {entry.recipient} · {entry.date}</div>
-                <div className="text-slate-700">{entry.msg}</div>
+                <div className="mb-0.5 text-xs font-medium text-slate-500">To: {entry.recipientName} ({entry.recipientContact}) · {entry.sentAt}</div>
+                <div className="text-slate-700">{entry.metadata?.renderedBody || entry.template}</div>
               </div>
             </div>
           ))}
+          {caseCommunications.length === 0 && <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-400">No case-related communications have been logged yet.</div>}
         </div>
-        <button className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800">
+        <Link to="/communications/new" className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800">
           <MessageSquare size={14} /> Send Communication
-        </button>
+        </Link>
       </div>
     </div>
   );

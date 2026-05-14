@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
+import { dispatchCommunication } from '../lib/communications';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
 
@@ -294,6 +295,52 @@ function normalizeCase(record: FuneralCaseRecord) {
   };
 }
 
+async function dispatchFuneralCaseCommunication(params: {
+  funeralCase: {
+    id: string;
+    caseNumber: string;
+    parlourId: string;
+    deceasedName: string;
+    informantName: string | null;
+    informantPhone: string | null;
+    coordinatorName: string | null;
+    funeralDate: string | null;
+    venue: string | null;
+    status: string;
+  };
+  eventType: 'case_opened' | 'service_scheduled' | 'documents_required' | 'case_completed';
+  statusMessage: string;
+  actorName?: string;
+}) {
+  if (!params.funeralCase.informantPhone) {
+    return;
+  }
+
+  await dispatchCommunication(prisma, {
+    parlourId: params.funeralCase.parlourId,
+    type: 'sms',
+    recipientName: params.funeralCase.informantName || 'Family Contact',
+    recipientContact: params.funeralCase.informantPhone,
+    trigger: 'funeral_case_update',
+    body: 'Dear {family_contact}, case {case_number} update: {status_message}. Coordinator: {coordinator_name}.',
+    variables: {
+      family_contact: params.funeralCase.informantName || 'Family Contact',
+      case_number: params.funeralCase.caseNumber,
+      status_message: params.statusMessage,
+      coordinator_name: params.funeralCase.coordinatorName || 'Assigned Coordinator',
+      coordinator_phone: '',
+    },
+    metadata: {
+      funeralCaseId: params.funeralCase.id,
+      caseNumber: params.funeralCase.caseNumber,
+      eventType: params.eventType,
+      relatedEntityType: 'funeral_case',
+      relatedEntityId: params.funeralCase.id,
+    },
+    createdBy: params.actorName,
+  });
+}
+
 export const funeralCasesRouter = Router();
 
 funeralCasesRouter.get('/', async (req, res) => {
@@ -387,6 +434,13 @@ funeralCasesRouter.post('/', async (req, res) => {
     details: `informant=${parsed.data.informantName}`,
   });
 
+  await dispatchFuneralCaseCommunication({
+    funeralCase: record,
+    eventType: 'case_opened',
+    statusMessage: `Death notice logged for ${record.deceasedName}. Your coordinator is ${record.coordinatorName}.`,
+    actorName: req.actor?.userName || req.actor?.userId,
+  });
+
   return res.status(201).json(normalizeCase(record));
 });
 
@@ -438,6 +492,24 @@ funeralCasesRouter.patch('/:id', async (req, res) => {
       parlourId: record.parlourId,
     });
 
+    if ((parsed.data.funeralDate && parsed.data.funeralDate !== existing.funeralDate) || (parsed.data.status === 'scheduled' && existing.status !== 'scheduled')) {
+      await dispatchFuneralCaseCommunication({
+        funeralCase: record,
+        eventType: 'service_scheduled',
+        statusMessage: `Funeral service scheduled for ${record.funeralDate || 'TBC'} at ${record.venue || 'venue pending'}.`,
+        actorName: req.actor?.userName || req.actor?.userId,
+      });
+    }
+
+    if (parsed.data.status === 'completed' && existing.status !== 'completed') {
+      await dispatchFuneralCaseCommunication({
+        funeralCase: record,
+        eventType: 'case_completed',
+        statusMessage: `Case ${record.caseNumber} has been completed and closed.`,
+        actorName: req.actor?.userName || req.actor?.userId,
+      });
+    }
+
     return res.json(normalizeCase(record));
   } catch {
     return res.status(404).json({ message: 'Funeral case not found' });
@@ -479,6 +551,24 @@ funeralCasesRouter.patch('/:id/status', async (req, res) => {
       parlourId: record.parlourId,
       details: `status=${record.status}`,
     });
+
+    if (record.status === 'scheduled' && existing.status !== 'scheduled') {
+      await dispatchFuneralCaseCommunication({
+        funeralCase: record,
+        eventType: 'service_scheduled',
+        statusMessage: `Funeral service scheduled for ${record.funeralDate || 'TBC'} at ${record.venue || 'venue pending'}.`,
+        actorName: req.actor?.userName || req.actor?.userId,
+      });
+    }
+
+    if (record.status === 'completed' && existing.status !== 'completed') {
+      await dispatchFuneralCaseCommunication({
+        funeralCase: record,
+        eventType: 'case_completed',
+        statusMessage: `Case ${record.caseNumber} has been completed and closed.`,
+        actorName: req.actor?.userName || req.actor?.userId,
+      });
+    }
 
     return res.json(normalizeCase(record));
   } catch {
@@ -528,6 +618,15 @@ funeralCasesRouter.post('/:id/tasks', async (req, res) => {
     parlourId: updated.parlourId,
     details: `task=${task.title}`,
   });
+
+  if (task.category === 'documentation') {
+    await dispatchFuneralCaseCommunication({
+      funeralCase: updated,
+      eventType: 'documents_required',
+      statusMessage: `Additional documents are required for case ${updated.caseNumber}. Please contact ${updated.coordinatorName} for assistance.`,
+      actorName: req.actor?.userName || req.actor?.userId,
+    });
+  }
 
   return res.status(201).json(normalizeCase(updated));
 });

@@ -281,9 +281,36 @@ export interface Communication {
   recipientContact: string;
   subject?: string;
   template: string;
-  status: 'sent' | 'delivered' | 'failed' | 'pending';
+  status: 'queued' | 'sent' | 'delivered' | 'failed' | 'pending';
   sentAt: string;
   parlourId: string;
+  metadata?: {
+    trigger?: string;
+    channel?: 'sms' | 'email';
+    templateId?: string;
+    templateName?: string;
+    renderedBody?: string;
+    renderedSubject?: string;
+    providerMode?: 'demo';
+    providerMessageId?: string;
+    statusReason?: string;
+    queuedAt?: string;
+    deliveredAt?: string;
+    failedAt?: string;
+    createdBy?: string;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+    policyId?: string;
+    policyNumber?: string;
+    paymentId?: string;
+    receiptId?: string;
+    funeralCaseId?: string;
+    caseNumber?: string;
+    eventType?: string;
+    oldStatus?: string;
+    newStatus?: string;
+    memberId?: string;
+  };
 }
 
 export interface Document {
@@ -329,7 +356,7 @@ export interface CommunicationTemplate {
   parlourId: string;
   name: string;
   type: 'sms' | 'email';
-  trigger: 'payment_reminder' | 'payment_receipt' | 'policy_activated' | 'policy_lapsed' | 'policy_suspended' | 'funeral_case_update' | 'welcome' | 'custom';
+  trigger: 'payment_reminder' | 'payment_receipt' | 'payment_failed_notice' | 'policy_activated' | 'policy_lapsed' | 'policy_suspended' | 'policy_reinstated' | 'policy_cancelled' | 'funeral_case_update' | 'welcome' | 'custom';
   subject?: string;
   body: string;
   isActive: boolean;

@@ -11,6 +11,22 @@ const loginSchema = zod_1.z.object({
     role: zod_1.z.enum(['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator', 'policyholder_customer']),
 });
 exports.authRouter = (0, express_1.Router)();
+async function resolveCustomerMemberId(user) {
+    if (user.role !== 'policyholder_customer') {
+        return user.memberId || undefined;
+    }
+    if (user.memberId) {
+        return user.memberId;
+    }
+    const member = await prisma_1.prisma.member.findFirst({
+        where: {
+            email: user.email,
+            ...(user.parlourId ? { parlourId: user.parlourId } : {}),
+        },
+        select: { id: true },
+    });
+    return member?.id;
+}
 exports.authRouter.post('/login', async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -29,6 +45,7 @@ exports.authRouter.post('/login', async (req, res) => {
     if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
     }
+    const memberId = await resolveCustomerMemberId(user);
     return res.json({
         token: user.id,
         user: {
@@ -38,7 +55,7 @@ exports.authRouter.post('/login', async (req, res) => {
             role: user.role,
             parlourId: user.parlourId,
             branchId: user.branchId,
-            memberId: user.memberId,
+            memberId,
         },
     });
 });
@@ -51,6 +68,7 @@ exports.authRouter.get('/session', async (req, res) => {
     if (!user || user.status !== 'active') {
         return res.status(200).json({ authenticated: false });
     }
+    const memberId = await resolveCustomerMemberId(user);
     return res.json({
         authenticated: true,
         user: {
@@ -60,7 +78,7 @@ exports.authRouter.get('/session', async (req, res) => {
             role: user.role,
             parlourId: user.parlourId,
             branchId: user.branchId,
-            memberId: user.memberId,
+            memberId,
         },
     });
 });

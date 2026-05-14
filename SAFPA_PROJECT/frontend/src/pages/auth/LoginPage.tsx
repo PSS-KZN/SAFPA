@@ -81,20 +81,6 @@ export default function LoginPage() {
             <p className="mt-6 max-w-[420px] text-[17px] leading-8 text-slate-300">
               SAFPA&apos;s unified workspace for administration, policy servicing, collections, case management, and customer support.
             </p>
-            <div className="mt-8 grid w-full grid-cols-3 gap-3 text-left text-xs text-slate-300">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <div className="font-semibold text-white">Secure</div>
-                <div className="mt-1 text-slate-400">Role-based access</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <div className="font-semibold text-white">Branded</div>
-                <div className="mt-1 text-slate-400">Matches SAFPA shell</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <div className="font-semibold text-white">Live</div>
-                <div className="mt-1 text-slate-400">Backend-connected login</div>
-              </div>
-            </div>
           </div>
         </section>
 

@@ -4,6 +4,7 @@ exports.paymentsRouter = void 0;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const audit_1 = require("../lib/audit");
+const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const createPaymentSchema = zod_1.z.object({
@@ -280,25 +281,36 @@ exports.paymentsRouter.post('/', async (req, res) => {
             applicationSummary = await applySuccessfulPayment(tx, policy, payment, actorName);
         }
         if (parsed.data.status === 'successful' || parsed.data.status === 'failed') {
-            await tx.communicationLog.create({
-                data: {
-                    id: (0, id_1.generateId)('c'),
+            const successful = parsed.data.status === 'successful';
+            const contact = successful ? (member?.email || member?.phone || '') : (member?.phone || member?.email || '');
+            if (contact) {
+                await (0, communications_1.dispatchCommunication)(tx, {
                     parlourId: payment.parlourId,
-                    type: parsed.data.status === 'successful' ? 'email' : 'sms',
+                    type: successful && member?.email ? 'email' : 'sms',
                     recipientName: payment.memberName,
-                    recipientContact: parsed.data.status === 'successful' ? (member?.email || member?.phone || '') : (member?.phone || ''),
-                    subject: parsed.data.status === 'successful' ? `Payment Receipt - ${payment.reference}` : undefined,
-                    template: parsed.data.status === 'successful' ? 'Payment Receipt' : 'Payment Failed Notice',
-                    status: 'delivered',
-                    sentAt: normalizeDate(parsed.data.date),
+                    recipientContact: contact,
+                    trigger: successful ? 'payment_receipt' : 'payment_failed_notice',
+                    subject: successful ? `Payment Receipt - ${payment.reference}` : undefined,
+                    body: successful
+                        ? 'Dear {member_name}, your payment of R{amount} for policy {policy_number} has been received. Reference: {reference}.'
+                        : 'Dear {member_name}, we could not process your payment of R{amount} for policy {policy_number}. Please contact the parlour for assistance.',
+                    variables: {
+                        member_name: payment.memberName,
+                        amount: payment.amount,
+                        policy_number: payment.policyNumber,
+                        reference: payment.reference,
+                    },
                     metadata: {
                         policyId: policy.id,
                         paymentId: payment.id,
                         receiptId: applicationSummary?.receiptId,
                         appliedDueDates: applicationSummary?.appliedDueDates || [],
+                        relatedEntityType: 'payment',
+                        relatedEntityId: payment.id,
                     },
-                },
-            });
+                    createdBy: actorName,
+                });
+            }
         }
         return { payment, applicationSummary };
     });

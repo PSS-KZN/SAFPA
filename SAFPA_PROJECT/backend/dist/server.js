@@ -32,6 +32,8 @@ exports.app = (0, express_1.default)();
 const port = Number(process.env.PORT || 4000);
 const showRouteIndex = process.env.NODE_ENV !== 'production';
 const docsBasePath = '/api/docs';
+const configuredFrontendOrigin = process.env.FRONTEND_ORIGIN;
+const localFrontendOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1):(5173|5174)$/;
 const mountedRouters = [
     { basePath: '/api/auth', router: auth_1.authRouter },
     { basePath: '/api/parlours', router: parlours_1.parloursRouter },
@@ -58,7 +60,19 @@ function getDocumentedEndpoints() {
         { method: 'GET', path: `${docsBasePath}/openapi.json` },
     ]);
 }
-exports.app.use((0, cors_1.default)({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
+exports.app.use((0, cors_1.default)({
+    origin(origin, callback) {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        if (configuredFrontendOrigin) {
+            callback(null, origin === configuredFrontendOrigin);
+            return;
+        }
+        callback(null, localFrontendOriginPattern.test(origin));
+    },
+}));
 exports.app.use(express_1.default.json());
 exports.app.use('/uploads', express_1.default.static(node_path_1.default.resolve(process.cwd(), 'uploads')));
 exports.app.get(`${docsBasePath}/openapi.json`, (req, res) => {

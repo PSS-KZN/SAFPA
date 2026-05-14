@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
+import { dispatchCommunication } from '../lib/communications';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
 
@@ -10,10 +11,23 @@ const sendMessageSchema = z.object({
   type: z.enum(['sms', 'email']),
   recipientName: z.string().min(2),
   recipientContact: z.string().min(2),
+  trigger: z.enum([
+    'payment_reminder',
+    'payment_receipt',
+    'payment_failed_notice',
+    'policy_activated',
+    'policy_suspended',
+    'policy_lapsed',
+    'policy_reinstated',
+    'policy_cancelled',
+    'funeral_case_update',
+    'welcome',
+    'custom',
+  ]).default('custom'),
+  templateId: z.string().min(1).optional(),
+  templateName: z.string().min(2).optional(),
   subject: z.string().optional(),
-  template: z.string().min(2),
-  status: z.enum(['sent', 'delivered', 'failed', 'pending']).default('delivered'),
-  sentAt: z.string().optional(),
+  message: z.string().min(2),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -67,19 +81,18 @@ communicationsRouter.post('/send', async (req, res) => {
     return res.status(400).json({ message: 'Invalid communication payload', errors: parsed.error.flatten() });
   }
 
-  const record = await prisma.communicationLog.create({
-    data: {
-      id: generateId('c'),
-      parlourId: parsed.data.parlourId,
-      type: parsed.data.type,
-      recipientName: parsed.data.recipientName,
-      recipientContact: parsed.data.recipientContact,
-      subject: parsed.data.subject,
-      template: parsed.data.template,
-      status: parsed.data.status,
-      sentAt: parsed.data.sentAt || new Date().toISOString().slice(0, 16).replace('T', ' '),
-      metadata: parsed.data.metadata as Prisma.InputJsonValue | undefined,
-    },
+  const record = await dispatchCommunication(prisma, {
+    parlourId: parsed.data.parlourId,
+    type: parsed.data.type,
+    recipientName: parsed.data.recipientName,
+    recipientContact: parsed.data.recipientContact,
+    trigger: parsed.data.trigger,
+    templateId: parsed.data.templateId,
+    templateName: parsed.data.templateName,
+    subject: parsed.data.subject,
+    body: parsed.data.message,
+    metadata: parsed.data.metadata,
+    createdBy: req.actor?.userName || req.actor?.userId,
   });
 
   await writeAuditLog(req, {
@@ -111,26 +124,33 @@ communicationsRouter.post('/run-reminders', async (req, res) => {
   let sent = 0;
   for (const policy of policies) {
     const member = await prisma.member.findUnique({ where: { id: policy.memberId } });
-    if (!member) {
+    if (!member || !member.phone) {
       continue;
     }
 
-    await prisma.communicationLog.create({
-      data: {
-        id: generateId('c'),
-        parlourId: parsed.data.parlourId,
-        type: 'sms',
-        recipientName: `${member.firstName} ${member.lastName}`,
-        recipientContact: member.phone,
-        template: 'Payment Reminder',
-        status: 'delivered',
-        sentAt: `${dueDate} 08:00`,
-        metadata: {
-          policyId: policy.id,
-          policyNumber: policy.policyNumber,
-          amount: policy.premiumAmount,
-        },
+    await dispatchCommunication(prisma, {
+      parlourId: parsed.data.parlourId,
+      type: 'sms',
+      recipientName: `${member.firstName} ${member.lastName}`.trim(),
+      recipientContact: member.phone,
+      trigger: 'payment_reminder',
+      body: 'Dear {member_name}, your premium of R{amount} for policy {policy_number} is due on {due_date}. Please ensure funds are available.',
+      variables: {
+        member_name: `${member.firstName} ${member.lastName}`.trim(),
+        amount: policy.premiumAmount,
+        policy_number: policy.policyNumber,
+        due_date: dueDate,
+        contact_number: member.phone,
       },
+      metadata: {
+        policyId: policy.id,
+        policyNumber: policy.policyNumber,
+        amount: policy.premiumAmount,
+        dueDate,
+        relatedEntityType: 'policy',
+        relatedEntityId: policy.id,
+      },
+      createdBy: req.actor?.userName || req.actor?.userId,
     });
     sent += 1;
   }

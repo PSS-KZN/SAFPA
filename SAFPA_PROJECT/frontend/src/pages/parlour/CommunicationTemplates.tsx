@@ -8,9 +8,12 @@ import { fetchTemplates, setTemplateStatus } from '../../services/templatesApi';
 const triggerLabels: Record<string, string> = {
   payment_reminder: 'Payment Reminder',
   payment_receipt: 'Payment Receipt',
+  payment_failed_notice: 'Payment Failed Notice',
   policy_activated: 'Policy Activated',
   policy_lapsed: 'Policy Lapsed',
   policy_suspended: 'Policy Suspended',
+  policy_reinstated: 'Policy Reinstated',
+  policy_cancelled: 'Policy Cancelled',
   funeral_case_update: 'Funeral Case Update',
   welcome: 'Welcome',
   custom: 'Custom',

@@ -52,13 +52,22 @@ async function resolveActor(req) {
     if (userId) {
         const user = await prisma_1.prisma.appUser.findUnique({ where: { id: userId } });
         if (user && user.status === 'active') {
+            const memberId = user.role === 'policyholder_customer'
+                ? (await prisma_1.prisma.member.findFirst({
+                    where: {
+                        email: user.email,
+                        ...(user.parlourId ? { parlourId: user.parlourId } : {}),
+                    },
+                    select: { id: true },
+                }))?.id
+                : undefined;
             return {
                 userId: user.id,
                 userName: headerUserName || user.name,
                 role: headerRole || normalizeRole(user.role),
                 parlourId: headerParlourId || user.parlourId || undefined,
                 branchId: headerBranchId || user.branchId || undefined,
-                memberId: user.memberId || undefined,
+                memberId,
                 isAuthenticated: true,
             };
         }
