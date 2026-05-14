@@ -2,9 +2,8 @@ import { useRole } from '../../contexts/RoleContext';
 import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import type { UserRole } from '../../types';
-import { Bell, LogOut, Search } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const roleLabels: Record<UserRole, string> = {
   safpa_admin: 'SAFPA Admin',
@@ -17,19 +16,13 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 export default function TopBar() {
-  const { currentUser, logout } = useRole();
+  const { currentUser } = useRole();
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [showNotifications, setShowNotifications] = useState(false);
-  const navigate = useNavigate();
 
   const shellPrimary = isTenantBranded ? parlourBrand?.primaryColor ?? '#e31837' : '#e31837';
   const shellAccent = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
   const headerStyle = isTenantBranded ? { borderTop: `3px solid ${shellPrimary}` } : undefined;
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
 
   const notifications = [
     'New lead from website — Kgomotso Phiri',
@@ -67,13 +60,6 @@ export default function TopBar() {
           </div>
         )}
 
-        <div className="hidden items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 shadow-sm md:flex" style={isTenantBranded ? { borderColor: `${shellPrimary}33` } : undefined}>
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Signed in as</div>
-            <div className="text-sm font-semibold text-slate-800">{roleLabels[currentUser.role]}</div>
-          </div>
-        </div>
-
         {/* Notifications */}
         <div className="relative">
           <button
@@ -103,9 +89,6 @@ export default function TopBar() {
 
         {/* User Info */}
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-          <button onClick={handleLogout} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
-            <LogOut size={16} /> Logout
-          </button>
           <div className="text-right hidden sm:block">
             <div className="text-sm font-semibold text-slate-800">{currentUser.name}</div>
             <div className="text-xs text-slate-500">{roleLabels[currentUser.role]}</div>

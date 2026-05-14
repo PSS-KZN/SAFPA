@@ -5,9 +5,9 @@ import type { UserRole } from '../../types';
 import {
   LayoutDashboard, Building2, Users, FileText, Wallet, HeartHandshake,
   MessageSquare, BarChart3, Globe, UserPlus, ChevronLeft, ChevronRight,
-  BookOpen, Shield, FolderOpen, LayoutTemplate, SwatchBook,
+  BookOpen, Shield, FolderOpen, LayoutTemplate, SwatchBook, LogOut,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 interface NavItem {
@@ -68,9 +68,10 @@ const navItems: NavItem[] = [
 ];
 
 export default function Sidebar() {
-  const { currentUser } = useRole();
+  const { currentUser, logout } = useRole();
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const filtered = navItems.filter((item) => item.roles.includes(currentUser.role));
 
@@ -94,6 +95,11 @@ export default function Sidebar() {
     ? { background: `linear-gradient(135deg, ${parlourBrand?.primaryColor ?? '#ffffff'}22, ${parlourBrand?.accentColor ?? '#ffffff'}22)` }
     : undefined;
   const tenantTitle = isTenantBranded ? parlourBrand?.name ?? 'Tenant Workspace' : 'SAFPA FPOS';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} bg-[#0a0f1c] text-slate-300 flex flex-col transition-all duration-300 min-h-screen relative z-20 shadow-2xl border-r border-slate-800/50`} style={sidebarBackground}>
@@ -187,12 +193,32 @@ export default function Sidebar() {
 
       {/* Footer */}
       {!collapsed && (
-        <div className="px-6 py-5 border-t border-slate-800/50 text-[12px] font-medium text-slate-500 flex items-center justify-between bg-[#080c17]">
-          <span>{isTenantBranded ? 'Tenant branded shell' : 'v1.0.0 Production'}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">System Online</span>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse-slow"></div>
+        <div className="px-4 py-4 border-t border-slate-800/50 bg-[#080c17]">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500"
+          >
+            <LogOut size={16} /> Logout
+          </button>
+          <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-slate-500">
+            <span>{isTenantBranded ? 'Tenant branded shell' : 'v1.0.0 Production'}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">System Online</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse-slow"></div>
+            </div>
           </div>
+        </div>
+      )}
+
+      {collapsed && (
+        <div className="border-t border-slate-800/50 bg-[#080c17] px-3 py-4">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center rounded-xl border border-red-500/35 bg-red-600 px-3 py-3 text-white transition hover:bg-red-500"
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       )}
     </aside>
