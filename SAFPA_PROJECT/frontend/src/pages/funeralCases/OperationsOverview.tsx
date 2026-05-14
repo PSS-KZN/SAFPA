@@ -6,6 +6,7 @@ import { fetchCommunications } from '../../services/communicationsApi';
 import { fetchDocuments } from '../../services/documentsApi';
 import { fetchFuneralCases } from '../../services/funeralCasesApi';
 import type { Communication, Document, FuneralCase } from '../../types';
+import { filterFuneralCasesForUser } from '../../utils/dataScope';
 
 function formatDate(value?: string) {
   if (!value) {
@@ -40,9 +41,7 @@ export default function OperationsOverview() {
           fetchDocuments({ parlourId }),
         ]);
 
-        const scopedCases = currentUser.branchId
-          ? caseData.filter((item) => item.branchId === currentUser.branchId)
-          : caseData;
+        const scopedCases = filterFuneralCasesForUser(caseData, currentUser);
 
         setFuneralCases(scopedCases);
         setCommunications(communicationData);
@@ -55,7 +54,7 @@ export default function OperationsOverview() {
     };
 
     void load();
-  }, [currentUser.branchId, parlourId]);
+  }, [currentUser, parlourId]);
 
   const openCases = useMemo(
     () => funeralCases.filter((item) => item.status !== 'completed' && item.status !== 'archived').length,

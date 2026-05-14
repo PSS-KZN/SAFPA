@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
   { label: 'Documents', path: '/documents', icon: <FolderOpen size={18} />, roles: ['parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator'], group: 'Operations' },
 
   // Reports
-  { label: 'Reports', path: '/reports', icon: <BarChart3 size={18} />, roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator', 'reporting_analyst'], group: 'Analytics' },
+  { label: 'Reports', path: '/reports', icon: <BarChart3 size={18} />, roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator'], group: 'Analytics' },
 
   // Audit
   { label: 'Audit Log', path: '/audit-log', icon: <Shield size={18} />, roles: ['safpa_admin', 'parlour_owner'], group: 'Analytics' },

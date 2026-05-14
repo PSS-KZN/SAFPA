@@ -13,7 +13,6 @@ const roleLabels: Record<UserRole, string> = {
   policy_admin: 'Policy Admin',
   collections_clerk: 'Collections Clerk',
   operations_coordinator: 'Operations Coordinator',
-  reporting_analyst: 'Reporting Analyst',
   policyholder_customer: 'Policyholder / Customer',
 };
 

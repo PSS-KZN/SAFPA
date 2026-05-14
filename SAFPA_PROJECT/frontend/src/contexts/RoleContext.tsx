@@ -19,7 +19,6 @@ const roleToDefaultUser: Record<UserRole, string> = {
   policy_admin: 'u5',
   collections_clerk: 'u6',
   operations_coordinator: 'u7',
-  reporting_analyst: 'u11',
   policyholder_customer: 'u12',
 };
 
@@ -33,6 +32,9 @@ function readStoredUser(): User | null {
     }
     const parsed = JSON.parse(raw) as User;
     if (!parsed?.id || !parsed?.role) {
+      return null;
+    }
+    if (!users.some((user) => user.id === parsed.id && user.role === parsed.role)) {
       return null;
     }
     return parsed;

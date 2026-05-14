@@ -13,7 +13,6 @@ const roleLabels: Record<UserRole, string> = {
   policy_admin: 'Policy Admin',
   collections_clerk: 'Collections Clerk',
   operations_coordinator: 'Operations Coordinator',
-  reporting_analyst: 'Reporting Analyst',
   policyholder_customer: 'Policyholder / Customer',
 };
 
@@ -24,14 +23,13 @@ const roleDefaultPath: Record<UserRole, string> = {
   policy_admin: '/policy-admin',
   collections_clerk: '/collections',
   operations_coordinator: '/operations',
-  reporting_analyst: '/reports',
   policyholder_customer: '/customer',
 };
 
 const allRoles: UserRole[] = [
   'safpa_admin', 'parlour_owner', 'branch_manager',
   'policy_admin', 'collections_clerk', 'operations_coordinator',
-  'reporting_analyst', 'policyholder_customer',
+  'policyholder_customer',
 ];
 
 export default function TopBar() {

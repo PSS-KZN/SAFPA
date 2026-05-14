@@ -95,7 +95,6 @@ Main role landing routes:
 - policy_admin -> /policy-admin
 - collections_clerk -> /collections
 - operations_coordinator -> /operations
-- reporting_analyst -> /reports
 - policyholder_customer -> /customer
 
 If a user visits a route they are not allowed to access, they are redirected to the role default route.
@@ -106,7 +105,6 @@ Additional route groups currently exposed:
 - Policy admin: dedicated /policy-admin overview plus leads, members, policies, communications, documents, reports
 - Operations coordinator: dedicated /operations overview plus funeral cases, communications, documents, reports
 - Shared operational routes: leads, members, policies, collections, funeral cases, communications, reports, documents
-- Reporting analyst: reports only
 - Customer self-service: /customer/policy, /customer/payments, /customer/support
 - Audit log route: /audit-log for safpa_admin and parlour_owner
 
@@ -117,7 +115,7 @@ RoleContext.tsx:
 - Provides switchRole for demo role changes
 - Restores session on refresh from localStorage
 - Primes a default session on first load so initial API calls carry actor headers immediately
-- Includes dedicated demo users for both reporting_analyst and policyholder_customer
+- Includes a dedicated demo user for policyholder_customer
 
 TenantBrandingContext.tsx:
 - Loads the active parlour record for non-admin users with a parlourId
@@ -240,7 +238,6 @@ Note:
 - API calls still use backend for domain data and mutations
 - The provider primes a default safpa_session on first load so initial API requests include actor headers
 - Tenant branding is not mocked in the layout; it is fetched from the backend parlour record for the active parlour context
-- Demo user data includes a dedicated `reporting_analyst` user for reports-only access
 - Demo user data also includes a dedicated `policyholder_customer` user and customer self-service navigation
 - The customer portal UI is routed in the frontend, but the backend still needs a dedicated customer authorization profile for full end-to-end support
 - This keeps role-switching quick for demo while using backend persistence for flows

@@ -5,7 +5,6 @@ export type UserRole =
   | 'policy_admin'
   | 'collections_clerk'
   | 'operations_coordinator'
-  | 'reporting_analyst'
   | 'policyholder_customer';
 
 export interface User {

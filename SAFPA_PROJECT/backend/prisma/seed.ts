@@ -138,7 +138,6 @@ async function main() {
     { id: 'u8', name: 'Ayanda Cele', email: 'ayanda@dignitymemorial.co.za', role: 'parlour_owner', parlourId: 'p2', status: 'active' },
     { id: 'u9', name: 'Zanele Mkhize', email: 'zanele@dignitymemorial.co.za', role: 'branch_manager', parlourId: 'p2', branchId: 'b4', status: 'active' },
     { id: 'u10', name: 'Noxolo Mtshali', email: 'noxolo@phakamafunerals.co.za', role: 'parlour_owner', parlourId: 'p3', status: 'active' },
-    { id: 'u11', name: 'Neo Mahlasela', email: 'neo.reports@ubuntufunerals.co.za', role: 'reporting_analyst', parlourId: 'p1', branchId: 'b1', status: 'active' },
   ] as const;
 
   const baseSubscriptions = [

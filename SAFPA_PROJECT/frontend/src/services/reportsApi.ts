@@ -12,6 +12,8 @@ export interface ReportsDashboardData {
   branchPerformance: Array<{ branchId: string; branch: string; members: number; collections: number }>;
   policyDistribution: Array<{ name: string; value: number }>;
   policyLifecycle: Array<{ status: string; count: number }>;
+  memberGrowth: Array<{ month: string; members: number }>;
+  funeralCaseTrend: Array<{ month: string; total: number; open: number; closed: number }>;
 }
 
 export interface ReportsFilters {
@@ -35,6 +37,7 @@ export interface NetworkDashboardData {
   monthlyCollections: Array<{ month: string; collected: number; due: number }>;
   policyStatusBreakdown: Array<{ status: string; count: number }>;
   memberGrowth: Array<{ month: string; members: number }>;
+  funeralCaseTrend: Array<{ month: string; total: number; open: number; closed: number }>;
   parlours: Array<{ id: string; name: string; province: string; tier: string; status: string }>;
 }
 

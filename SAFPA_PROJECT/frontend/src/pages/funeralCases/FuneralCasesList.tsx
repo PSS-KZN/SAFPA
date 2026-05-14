@@ -4,6 +4,7 @@ import { Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FuneralCase } from '../../types';
 import { deleteFuneralCase, fetchFuneralCases } from '../../services/funeralCasesApi';
+import { filterFuneralCasesForUser } from '../../utils/dataScope';
 
 const statusColors: Record<string, string> = {
   logged: 'bg-red-100 text-red-700',
@@ -39,9 +40,7 @@ export default function FuneralCasesList() {
     void load();
   }, [parlourId]);
 
-  const cases = currentUser.role === 'branch_manager' && currentUser.branchId
-    ? items.filter((item) => item.branchId === currentUser.branchId)
-    : items;
+  const cases = filterFuneralCasesForUser(items, currentUser);
   const filtered = filterStatus === 'all'
     ? cases
     : filterStatus === 'open'

@@ -8,11 +8,65 @@ interface MonthlyAggregation {
   due: number;
 }
 
+interface MemberGrowthPoint {
+  month: string;
+  members: number;
+}
+
+interface FuneralCaseTrendPoint {
+  month: string;
+  total: number;
+  open: number;
+  closed: number;
+}
+
 function monthKey(dateText: string): string {
   if (dateText.length >= 7) {
     return dateText.slice(0, 7);
   }
   return 'unknown';
+}
+
+function monthKeyFromDate(date: Date): string {
+  return date.toISOString().slice(0, 7);
+}
+
+function isOpenFuneralCase(status: string): boolean {
+  return status !== 'completed' && status !== 'archived';
+}
+
+function buildMemberGrowthSeries(members: Array<{ joinDate: string; createdAt: Date }>): MemberGrowthPoint[] {
+  const memberMonthMap = new Map<string, number>();
+
+  for (const member of members) {
+    const key = member.joinDate ? monthKey(member.joinDate) : monthKeyFromDate(member.createdAt);
+    memberMonthMap.set(key, (memberMonthMap.get(key) || 0) + 1);
+  }
+
+  return Array.from(memberMonthMap.entries())
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .slice(-6)
+    .map(([month, count]) => ({ month, members: count }));
+}
+
+function buildFuneralCaseTrendSeries(funeralCases: Array<{ dateOfDeath: string; createdAt: Date; status: string }>): FuneralCaseTrendPoint[] {
+  const monthlyMap = new Map<string, FuneralCaseTrendPoint>();
+
+  for (const funeralCase of funeralCases) {
+    const key = funeralCase.dateOfDeath ? monthKey(funeralCase.dateOfDeath) : monthKeyFromDate(funeralCase.createdAt);
+    const current = monthlyMap.get(key) || { month: key, total: 0, open: 0, closed: 0 };
+    current.total += 1;
+    if (isOpenFuneralCase(funeralCase.status)) {
+      current.open += 1;
+    } else {
+      current.closed += 1;
+    }
+    monthlyMap.set(key, current);
+  }
+
+  return Array.from(monthlyMap.values())
+    .sort((left, right) => left.month.localeCompare(right.month))
+    .slice(-6);
 }
 
 function inDateRange(dateText: string, startDate?: string, endDate?: string): boolean {
@@ -107,7 +161,7 @@ async function buildParlourDashboard(params: {
   const activePolicies = filteredPolicies.filter((policy) => policy.status === 'active').length;
   const totalPolicies = filteredPolicies.length;
   const totalMembers = members.length;
-  const openFuneralCases = filteredFuneralCases.filter((funeralCase) => funeralCase.status !== 'completed' && funeralCase.status !== 'archived').length;
+  const openFuneralCases = filteredFuneralCases.filter((funeralCase) => isOpenFuneralCase(funeralCase.status)).length;
 
   const premiumsDue = filteredPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
   const premiumsCollected = collectionWindowPayments
@@ -169,6 +223,9 @@ async function buildParlourDashboard(params: {
     .map(([status, count]) => ({ status, count }))
     .sort((left, right) => right.count - left.count);
 
+  const memberGrowth = buildMemberGrowthSeries(members);
+  const funeralCaseTrend = buildFuneralCaseTrendSeries(filteredFuneralCases);
+
   return {
     totalMembers,
     totalPolicies,
@@ -181,6 +238,8 @@ async function buildParlourDashboard(params: {
     branchPerformance,
     policyDistribution,
     policyLifecycle,
+    memberGrowth,
+    funeralCaseTrend,
   };
 }
 
@@ -238,7 +297,7 @@ reportsRouter.get('/network', async (_req, res) => {
   const totalPolicies = policies.length;
   const activePolicies = policies.filter((policy) => policy.status === 'active').length;
   const totalArrears = policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
-  const openFuneralCases = funeralCases.filter((item) => item.status !== 'completed' && item.status !== 'archived').length;
+  const openFuneralCases = funeralCases.filter((item) => isOpenFuneralCase(item.status)).length;
 
   const nowMonth = new Date().toISOString().slice(0, 7);
   const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
@@ -265,15 +324,8 @@ reportsRouter.get('/network', async (_req, res) => {
   }
   const policyStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
 
-  const memberMonthMap = new Map<string, number>();
-  for (const member of members) {
-    const key = monthKey(member.joinDate);
-    memberMonthMap.set(key, (memberMonthMap.get(key) || 0) + 1);
-  }
-  const memberGrowth = Array.from(memberMonthMap.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .slice(-6)
-    .map(([month, count]) => ({ month, members: count }));
+  const memberGrowth = buildMemberGrowthSeries(members);
+  const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);
 
   return res.json({
     totalParlours,
@@ -289,6 +341,7 @@ reportsRouter.get('/network', async (_req, res) => {
     monthlyCollections,
     policyStatusBreakdown,
     memberGrowth,
+    funeralCaseTrend,
     parlours,
   });
 });

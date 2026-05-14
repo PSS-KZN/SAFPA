@@ -43,7 +43,6 @@ To align with the sensitive and professional nature of the funeral industry, the
 | `policy_admin` | Policy Admin | Policy Overview | Handles member registration, policy lifecycle, dependants, beneficiaries, and document management. |
 | `collections_clerk` | Collections Clerk | Collections | Monitors premiums, processes failed payments, manages arrears follow-up, and imports reconciliation files. |
 | `operations_coordinator` | Operations Coordinator | Operations Overview | Manages funeral case workflow from death notice to closure, including tasks, staff, vehicles, family communications, and operations analytics. |
-| `reporting_analyst` | Reporting Analyst | Reports | Read-only reporting specialist focused on collections, member growth, and operational analytics. |
 | `policyholder_customer` | Policyholder / Customer | Customer Portal | Self-service portal user for policy summary, payment capture, and support/contact updates. |
 
 ---
@@ -541,23 +540,7 @@ Manages funeral service delivery from first contact to case closure. Lands on Op
 
 ---
 
-### 7. Reporting Analyst (`reporting_analyst`)
-
-Focused on analytics and reporting only. Lands on Reports.
-
-**Demo user:** Neo Mahlasela
-
-**Accessible pages:**
-
-| Page | Notes |
-|------|-------|
-| Reports `/reports` | Read-only access to reporting dashboards and exports |
-
-**Not accessible:** SAFPA Admin pages, Parlour config, Leads, Members, Policies, Collections, Funeral Cases, Communications, Documents, Audit Log.
-
----
-
-### 8. Policyholder / Customer (`policyholder_customer`)
+### 7. Policyholder / Customer (`policyholder_customer`)
 
 Customer-facing self-service user. Lands on Customer Portal.
 
@@ -581,13 +564,13 @@ Implementation note:
 
 ## Summary Matrix
 
-| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator | Reporting Analyst | Policyholder / Customer |
-|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|:-----------------:|:-----------------------:|
-| SAFPA Dashboard | ✓ | — | — | — | — | — | — | — |
-| Parlour Management | ✓ | — | — | — | — | — | — | — |
-| Resources & Notices | ✓ | — | — | — | — | — | — | — |
-| Parlour Dashboard | — | ✓ | ✓ | — | — | — | — | — |
-| Policy Overview | — | — | — | ✓ | — | — | — | — |
+| Page / Feature | SAFPA Admin | Parlour Owner | Branch Manager | Policy Admin | Collections Clerk | Ops Coordinator | Policyholder / Customer |
+|----------------|:-----------:|:-------------:|:--------------:|:------------:|:-----------------:|:---------------:|:-----------------------:|
+| SAFPA Dashboard | ✓ | — | — | — | — | — | — |
+| Parlour Management | ✓ | — | — | — | — | — | — |
+| Resources & Notices | ✓ | — | — | — | — | — | — |
+| Parlour Dashboard | — | ✓ | ✓ | — | — | — | — |
+| Policy Overview | — | — | — | ✓ | — | — | — |
 | Operations Overview | — | — | — | — | — | ✓ | — | — |
 | Branches | — | ✓ | — | — | — | — | — | — |
 | Users | — | ✓ | — | — | — | — | — | — |

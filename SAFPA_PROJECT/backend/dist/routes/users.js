@@ -13,7 +13,6 @@ const roleEnum = zod_1.z.enum([
     'policy_admin',
     'collections_clerk',
     'operations_coordinator',
-    'reporting_analyst',
 ]);
 const createUserSchema = zod_1.z.object({
     name: zod_1.z.string().min(2),

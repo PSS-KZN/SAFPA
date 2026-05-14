@@ -29,7 +29,6 @@ const roleColors: Record<string, string> = {
   policy_admin: 'bg-violet-100 text-violet-700',
   collections_clerk: 'bg-green-100 text-green-700',
   operations_coordinator: 'bg-amber-100 text-amber-700',
-  reporting_analyst: 'bg-blue-100 text-blue-700',
 };
 
 export default function AuditLog() {

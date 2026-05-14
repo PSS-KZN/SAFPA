@@ -17,7 +17,7 @@ const ROLE_PERMISSIONS: Array<{ prefix: string; methods?: string[]; roles: strin
   { prefix: '/api/funeral-cases', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'operations_coordinator'] },
   { prefix: '/api/documents', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator'] },
   { prefix: '/api/audit', roles: ['safpa_admin', 'parlour_owner'] },
-  { prefix: '/api/reports', roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator', 'reporting_analyst'] },
+  { prefix: '/api/reports', roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator'] },
   { prefix: '/api/subscriptions', roles: ['safpa_admin'] },
 ];
 

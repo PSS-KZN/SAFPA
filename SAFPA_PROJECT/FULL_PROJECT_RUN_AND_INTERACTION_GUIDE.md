@@ -114,7 +114,7 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 
 - RoleContext stores selected session in localStorage key: safpa_session
 - RoleContext primes a default session on first load so initial API requests include actor headers
-- RoleContext also exposes default demo sessions for `reporting_analyst` and `policyholder_customer`
+- RoleContext also exposes a default demo session for `policyholder_customer`
 - TenantBrandingContext fetches the active parlour record for non-SAFPA users so tenant shell branding stays in sync with backend parlour data
 - services/http.ts reads safpa_session and sends headers:
   - x-user-id

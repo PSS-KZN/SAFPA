@@ -179,7 +179,7 @@ How authScopeMiddleware works (session.ts):
 Special case rules:
 - Parlour branding and logo routes under /api/parlours/:id/(branding|logo) are explicitly limited to safpa_admin and parlour_owner
 - Website inquiry intake remains public through /api/leads/website-inquiry
-- Reporting endpoints under `/api/reports` are available to `safpa_admin`, `parlour_owner`, `branch_manager`, `policy_admin`, `collections_clerk`, `operations_coordinator`, and `reporting_analyst`
+- Reporting endpoints under `/api/reports` are available to `safpa_admin`, `parlour_owner`, `branch_manager`, `policy_admin`, `collections_clerk`, and `operations_coordinator`
 - A dedicated `policyholder_customer` API permission profile is not defined in authScopeMiddleware yet; the customer portal currently exists as a frontend surface rather than a separately authorized backend role
 
 Headers commonly used:

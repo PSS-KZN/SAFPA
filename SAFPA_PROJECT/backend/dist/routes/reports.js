@@ -10,6 +10,41 @@ function monthKey(dateText) {
     }
     return 'unknown';
 }
+function monthKeyFromDate(date) {
+    return date.toISOString().slice(0, 7);
+}
+function isOpenFuneralCase(status) {
+    return status !== 'completed' && status !== 'archived';
+}
+function buildMemberGrowthSeries(members) {
+    const memberMonthMap = new Map();
+    for (const member of members) {
+        const key = member.joinDate ? monthKey(member.joinDate) : monthKeyFromDate(member.createdAt);
+        memberMonthMap.set(key, (memberMonthMap.get(key) || 0) + 1);
+    }
+    return Array.from(memberMonthMap.entries())
+        .sort((left, right) => left[0].localeCompare(right[0]))
+        .slice(-6)
+        .map(([month, count]) => ({ month, members: count }));
+}
+function buildFuneralCaseTrendSeries(funeralCases) {
+    const monthlyMap = new Map();
+    for (const funeralCase of funeralCases) {
+        const key = funeralCase.dateOfDeath ? monthKey(funeralCase.dateOfDeath) : monthKeyFromDate(funeralCase.createdAt);
+        const current = monthlyMap.get(key) || { month: key, total: 0, open: 0, closed: 0 };
+        current.total += 1;
+        if (isOpenFuneralCase(funeralCase.status)) {
+            current.open += 1;
+        }
+        else {
+            current.closed += 1;
+        }
+        monthlyMap.set(key, current);
+    }
+    return Array.from(monthlyMap.values())
+        .sort((left, right) => left.month.localeCompare(right.month))
+        .slice(-6);
+}
 function inDateRange(dateText, startDate, endDate) {
     if (!dateText) {
         return false;
@@ -80,7 +115,7 @@ async function buildParlourDashboard(params) {
     const activePolicies = filteredPolicies.filter((policy) => policy.status === 'active').length;
     const totalPolicies = filteredPolicies.length;
     const totalMembers = members.length;
-    const openFuneralCases = filteredFuneralCases.filter((funeralCase) => funeralCase.status !== 'completed' && funeralCase.status !== 'archived').length;
+    const openFuneralCases = filteredFuneralCases.filter((funeralCase) => isOpenFuneralCase(funeralCase.status)).length;
     const premiumsDue = filteredPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
     const premiumsCollected = collectionWindowPayments
         .filter((payment) => payment.status === 'successful')
@@ -131,6 +166,8 @@ async function buildParlourDashboard(params) {
     const policyLifecycle = Array.from(lifecycleMap.entries())
         .map(([status, count]) => ({ status, count }))
         .sort((left, right) => right.count - left.count);
+    const memberGrowth = buildMemberGrowthSeries(members);
+    const funeralCaseTrend = buildFuneralCaseTrendSeries(filteredFuneralCases);
     return {
         totalMembers,
         totalPolicies,
@@ -143,6 +180,8 @@ async function buildParlourDashboard(params) {
         branchPerformance,
         policyDistribution,
         policyLifecycle,
+        memberGrowth,
+        funeralCaseTrend,
     };
 }
 exports.reportsRouter = (0, express_1.Router)();
@@ -191,7 +230,7 @@ exports.reportsRouter.get('/network', async (_req, res) => {
     const totalPolicies = policies.length;
     const activePolicies = policies.filter((policy) => policy.status === 'active').length;
     const totalArrears = policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
-    const openFuneralCases = funeralCases.filter((item) => item.status !== 'completed' && item.status !== 'archived').length;
+    const openFuneralCases = funeralCases.filter((item) => isOpenFuneralCase(item.status)).length;
     const nowMonth = new Date().toISOString().slice(0, 7);
     const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
     const premiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
@@ -214,15 +253,8 @@ exports.reportsRouter.get('/network', async (_req, res) => {
         statusMap.set(policy.status, (statusMap.get(policy.status) || 0) + 1);
     }
     const policyStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
-    const memberMonthMap = new Map();
-    for (const member of members) {
-        const key = monthKey(member.joinDate);
-        memberMonthMap.set(key, (memberMonthMap.get(key) || 0) + 1);
-    }
-    const memberGrowth = Array.from(memberMonthMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .slice(-6)
-        .map(([month, count]) => ({ month, members: count }));
+    const memberGrowth = buildMemberGrowthSeries(members);
+    const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);
     return res.json({
         totalParlours,
         activeParlours,
@@ -237,6 +269,7 @@ exports.reportsRouter.get('/network', async (_req, res) => {
         monthlyCollections,
         policyStatusBreakdown,
         memberGrowth,
+        funeralCaseTrend,
         parlours,
     });
 });
