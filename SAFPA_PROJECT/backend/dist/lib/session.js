@@ -4,6 +4,8 @@ exports.authScopeMiddleware = authScopeMiddleware;
 const prisma_1 = require("./prisma");
 const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/leads/website-inquiry']);
 const ROLE_PERMISSIONS = [
+    { prefix: '/api/members/', methods: ['PATCH'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'policyholder_customer'] },
+    { prefix: '/api/payments', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'collections_clerk', 'policyholder_customer'] },
     { prefix: '/api/parlours', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
     { prefix: '/api/resources', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
     { prefix: '/api/branches', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner'] },
@@ -56,6 +58,7 @@ async function resolveActor(req) {
                 role: headerRole || normalizeRole(user.role),
                 parlourId: headerParlourId || user.parlourId || undefined,
                 branchId: headerBranchId || user.branchId || undefined,
+                memberId: user.memberId || undefined,
                 isAuthenticated: true,
             };
         }
@@ -67,6 +70,7 @@ async function resolveActor(req) {
                 role: headerRole,
                 parlourId: headerParlourId,
                 branchId: headerBranchId,
+                memberId: undefined,
                 isAuthenticated: true,
             };
         }
@@ -81,6 +85,7 @@ async function resolveActor(req) {
         role: headerRole,
         parlourId: headerParlourId,
         branchId: headerBranchId,
+        memberId: undefined,
         isAuthenticated: true,
     };
 }
@@ -93,12 +98,11 @@ function ruleAllows(path, method, role) {
     if (rules.length === 0) {
         return true;
     }
-    for (const rule of rules) {
-        if (!rule.methods || rule.methods.includes(method)) {
-            return rule.roles.includes(normalizedRole);
-        }
+    const applicableRules = rules.filter((rule) => !rule.methods || rule.methods.includes(method));
+    if (applicableRules.length === 0) {
+        return true;
     }
-    return true;
+    return applicableRules.some((rule) => rule.roles.includes(normalizedRole));
 }
 function enforceTenantScope(req, res) {
     const actor = req.actor;

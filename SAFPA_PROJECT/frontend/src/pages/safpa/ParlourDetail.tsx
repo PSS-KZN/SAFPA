@@ -1,17 +1,52 @@
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Building2, Users, Mail, Phone, Calendar } from 'lucide-react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Building2, Users, Mail, Phone, Calendar, PencilLine, Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Branch, Parlour, User } from '../../types';
-import { fetchParlourById } from '../../services/parloursApi';
+import { fetchParlourById, updateParlour } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
 import { fetchUsers } from '../../services/usersApi';
 
+type ParlourFormState = {
+  name: string;
+  region: string;
+  province: string;
+  tier: Parlour['tier'];
+  status: Parlour['status'];
+  onboardingProgress: number;
+  contactEmail: string;
+  contactPhone: string;
+  primaryColor: string;
+  businessDescription: string;
+  joinedDate: string;
+};
+
+function createFormState(parlour: Parlour): ParlourFormState {
+  return {
+    name: parlour.name,
+    region: parlour.region,
+    province: parlour.province,
+    tier: parlour.tier,
+    status: parlour.status,
+    onboardingProgress: parlour.onboardingProgress,
+    contactEmail: parlour.contactEmail,
+    contactPhone: parlour.contactPhone,
+    primaryColor: parlour.primaryColor,
+    businessDescription: parlour.businessDescription || '',
+    joinedDate: parlour.joinedDate,
+  };
+}
+
 export default function ParlourDetail() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [parlour, setParlour] = useState<Parlour | null>(null);
   const [parlourBranches, setParlourBranches] = useState<Branch[]>([]);
   const [parlourUsers, setParlourUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
+  const [form, setForm] = useState<ParlourFormState | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -21,15 +56,18 @@ export default function ParlourDetail() {
 
     const loadParlour = async () => {
       try {
+        setError(null);
         const [record, branches, users] = await Promise.all([
           fetchParlourById(id),
           fetchBranches(id),
           fetchUsers(id),
         ]);
         setParlour(record);
+        setForm(createFormState(record));
         setParlourBranches(branches);
         setParlourUsers(users);
       } catch {
+        setError('Failed to load parlour details.');
         setParlour(null);
         setParlourBranches([]);
         setParlourUsers([]);
@@ -45,12 +83,51 @@ export default function ParlourDetail() {
   if (!parlour) return <div className="text-center py-12 text-slate-500">Parlour not found</div>;
 
   const onboardingSteps = [
-    { label: 'Business Profile', done: parlour.onboardingProgress >= 20 },
-    { label: 'Branding & Logo', done: parlour.onboardingProgress >= 40 },
-    { label: 'Products Setup', done: parlour.onboardingProgress >= 60 },
-    { label: 'Branch Configuration', done: parlour.onboardingProgress >= 80 },
-    { label: 'Go Live', done: parlour.onboardingProgress >= 100 },
+    { label: 'Business Profile', detail: 'Capture the core parlour profile, contacts, and launch ownership.', done: parlour.onboardingProgress >= 20 },
+    { label: 'Branding & Logo', detail: 'Set up visual identity, colours, and branded web presence.', done: parlour.onboardingProgress >= 40 },
+    { label: 'Products Setup', detail: 'Configure products, packages, and billing defaults.', done: parlour.onboardingProgress >= 60 },
+    { label: 'Branch Configuration', detail: 'Add branches, assign managers, and confirm operational scope.', done: parlour.onboardingProgress >= 80 },
+    { label: 'Go Live', detail: 'Confirm readiness and move the tenant into active service.', done: parlour.onboardingProgress >= 100 },
   ];
+
+  const currentStepIndex = onboardingSteps.findIndex((step) => !step.done);
+  const currentStep = currentStepIndex === -1 ? onboardingSteps[onboardingSteps.length - 1] : onboardingSteps[currentStepIndex];
+
+  const updateForm = <K extends keyof ParlourFormState>(field: K, value: ParlourFormState[K]) => {
+    setForm((previous) => (previous ? { ...previous, [field]: value } : previous));
+  };
+
+  const startEdit = () => {
+    setForm(createFormState(parlour));
+    setIsEditing(true);
+    setSearchParams({ mode: 'edit' });
+  };
+
+  const cancelEdit = () => {
+    setForm(createFormState(parlour));
+    setIsEditing(false);
+    setSearchParams({});
+  };
+
+  const saveChanges = async () => {
+    if (!id || !form) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const updated = await updateParlour(id, form);
+      setParlour(updated);
+      setForm(createFormState(updated));
+      setIsEditing(false);
+      setSearchParams({});
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to update parlour');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
@@ -58,7 +135,10 @@ export default function ParlourDetail() {
         <ArrowLeft size={16} /> Back to Parlours
       </Link>
 
-      <div className="flex items-center gap-4 mb-6">
+      {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
+
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: parlour.primaryColor }}>
           {parlour.name.charAt(0)}
         </div>
@@ -69,19 +149,97 @@ export default function ParlourDetail() {
         <span className={`ml-4 px-3 py-1 rounded-full text-xs font-medium ${parlour.status === 'active' ? 'bg-green-100 text-green-700' : parlour.status === 'onboarding' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
           {parlour.status}
         </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {!isEditing ? (
+            <button onClick={startEdit} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <PencilLine size={16} /> Edit Parlour
+            </button>
+          ) : (
+            <>
+              <button onClick={cancelEdit} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <X size={16} /> Cancel
+              </button>
+              <button onClick={() => void saveChanges()} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">
+                <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Info Card */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold mb-4">Details</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-2 text-slate-600"><Building2 size={16} /> Tier: <span className="font-medium capitalize">{parlour.tier}</span></div>
-            <div className="flex items-center gap-2 text-slate-600"><Users size={16} /> Members: <span className="font-medium">{parlour.totalMembers.toLocaleString()}</span></div>
-            <div className="flex items-center gap-2 text-slate-600"><Mail size={16} /> {parlour.contactEmail}</div>
-            <div className="flex items-center gap-2 text-slate-600"><Phone size={16} /> {parlour.contactPhone}</div>
-            <div className="flex items-center gap-2 text-slate-600"><Calendar size={16} /> Joined: {parlour.joinedDate}</div>
-          </div>
+          {isEditing && form ? (
+            <div className="space-y-4 text-sm">
+              <div>
+                <label className="mb-1 block text-slate-600">Parlour Name</label>
+                <input value={form.name} onChange={(event) => updateForm('name', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-slate-600">Region</label>
+                  <input value={form.region} onChange={(event) => updateForm('region', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-slate-600">Province</label>
+                  <input value={form.province} onChange={(event) => updateForm('province', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-slate-600">Tier</label>
+                  <select value={form.tier} onChange={(event) => updateForm('tier', event.target.value as Parlour['tier'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 capitalize">
+                    <option value="basic">Basic</option>
+                    <option value="standard">Standard</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-slate-600">Status</label>
+                  <select value={form.status} onChange={(event) => updateForm('status', event.target.value as Parlour['status'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 capitalize">
+                    <option value="onboarding">Onboarding</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-slate-600">Contact Email</label>
+                <input type="email" value={form.contactEmail} onChange={(event) => updateForm('contactEmail', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-slate-600">Contact Phone</label>
+                <input value={form.contactPhone} onChange={(event) => updateForm('contactPhone', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-slate-600">Primary Brand Color</label>
+                <div className="flex items-center gap-3 rounded-lg border border-slate-300 px-3 py-2">
+                  <input type="color" value={form.primaryColor} onChange={(event) => updateForm('primaryColor', event.target.value)} className="h-8 w-10 rounded border border-slate-200 bg-transparent p-1" />
+                  <span className="text-slate-600">{form.primaryColor.toUpperCase()}</span>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-slate-600">Joined Date</label>
+                <input type="date" value={form.joinedDate} onChange={(event) => updateForm('joinedDate', event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-slate-600">Business Description</label>
+                <textarea value={form.businessDescription} onChange={(event) => updateForm('businessDescription', event.target.value)} rows={4} className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2 text-slate-600"><Building2 size={16} /> Tier: <span className="font-medium capitalize">{parlour.tier}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Users size={16} /> Members: <span className="font-medium">{parlour.totalMembers.toLocaleString()}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Mail size={16} /> {parlour.contactEmail}</div>
+              <div className="flex items-center gap-2 text-slate-600"><Phone size={16} /> {parlour.contactPhone}</div>
+              <div className="flex items-center gap-2 text-slate-600"><Calendar size={16} /> Joined: {parlour.joinedDate}</div>
+              {parlour.businessDescription && <p className="rounded-lg bg-slate-50 px-3 py-3 leading-6 text-slate-600">{parlour.businessDescription}</p>}
+            </div>
+          )}
         </div>
 
         {/* Onboarding Progress */}
@@ -90,13 +248,27 @@ export default function ParlourDetail() {
           <div className="h-2 bg-slate-200 rounded-full mb-4">
             <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${parlour.onboardingProgress}%` }} />
           </div>
+          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div className="font-semibold">Current step: {currentStep.label}</div>
+            <div className="mt-1 text-amber-700">{currentStep.detail}</div>
+          </div>
+          {isEditing && form && (
+            <div className="mb-4">
+              <label className="mb-1 block text-sm text-slate-600">Update onboarding progress</label>
+              <input type="range" min={0} max={100} step={5} value={form.onboardingProgress} onChange={(event) => updateForm('onboardingProgress', Number(event.target.value))} className="w-full" />
+              <div className="mt-1 text-xs text-slate-500">{form.onboardingProgress}% complete</div>
+            </div>
+          )}
           <div className="space-y-2">
             {onboardingSteps.map((step) => (
-              <div key={step.label} className="flex items-center gap-2 text-sm">
+              <div key={step.label} className="rounded-lg border border-slate-100 px-3 py-3 text-sm">
+                <div className="flex items-center gap-2">
                 <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${step.done ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
                   {step.done && <span className="text-white text-xs">✓</span>}
                 </div>
                 <span className={step.done ? 'text-slate-700' : 'text-slate-400'}>{step.label}</span>
+                </div>
+                <div className={`mt-1 pl-6 text-xs ${step.done ? 'text-slate-500' : 'text-slate-400'}`}>{step.detail}</div>
               </div>
             ))}
           </div>

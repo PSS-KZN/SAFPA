@@ -4,6 +4,8 @@ import { prisma } from './prisma';
 const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/leads/website-inquiry']);
 
 const ROLE_PERMISSIONS: Array<{ prefix: string; methods?: string[]; roles: string[] }> = [
+  { prefix: '/api/members/', methods: ['PATCH'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'policyholder_customer'] },
+  { prefix: '/api/payments', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'collections_clerk', 'policyholder_customer'] },
   { prefix: '/api/parlours', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
   { prefix: '/api/resources', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
   { prefix: '/api/branches', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner'] },
@@ -57,12 +59,23 @@ async function resolveActor(req: Request): Promise<Express.SessionActor | null> 
   if (userId) {
     const user = await prisma.appUser.findUnique({ where: { id: userId } });
     if (user && user.status === 'active') {
+      const memberId = user.role === 'policyholder_customer'
+        ? (await prisma.member.findFirst({
+            where: {
+              email: user.email,
+              ...(user.parlourId ? { parlourId: user.parlourId } : {}),
+            },
+            select: { id: true },
+          }))?.id
+        : undefined;
+
       return {
         userId: user.id,
         userName: headerUserName || user.name,
         role: headerRole || normalizeRole(user.role),
         parlourId: headerParlourId || user.parlourId || undefined,
         branchId: headerBranchId || user.branchId || undefined,
+        memberId,
         isAuthenticated: true,
       };
     }
@@ -75,6 +88,7 @@ async function resolveActor(req: Request): Promise<Express.SessionActor | null> 
         role: headerRole,
         parlourId: headerParlourId,
         branchId: headerBranchId,
+        memberId: undefined,
         isAuthenticated: true,
       };
     }
@@ -92,6 +106,7 @@ async function resolveActor(req: Request): Promise<Express.SessionActor | null> 
     role: headerRole,
     parlourId: headerParlourId,
     branchId: headerBranchId,
+    memberId: undefined,
     isAuthenticated: true,
   };
 }
@@ -108,13 +123,12 @@ function ruleAllows(path: string, method: string, role: string): boolean {
     return true;
   }
 
-  for (const rule of rules) {
-    if (!rule.methods || rule.methods.includes(method)) {
-      return rule.roles.includes(normalizedRole);
-    }
+  const applicableRules = rules.filter((rule) => !rule.methods || rule.methods.includes(method));
+  if (applicableRules.length === 0) {
+    return true;
   }
 
-  return true;
+  return applicableRules.some((rule) => rule.roles.includes(normalizedRole));
 }
 
 function enforceTenantScope(req: Request, res: Response): boolean {

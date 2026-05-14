@@ -219,9 +219,10 @@ parloursRouter.get('/availability/subdomain', async (req, res) => {
 
 parloursRouter.get('/', async (req, res) => {
   const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+  const actorParlourId = req.actor?.parlourId;
 
   const parlours = await prisma.parlour.findMany({
-    where: parlourId ? { id: parlourId } : undefined,
+    where: actorParlourId ? { id: actorParlourId } : parlourId ? { id: parlourId } : undefined,
     orderBy: { createdAt: 'desc' },
   });
 

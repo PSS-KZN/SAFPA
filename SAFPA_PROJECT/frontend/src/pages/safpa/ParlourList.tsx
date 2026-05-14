@@ -1,9 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
+import { Eye, PencilLine } from 'lucide-react';
 import type { Parlour } from '../../types';
 import { fetchParlours, setParlourStatus } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
+
+function getOnboardingStage(progress: number): string {
+  if (progress >= 100) {
+    return 'Go live complete';
+  }
+  if (progress >= 80) {
+    return 'Branch setup';
+  }
+  if (progress >= 60) {
+    return 'Products setup';
+  }
+  if (progress >= 40) {
+    return 'Branding review';
+  }
+  if (progress >= 20) {
+    return 'Business profile';
+  }
+  return 'Tenant created';
+}
 
 export default function ParlourList() {
   const [parlours, setParlours] = useState<Parlour[]>([]);
@@ -89,19 +108,25 @@ export default function ParlourList() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-red-500 rounded-full" style={{ width: `${p.onboardingProgress}%` }} />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-500 rounded-full" style={{ width: `${p.onboardingProgress}%` }} />
+                          </div>
+                          <span className="text-xs text-slate-500">{p.onboardingProgress}%</span>
                         </div>
-                        <span className="text-xs text-slate-500">{p.onboardingProgress}%</span>
+                        <div className="text-xs text-slate-500">{getOnboardingStage(p.onboardingProgress)}</div>
                       </div>
                     </td>
                     <td className="px-4 py-3">{p.totalMembers.toLocaleString()}</td>
                     <td className="px-4 py-3">{branchCount}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Link to={`/safpa/parlours/${p.id}`} className="text-red-600 hover:text-red-800" title="View">
+                        <Link to={`/safpa/parlours/${p.id}`} className="text-red-600 hover:text-red-800" title="View details">
                           <Eye size={16} />
+                        </Link>
+                        <Link to={`/safpa/parlours/${p.id}?mode=edit`} className="text-slate-600 hover:text-slate-900" title="Edit parlour">
+                          <PencilLine size={16} />
                         </Link>
                         <button onClick={() => void toggleStatus(p)} className="text-xs text-slate-600 hover:text-slate-900">
                           {p.status === 'suspended' ? 'Activate' : 'Suspend'}

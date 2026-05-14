@@ -27,6 +27,8 @@ export const app = express();
 const port = Number(process.env.PORT || 4000);
 const showRouteIndex = process.env.NODE_ENV !== 'production';
 const docsBasePath = '/api/docs';
+const configuredFrontendOrigin = process.env.FRONTEND_ORIGIN;
+const localFrontendOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1):(5173|5174)$/;
 const mountedRouters: MountedRouter[] = [
   { basePath: '/api/auth', router: authRouter },
   { basePath: '/api/parlours', router: parloursRouter },
@@ -55,7 +57,21 @@ function getDocumentedEndpoints() {
   ]);
 }
 
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (configuredFrontendOrigin) {
+      callback(null, origin === configuredFrontendOrigin);
+      return;
+    }
+
+    callback(null, localFrontendOriginPattern.test(origin));
+  },
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 

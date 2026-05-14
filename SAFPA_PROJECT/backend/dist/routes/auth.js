@@ -4,20 +4,25 @@ exports.authRouter = void 0;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const prisma_1 = require("../lib/prisma");
+const DEMO_PASSWORD = 'demo123';
 const loginSchema = zod_1.z.object({
-    userId: zod_1.z.string().optional(),
-    email: zod_1.z.string().email().optional(),
+    email: zod_1.z.string().email(),
+    password: zod_1.z.string().min(1),
+    role: zod_1.z.enum(['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator', 'policyholder_customer']),
 });
 exports.authRouter = (0, express_1.Router)();
 exports.authRouter.post('/login', async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success || (!parsed.data.userId && !parsed.data.email)) {
-        return res.status(400).json({ message: 'Provide userId or email' });
+    if (!parsed.success) {
+        return res.status(400).json({ message: 'Provide email, password, and role' });
+    }
+    if (parsed.data.password !== DEMO_PASSWORD) {
+        return res.status(401).json({ message: 'Invalid credentials' });
     }
     const user = await prisma_1.prisma.appUser.findFirst({
         where: {
-            ...(parsed.data.userId ? { id: parsed.data.userId } : {}),
-            ...(parsed.data.email ? { email: parsed.data.email } : {}),
+            email: parsed.data.email,
+            role: parsed.data.role,
             status: 'active',
         },
     });
@@ -33,6 +38,7 @@ exports.authRouter.post('/login', async (req, res) => {
             role: user.role,
             parlourId: user.parlourId,
             branchId: user.branchId,
+            memberId: user.memberId,
         },
     });
 });
@@ -54,6 +60,7 @@ exports.authRouter.get('/session', async (req, res) => {
             role: user.role,
             parlourId: user.parlourId,
             branchId: user.branchId,
+            memberId: user.memberId,
         },
     });
 });

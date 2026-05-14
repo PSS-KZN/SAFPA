@@ -3,6 +3,7 @@ import { RoleProvider, useRole } from './contexts/RoleContext';
 import AppLayout from './components/layout/AppLayout';
 import type { ReactNode } from 'react';
 import type { UserRole } from './types';
+import LoginPage from './pages/auth/LoginPage';
 
 // SAFPA Admin
 import SAFPADashboard from './pages/safpa/SAFPADashboard';
@@ -86,7 +87,12 @@ const roleDefaultPath: Record<string, string> = {
 };
 
 function ProtectedRoute({ allowedRoles, children }: { allowedRoles: UserRole[]; children: ReactNode }) {
-  const { currentUser } = useRole();
+  const { currentUser, isAuthenticated } = useRole();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   const defaultPath = roleDefaultPath[currentUser.role] || '/parlour';
 
   if (!allowedRoles.includes(currentUser.role)) {
@@ -101,11 +107,12 @@ const withAccess = (allowedRoles: UserRole[], element: ReactNode) => (
 );
 
 function AppRoutes() {
-  const { currentUser } = useRole();
+  const { currentUser, isAuthenticated } = useRole();
   const defaultPath = roleDefaultPath[currentUser.role] || '/parlour';
 
   return (
     <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to={defaultPath} replace /> : <LoginPage />} />
       <Route element={<AppLayout />}>
         {/* SAFPA Admin */}
         <Route path="/safpa" element={withAccess(['safpa_admin'], <SAFPADashboard />)} />
@@ -186,8 +193,8 @@ function AppRoutes() {
         <Route path="/audit-log" element={withAccess(['safpa_admin', 'parlour_owner'], <AuditLog />)} />
 
         {/* Default redirect based on role */}
-        <Route path="/" element={<Navigate to={defaultPath} replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Navigate to={isAuthenticated ? defaultPath : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
       </Route>
     </Routes>
   );

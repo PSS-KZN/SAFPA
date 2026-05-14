@@ -127,6 +127,17 @@ function parseImportRows(buffer) {
 }
 exports.membersRouter.get('/', async (req, res) => {
     const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+    const actor = req.actor;
+    if (actor?.role === 'policyholder_customer') {
+        if (!actor.memberId) {
+            return res.status(403).json({ message: 'Customer account is not linked to a member profile' });
+        }
+        const member = await prisma_1.prisma.member.findUnique({ where: { id: actor.memberId } });
+        if (!member || (actor.parlourId && member.parlourId !== actor.parlourId)) {
+            return res.json([]);
+        }
+        return res.json([member]);
+    }
     const members = await prisma_1.prisma.member.findMany({
         where: parlourId ? { parlourId } : undefined,
         orderBy: { createdAt: 'desc' },
@@ -167,6 +178,9 @@ exports.membersRouter.patch('/:id', async (req, res) => {
     const parsed = updateMemberSchema.safeParse(req.body);
     if (!parsed.success) {
         return res.status(400).json({ message: 'Invalid member payload', errors: parsed.error.flatten() });
+    }
+    if (req.actor?.role === 'policyholder_customer' && req.actor.memberId !== req.params.id) {
+        return res.status(403).json({ message: 'Customers may only update their own profile' });
     }
     try {
         const member = await prisma_1.prisma.member.update({

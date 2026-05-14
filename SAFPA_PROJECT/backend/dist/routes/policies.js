@@ -292,6 +292,20 @@ async function createPolicyFromImportRow(params) {
 exports.policiesRouter = (0, express_1.Router)();
 exports.policiesRouter.get('/', async (req, res) => {
     const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+    const actor = req.actor;
+    if (actor?.role === 'policyholder_customer') {
+        if (!actor.memberId) {
+            return res.status(403).json({ message: 'Customer account is not linked to a member profile' });
+        }
+        const policies = await prisma_1.prisma.policy.findMany({
+            where: {
+                memberId: actor.memberId,
+                ...(parlourId ? { parlourId } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        return res.json(policies);
+    }
     const policies = await prisma_1.prisma.policy.findMany({
         where: parlourId ? { parlourId } : undefined,
         orderBy: { createdAt: 'desc' },

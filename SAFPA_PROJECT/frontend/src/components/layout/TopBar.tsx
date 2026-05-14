@@ -2,7 +2,7 @@ import { useRole } from '../../contexts/RoleContext';
 import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import type { UserRole } from '../../types';
-import { Bell, Search } from 'lucide-react';
+import { Bell, LogOut, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,24 +16,8 @@ const roleLabels: Record<UserRole, string> = {
   policyholder_customer: 'Policyholder / Customer',
 };
 
-const roleDefaultPath: Record<UserRole, string> = {
-  safpa_admin: '/safpa',
-  parlour_owner: '/parlour',
-  branch_manager: '/parlour',
-  policy_admin: '/policy-admin',
-  collections_clerk: '/collections',
-  operations_coordinator: '/operations',
-  policyholder_customer: '/customer',
-};
-
-const allRoles: UserRole[] = [
-  'safpa_admin', 'parlour_owner', 'branch_manager',
-  'policy_admin', 'collections_clerk', 'operations_coordinator',
-  'policyholder_customer',
-];
-
 export default function TopBar() {
-  const { currentUser, switchRole } = useRole();
+  const { currentUser, logout } = useRole();
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
@@ -42,9 +26,9 @@ export default function TopBar() {
   const shellAccent = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
   const headerStyle = isTenantBranded ? { borderTop: `3px solid ${shellPrimary}` } : undefined;
 
-  const handleRoleSwitch = (role: UserRole) => {
-    switchRole(role);
-    navigate(roleDefaultPath[role]);
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
   };
 
   const notifications = [
@@ -83,18 +67,11 @@ export default function TopBar() {
           </div>
         )}
 
-        {/* Role Switcher */}
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-1.5 shadow-sm" style={isTenantBranded ? { borderColor: `${shellPrimary}33` } : undefined}>
-          <label className="text-xs text-slate-500 font-medium">Role</label>
-          <select
-            value={currentUser.role}
-            onChange={(e) => handleRoleSwitch(e.target.value as UserRole)}
-            className="text-sm bg-transparent text-slate-800 font-medium outline-none cursor-pointer hover:text-red-600 transition-colors"
-          >
-            {allRoles.map((role) => (
-              <option key={role} value={role} className="text-slate-800">{roleLabels[role]}</option>
-            ))}
-          </select>
+        <div className="hidden items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 shadow-sm md:flex" style={isTenantBranded ? { borderColor: `${shellPrimary}33` } : undefined}>
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Signed in as</div>
+            <div className="text-sm font-semibold text-slate-800">{roleLabels[currentUser.role]}</div>
+          </div>
         </div>
 
         {/* Notifications */}
@@ -126,6 +103,9 @@ export default function TopBar() {
 
         {/* User Info */}
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+          <button onClick={handleLogout} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+            <LogOut size={16} /> Logout
+          </button>
           <div className="text-right hidden sm:block">
             <div className="text-sm font-semibold text-slate-800">{currentUser.name}</div>
             <div className="text-xs text-slate-500">{roleLabels[currentUser.role]}</div>

@@ -26,6 +26,32 @@ export const communicationsRouter = Router();
 
 communicationsRouter.get('/', async (req, res) => {
   const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+  const actor = req.actor;
+
+  if (actor?.role === 'policyholder_customer') {
+    if (!actor.memberId) {
+      return res.status(403).json({ message: 'Customer account is not linked to a member profile' });
+    }
+
+    const member = await prisma.member.findUnique({ where: { id: actor.memberId } });
+    if (!member || (actor.parlourId && member.parlourId !== actor.parlourId)) {
+      return res.json([]);
+    }
+
+    const records = await prisma.communicationLog.findMany({
+      where: {
+        ...(parlourId ? { parlourId } : {}),
+        OR: [
+          { recipientContact: member.phone },
+          { recipientContact: member.email },
+          { recipientName: `${member.firstName} ${member.lastName}`.trim() },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json(records);
+  }
 
   const records = await prisma.communicationLog.findMany({
     where: parlourId ? { parlourId } : undefined,

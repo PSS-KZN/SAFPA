@@ -249,6 +249,23 @@ async function applySuccessfulPayment(
 
 paymentsRouter.get('/', async (req, res) => {
   const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+  const actor = req.actor;
+
+  if (actor?.role === 'policyholder_customer') {
+    if (!actor.memberId) {
+      return res.status(403).json({ message: 'Customer account is not linked to a member profile' });
+    }
+
+    const payments = await prisma.paymentTransaction.findMany({
+      where: {
+        memberId: actor.memberId,
+        ...(parlourId ? { parlourId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json(payments);
+  }
 
   const payments = await prisma.paymentTransaction.findMany({
     where: parlourId ? { parlourId } : undefined,
@@ -283,6 +300,10 @@ paymentsRouter.post('/', async (req, res) => {
   const policy = await prisma.policy.findUnique({ where: { id: parsed.data.policyId } });
   if (!policy) {
     return res.status(404).json({ message: 'Policy not found' });
+  }
+
+  if (req.actor?.role === 'policyholder_customer' && req.actor.memberId !== policy.memberId) {
+    return res.status(403).json({ message: 'Customers may only pay against their own policies' });
   }
 
   const member = await prisma.member.findUnique({ where: { id: policy.memberId } });

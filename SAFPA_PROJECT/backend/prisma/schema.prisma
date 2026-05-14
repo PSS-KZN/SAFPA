@@ -68,6 +68,7 @@ model AppUser {
   role      String
   parlourId String?
   branchId  String?
+  memberId  String?
   avatar    String?
   status    String
   createdAt DateTime @default(now())

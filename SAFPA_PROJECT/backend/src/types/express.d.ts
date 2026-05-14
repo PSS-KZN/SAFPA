@@ -8,6 +8,7 @@ declare global {
       role: string;
       parlourId?: string;
       branchId?: string;
+      memberId?: string;
       isAuthenticated: boolean;
     }
 

@@ -11,6 +11,7 @@ const roleEnum = z.enum([
   'policy_admin',
   'collections_clerk',
   'operations_coordinator',
+  'policyholder_customer',
 ]);
 
 const createUserSchema = z.object({
@@ -19,6 +20,7 @@ const createUserSchema = z.object({
   role: roleEnum,
   parlourId: z.string().min(1).optional(),
   branchId: z.string().min(1).optional(),
+  memberId: z.string().min(1).optional(),
   avatar: z.string().optional(),
   status: z.enum(['active', 'inactive']).default('active'),
 });
