@@ -277,7 +277,7 @@ export default function LoginPage() {
                   >
                     The Funeral Parlour
                     <br />
-                    Operations Platform
+                    Operations System
                   </p>
                   <div className="mt-3 h-px bg-gradient-to-r from-[var(--accent-soft)]/60 via-[var(--accent-soft)]/20 to-transparent" />
                 </div>
@@ -302,7 +302,7 @@ export default function LoginPage() {
               </h1>
 
               <p className="mt-8 max-w-md text-lg leading-relaxed text-[var(--panel-muted)] animate-gentleFade" style={{ animationDelay: '0.5s' }}>
-                Sign into the SAFPA Funeral Parlour Operations Platform to move between administration, member servicing, collections, and funeral case execution from one secure workspace.
+                Sign into the SAFPA Funeral Parlour Operations System to move between administration, member servicing, collections, and funeral case execution from one secure workspace.
               </p>
 
               <div className="mt-10 grid max-w-md grid-cols-2 gap-x-8 gap-y-4 animate-gentleFade" style={{ animationDelay: '0.62s' }}>
@@ -382,7 +382,7 @@ export default function LoginPage() {
                 >
                   Funeral Parlour
                   <br />
-                  Operations Platform
+                  Operations System
                 </h2>
 
                 <div className="mt-6 flex items-center gap-3">
