@@ -37,7 +37,7 @@ export interface NetworkDashboardData {
   collectionRate: number;
   monthlyCollections: Array<{ month: string; collected: number; due: number }>;
   policyStatusBreakdown: Array<{ status: string; count: number }>;
-  memberGrowth: Array<{ month: string; members: number }>;
+  parlourGrowth: Array<{ month: string; parlours: number }>;
   funeralCaseTrend: Array<{ month: string; total: number; open: number; closed: number }>;
   parlours: Array<{ id: string; name: string; province: string; tier: string; status: string }>;
   usageSummary: Array<{

@@ -13,6 +13,11 @@ interface MemberGrowthPoint {
   members: number;
 }
 
+interface ParlourGrowthPoint {
+  month: string;
+  parlours: number;
+}
+
 interface FuneralCaseTrendPoint {
   month: string;
   total: number;
@@ -87,6 +92,20 @@ function buildMemberGrowthSeries(members: Array<{ joinDate: string; createdAt: D
     .map(([month, count]) => ({ month, members: count }));
 }
 
+function buildParlourGrowthSeries(parlours: Array<{ joinedDate?: string | null; createdAt: Date }>): ParlourGrowthPoint[] {
+  const parlourMonthMap = new Map<string, number>();
+
+  for (const parlour of parlours) {
+    const key = parlour.joinedDate ? monthKey(parlour.joinedDate) : monthKeyFromDate(parlour.createdAt);
+    parlourMonthMap.set(key, (parlourMonthMap.get(key) || 0) + 1);
+  }
+
+  return Array.from(parlourMonthMap.entries())
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .slice(-6)
+    .map(([month, count]) => ({ month, parlours: count }));
+}
+
 function buildFuneralCaseTrendSeries(funeralCases: Array<{ dateOfDeath: string; createdAt: Date; status: string }>): FuneralCaseTrendPoint[] {
   const monthlyMap = new Map<string, FuneralCaseTrendPoint>();
 
@@ -121,6 +140,18 @@ function inDateRange(dateText: string, startDate?: string, endDate?: string): bo
   }
 
   return true;
+}
+
+function normalizeDateText(dateText?: string | Date | null): string {
+  if (!dateText) {
+    return '';
+  }
+
+  if (dateText instanceof Date) {
+    return dateText.toISOString().slice(0, 10);
+  }
+
+  return dateText.slice(0, 10);
 }
 
 function currentMonthRange(): { startDate: string; endDate: string } {
@@ -342,6 +373,14 @@ async function buildParlourDashboard(params: {
     ? productFilteredPolicies.filter((policy) => inDateRange(policy.startDate, params.startDate, params.endDate))
     : productFilteredPolicies;
 
+  const filteredMemberIdSet = new Set(filteredPolicies.map((policy) => policy.memberId));
+  const dateFilteredMembers = (params.startDate || params.endDate)
+    ? members.filter((member) => inDateRange(normalizeDateText(member.joinDate || member.createdAt), params.startDate, params.endDate))
+    : members;
+  const filteredMembers = params.productName || params.startDate || params.endDate
+    ? dateFilteredMembers.filter((member) => !filteredMemberIdSet.size || filteredMemberIdSet.has(member.id))
+    : members;
+
   const policyIdSet = new Set(filteredPolicies.map((policy) => policy.id));
   const filteredPayments = payments.filter((payment) => {
     if (params.branchId && !policyIdSet.has(payment.policyId)) {
@@ -376,7 +415,7 @@ async function buildParlourDashboard(params: {
 
   const activePolicies = filteredPolicies.filter((policy) => policy.status === 'active').length;
   const totalPolicies = filteredPolicies.length;
-  const totalMembers = members.length;
+  const totalMembers = filteredMembers.length;
   const openFuneralCases = filteredFuneralCases.filter((funeralCase) => isOpenFuneralCase(funeralCase.status)).length;
 
   const premiumsDue = filteredPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
@@ -403,7 +442,7 @@ async function buildParlourDashboard(params: {
   const branchPerformance = branches
     .filter((branch) => !params.branchId || branch.id === params.branchId)
     .map((branch) => {
-      const branchMembers = members.filter((member) => member.branchId === branch.id);
+      const branchMembers = filteredMembers.filter((member) => member.branchId === branch.id);
       const branchMemberSet = new Set(branchMembers.map((member) => member.id));
       const branchPolicies = filteredPolicies.filter((policy) => branchMemberSet.has(policy.memberId));
       const branchPolicySet = new Set(branchPolicies.map((policy) => policy.id));
@@ -439,7 +478,7 @@ async function buildParlourDashboard(params: {
     .map(([status, count]) => ({ status, count }))
     .sort((left, right) => right.count - left.count);
 
-  const memberGrowth = buildMemberGrowthSeries(members);
+  const memberGrowth = buildMemberGrowthSeries(filteredMembers);
   const funeralCaseTrend = buildFuneralCaseTrendSeries(filteredFuneralCases);
 
   return {
@@ -576,7 +615,7 @@ reportsRouter.get('/network', async (_req, res) => {
   }
   const policyStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
 
-  const memberGrowth = buildMemberGrowthSeries(members);
+  const parlourGrowth = buildParlourGrowthSeries(parlours);
   const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);
 
   return res.json({
@@ -593,7 +632,7 @@ reportsRouter.get('/network', async (_req, res) => {
     collectionRate,
     monthlyCollections,
     policyStatusBreakdown,
-    memberGrowth,
+    parlourGrowth,
     funeralCaseTrend,
     parlours,
     usageSummary,

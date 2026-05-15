@@ -41,6 +41,25 @@ function formatMonthLabel(value: string): string {
   return date.toLocaleString('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
+function normalizeDateValue(value?: string | null): string {
+  return value ? value.slice(0, 10) : '';
+}
+
+function isWithinSelectedDates(value: string | undefined, startDate?: string, endDate?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = normalizeDateValue(value);
+  if (startDate && normalized < startDate) {
+    return false;
+  }
+  if (endDate && normalized > endDate) {
+    return false;
+  }
+  return true;
+}
+
 type CsvValue = string | number;
 
 function csvCell(value: CsvValue): string {
@@ -152,6 +171,29 @@ function MemberGrowthChart({
           <Tooltip />
           <Line type="monotone" dataKey="members" stroke="#e31837" strokeWidth={2} name="New Members" />
         </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ParlourGrowthChart({
+  title,
+  data,
+}: {
+  title: string;
+  data: Array<{ month: string; parlours: number }>;
+}) {
+  return (
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+      <h3 className="font-semibold mb-4">{title}</h3>
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="month" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="parlours" fill="#0f766e" name="New Parlours" radius={[4, 4, 0, 0]} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
@@ -411,20 +453,27 @@ function OperationsKPIGrid({
 
 function UsageSummaryTable({
   selectedMonth,
+  reportMonth,
+  setReportMonth,
   rows,
 }: {
   selectedMonth: string;
+  reportMonth: string;
+  setReportMonth: (value: string) => void;
   rows: NetworkDashboardData['usageSummary'];
 }) {
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 lg:col-span-2">
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h3 className="font-semibold">Platform Usage Activity</h3>
           <p className="mt-1 text-sm text-slate-500">Month-scoped usage tracking for {formatMonthLabel(selectedMonth)}.</p>
         </div>
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-          {rows.length.toLocaleString()} parlours tracked
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+          <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+            {rows.length.toLocaleString()} parlours tracked
+          </div>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -464,7 +513,15 @@ function UsageSummaryTable({
   );
 }
 
-function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
+function NetworkAdminView({
+  data,
+  reportMonth,
+  setReportMonth,
+}: {
+  data: NetworkDashboardData;
+  reportMonth: string;
+  setReportMonth: (value: string) => void;
+}) {
   const activeParlourRate = data.totalParlours > 0 ? (data.activeParlours / data.totalParlours) * 100 : 0;
   const averageMembersPerParlour = data.totalParlours > 0 ? data.totalMembers / data.totalParlours : 0;
   const averagePoliciesPerParlour = data.totalParlours > 0 ? data.totalPolicies / data.totalParlours : 0;
@@ -529,6 +586,8 @@ function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UsageSummaryTable selectedMonth={data.selectedMonth} reportMonth={reportMonth} setReportMonth={setReportMonth} rows={data.usageSummary} />
+
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold mb-4">Network Collections Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -564,9 +623,7 @@ function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
 
         <MonthlyPerformanceTable title="Collections Efficiency by Month" rows={monthlyRows} />
 
-        <UsageSummaryTable selectedMonth={data.selectedMonth} rows={data.usageSummary} />
-
-        <MemberGrowthChart title="Member Growth" data={data.memberGrowth} />
+        <ParlourGrowthChart title="Parlour Growth" data={data.parlourGrowth} />
         <FuneralCaseTrendChart title="Network Funeral Case Trend" data={data.funeralCaseTrend} />
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 lg:col-span-2">
@@ -669,13 +726,40 @@ export default function ReportsDashboard() {
 
           if (isOperationsRole) {
             const [caseRecords, documentRecords, communicationRecords] = operationsData;
-            const scopedCases = currentUser.branchId
+            const branchScopedCases = currentUser.branchId
               ? caseRecords.filter((item) => item.branchId === currentUser.branchId)
               : caseRecords;
+            const dateScopedCases = (startDate || endDate)
+              ? branchScopedCases.filter((item) => isWithinSelectedDates(item.dateOfDeath || item.funeralDate || item.createdAt, startDate || undefined, endDate || undefined))
+              : branchScopedCases;
+            const scopedCaseIds = new Set(dateScopedCases.map((item) => item.id));
+            const dateScopedDocuments = documentRecords.filter((item) => {
+              if (!scopedCaseIds.has(item.entityId)) {
+                return false;
+              }
 
-            setFuneralCases(scopedCases);
-            setDocuments(documentRecords);
-            setCommunications(communicationRecords);
+              if (startDate || endDate) {
+                return isWithinSelectedDates(item.uploadedAt, startDate || undefined, endDate || undefined);
+              }
+
+              return true;
+            });
+            const dateScopedCommunications = communicationRecords.filter((item) => {
+              const relatedCaseId = item.metadata?.funeralCaseId;
+              if (relatedCaseId && !scopedCaseIds.has(relatedCaseId)) {
+                return false;
+              }
+
+              if (startDate || endDate) {
+                return isWithinSelectedDates(item.sentAt, startDate || undefined, endDate || undefined);
+              }
+
+              return true;
+            });
+
+            setFuneralCases(dateScopedCases);
+            setDocuments(dateScopedDocuments);
+            setCommunications(dateScopedCommunications);
           } else {
             setFuneralCases([]);
             setDocuments([]);
@@ -874,7 +958,7 @@ export default function ReportsDashboard() {
           Math.max(row.due - row.collected, 0),
         ])),
         ...buildCsvSection('Policy Status Breakdown', ['Status', 'Policies'], networkData.policyStatusBreakdown.map((row) => [humanizeLabel(row.status), row.count])),
-        ...buildCsvSection('Member Growth', ['Month', 'New Members'], networkData.memberGrowth.map((row) => [row.month, row.members])),
+        ...buildCsvSection('Parlour Growth', ['Month', 'New Parlours'], networkData.parlourGrowth.map((row) => [row.month, row.parlours])),
         ...buildCsvSection('Funeral Case Trend', ['Month', 'Total Cases', 'Open Cases', 'Closed Cases'], networkData.funeralCaseTrend.map((row) => [row.month, row.total, row.open, row.closed])),
         ...buildCsvSection('Parlour Footprint', ['Parlour', 'Province', 'Tier', 'Status'], networkData.parlours.map((row) => [row.name, row.province, row.tier, row.status])),
       ];
@@ -1000,13 +1084,6 @@ export default function ReportsDashboard() {
         </button>
       </div>
 
-      {isNetworkRole && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-          <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
-          <div className="text-sm text-slate-500">Usage activity and current-month KPIs are scoped to the selected month.</div>
-        </div>
-      )}
-
       {!isNetworkRole && (
         <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-3">
           <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
@@ -1029,7 +1106,7 @@ export default function ReportsDashboard() {
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
       {loading && <div className="mb-4 rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">Loading reports...</div>}
 
-      {isNetworkRole && networkData && <NetworkAdminView data={networkData} />}
+      {isNetworkRole && networkData && <NetworkAdminView data={networkData} reportMonth={reportMonth} setReportMonth={setReportMonth} />}
 
       {!isNetworkRole && data && (
         <>
