@@ -149,22 +149,22 @@ export default function SAFPADashboard() {
         </div>
       </div>
 
-      {/* Member Growth + Parlour Table */}
+      {/* Parlour Growth + Parlour Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="font-semibold text-slate-900 text-lg">Member Growth</h3>
-              <p className="text-[13px] text-slate-500">6-month acquisition trend</p>
+              <h3 className="font-semibold text-slate-900 text-lg">Parlour Growth</h3>
+              <p className="text-[13px] text-slate-500">6-month parlour onboarding trend</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={stats.memberGrowth}>
+            <LineChart data={stats.parlourGrowth}>
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} dy={10} />
               <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} dx={-10} />
               <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-              <Line type="monotone" dataKey="members" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="parlours" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
