@@ -37,6 +37,14 @@ function createFormState(parlour: Parlour): ParlourFormState {
   };
 }
 
+const onboardingStepDefinitions = [
+  { label: 'Business Profile', detail: 'Capture the core parlour profile, contacts, and launch ownership.', progress: 20 },
+  { label: 'Branding & Logo', detail: 'Set up visual identity, colours, and branded web presence.', progress: 40 },
+  { label: 'Products Setup', detail: 'Configure products, packages, and billing defaults.', progress: 60 },
+  { label: 'Branch Configuration', detail: 'Add branches, assign managers, and confirm operational scope.', progress: 80 },
+  { label: 'Go Live', detail: 'Confirm readiness and move the tenant into active service.', progress: 100 },
+] as const;
+
 export default function ParlourDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,19 +102,34 @@ export default function ParlourDetail() {
   if (loading) return <div className="text-center py-12 text-slate-500">Loading parlour...</div>;
   if (!parlour) return <div className="text-center py-12 text-slate-500">Parlour not found</div>;
 
-  const onboardingSteps = [
-    { label: 'Business Profile', detail: 'Capture the core parlour profile, contacts, and launch ownership.', done: parlour.onboardingProgress >= 20 },
-    { label: 'Branding & Logo', detail: 'Set up visual identity, colours, and branded web presence.', done: parlour.onboardingProgress >= 40 },
-    { label: 'Products Setup', detail: 'Configure products, packages, and billing defaults.', done: parlour.onboardingProgress >= 60 },
-    { label: 'Branch Configuration', detail: 'Add branches, assign managers, and confirm operational scope.', done: parlour.onboardingProgress >= 80 },
-    { label: 'Go Live', detail: 'Confirm readiness and move the tenant into active service.', done: parlour.onboardingProgress >= 100 },
-  ];
+  const onboardingProgress = isEditing && form ? form.onboardingProgress : parlour.onboardingProgress;
+  const onboardingSteps = onboardingStepDefinitions.map((step) => ({
+    ...step,
+    done: onboardingProgress >= step.progress,
+  }));
 
   const currentStepIndex = onboardingSteps.findIndex((step) => !step.done);
   const currentStep = currentStepIndex === -1 ? onboardingSteps[onboardingSteps.length - 1] : onboardingSteps[currentStepIndex];
 
   const updateForm = <K extends keyof ParlourFormState>(field: K, value: ParlourFormState[K]) => {
     setForm((previous) => (previous ? { ...previous, [field]: value } : previous));
+  };
+
+  const toggleOnboardingStep = (stepProgress: number, checked: boolean) => {
+    setForm((previous) => {
+      if (!previous) {
+        return previous;
+      }
+
+      const nextProgress = checked
+        ? stepProgress
+        : onboardingStepDefinitions.findLast((step) => step.progress < stepProgress)?.progress ?? 0;
+
+      return {
+        ...previous,
+        onboardingProgress: nextProgress,
+      };
+    });
   };
 
   const startEdit = () => {
@@ -256,29 +279,37 @@ export default function ParlourDetail() {
 
         {/* Onboarding Progress */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
-          <h3 className="font-semibold mb-4">Onboarding Progress — {parlour.onboardingProgress}%</h3>
+          <h3 className="font-semibold mb-4">Onboarding Progress — {onboardingProgress}%</h3>
           <div className="h-2 bg-slate-200 rounded-full mb-4">
-            <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${parlour.onboardingProgress}%` }} />
+            <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${onboardingProgress}%` }} />
           </div>
           <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <div className="font-semibold">Current step: {currentStep.label}</div>
             <div className="mt-1 text-amber-700">{currentStep.detail}</div>
           </div>
           {isEditing && form && (
-            <div className="mb-4">
-              <label className="mb-1 block text-sm text-slate-600">Update onboarding progress</label>
-              <input type="range" min={0} max={100} step={5} value={form.onboardingProgress} onChange={(event) => updateForm('onboardingProgress', Number(event.target.value))} className="w-full" />
-              <div className="mt-1 text-xs text-slate-500">{form.onboardingProgress}% complete</div>
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Mark each onboarding task complete to advance progress automatically.
             </div>
           )}
           <div className="space-y-2">
             {onboardingSteps.map((step) => (
               <div key={step.label} className="rounded-lg border border-slate-100 px-3 py-3 text-sm">
                 <div className="flex items-center gap-2">
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${step.done ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
-                  {step.done && <span className="text-white text-xs">✓</span>}
-                </div>
+                {isEditing && form ? (
+                  <input
+                    type="checkbox"
+                    checked={step.done}
+                    onChange={(event) => toggleOnboardingStep(step.progress, event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                  />
+                ) : (
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${step.done ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
+                    {step.done && <span className="text-white text-xs">✓</span>}
+                  </div>
+                )}
                 <span className={step.done ? 'text-slate-700' : 'text-slate-400'}>{step.label}</span>
+                <span className="ml-auto text-xs text-slate-400">{step.progress}%</span>
                 </div>
                 <div className={`mt-1 pl-6 text-xs ${step.done ? 'text-slate-500' : 'text-slate-400'}`}>{step.detail}</div>
               </div>
