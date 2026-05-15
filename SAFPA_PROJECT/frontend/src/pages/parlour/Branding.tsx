@@ -24,6 +24,8 @@ type BrandingFormState = {
   customDomainNotes: string;
 };
 
+type BrandingSection = 'identity' | 'profile' | 'website';
+
 const templateOptions: Array<{ value: Parlour['websiteTemplate']; label: string; description: string }> = [
   { value: 'heritage', label: 'Heritage', description: 'Traditional, dignified layout with stronger ceremony and trust cues.' },
   { value: 'modern', label: 'Modern', description: 'Cleaner presentation with bolder CTAs and polished service sections.' },
@@ -52,6 +54,30 @@ function createFormFromParlour(parlour: Parlour): BrandingFormState {
 
 function formsEqual(left: BrandingFormState, right: BrandingFormState): boolean {
   return Object.entries(left).every(([key, value]) => value === right[key as keyof BrandingFormState]);
+}
+
+function sectionFields(section: BrandingSection): Array<keyof BrandingFormState> {
+  if (section === 'identity') {
+    return ['logo', 'primaryColor', 'secondaryColor', 'accentColor'];
+  }
+
+  if (section === 'profile') {
+    return ['tagline', 'businessDescription', 'supportEmail', 'supportPhone', 'physicalAddress'];
+  }
+
+  return ['websiteTemplate', 'websiteSubdomain', 'customDomain', 'customDomainStatus', 'customDomainDnsTarget', 'customDomainNotes'];
+}
+
+function getSectionLabel(section: BrandingSection): string {
+  if (section === 'identity') {
+    return 'Brand identity';
+  }
+
+  if (section === 'profile') {
+    return 'Business profile';
+  }
+
+  return 'Website setup';
 }
 
 function hexToRgb(hex: string) {
@@ -208,7 +234,19 @@ export default function Branding() {
     setNotice(null);
   };
 
-  const persistBranding = async (mode: 'auto' | 'published') => {
+  const isSectionDirty = (section: BrandingSection) => {
+    if (!form || !initialForm) {
+      return false;
+    }
+
+    if (section === 'identity' && selectedLogoFile) {
+      return true;
+    }
+
+    return sectionFields(section).some((field) => form[field] !== initialForm[field]);
+  };
+
+  const persistBranding = async (mode: 'auto' | 'published', section?: BrandingSection) => {
     if (!form || !parlour) {
       return;
     }
@@ -239,15 +277,19 @@ export default function Branding() {
 
       applyBrandingState(updated);
       setSelectedLogoFile(null);
-      setNotice(
-        updated.websitePublishStatus === 'published'
-          ? 'Branding saved and website published.'
-          : updated.websitePublishStatus === 'ready'
+      if (mode === 'published') {
+        setNotice('Branding saved and website published.');
+      } else if (section) {
+        setNotice(`${getSectionLabel(section)} saved successfully.`);
+      } else {
+        setNotice(
+          updated.websitePublishStatus === 'ready'
             ? 'Branding saved. Website is ready to publish.'
             : updated.websitePublishStatus === 'needs_review'
               ? 'Branding saved. Website is awaiting review.'
               : 'Branding draft saved successfully.'
-      );
+        );
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save branding settings');
     } finally {
@@ -311,9 +353,15 @@ export default function Branding() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Palette size={18} className="text-slate-500" />
-              <h2 className="text-lg font-semibold">Brand Identity</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Palette size={18} className="text-slate-500" />
+                <h2 className="text-lg font-semibold">Brand Identity</h2>
+              </div>
+              <button onClick={() => void persistBranding('auto', 'identity')} disabled={saving || !isSectionDirty('identity')} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <Save size={16} />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
@@ -356,9 +404,15 @@ export default function Branding() {
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Globe size={18} className="text-slate-500" />
-              <h2 className="text-lg font-semibold">Business Profile</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Globe size={18} className="text-slate-500" />
+                <h2 className="text-lg font-semibold">Business Profile</h2>
+              </div>
+              <button onClick={() => void persistBranding('auto', 'profile')} disabled={saving || !isSectionDirty('profile')} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <Save size={16} />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
             <div className="grid grid-cols-1 gap-4">
               <div>
@@ -387,9 +441,15 @@ export default function Branding() {
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Globe size={18} className="text-slate-500" />
-              <h2 className="text-lg font-semibold">Website Setup</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Globe size={18} className="text-slate-500" />
+                <h2 className="text-lg font-semibold">Website Setup</h2>
+              </div>
+              <button onClick={() => void persistBranding('auto', 'website')} disabled={saving || !isSectionDirty('website')} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <Save size={16} />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
             <div className="space-y-4">
               <div>
