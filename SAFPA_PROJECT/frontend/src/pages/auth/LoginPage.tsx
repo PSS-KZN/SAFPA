@@ -33,6 +33,16 @@ const roleDescriptions: Record<UserRole, string> = {
   policyholder_customer: 'Access the customer portal for policies, payments, documents, and communication history.',
 };
 
+const roleLabels: Record<UserRole, string> = {
+  safpa_admin: 'SAFPA Admin',
+  parlour_owner: 'Parlour Owner',
+  branch_manager: 'Branch Manager',
+  policy_admin: 'Policy Admin',
+  collections_clerk: 'Collections Clerk',
+  operations_coordinator: 'Operations Coordinator',
+  policyholder_customer: 'Policyholder / Customer',
+};
+
 function getLoginTheme(): CSSProperties {
   return {
     '--page-bg': '#f5f0e8',
@@ -248,38 +258,29 @@ export default function LoginPage() {
             <div className="pointer-events-none absolute inset-8 border border-white/5" />
             <div className="pointer-events-none absolute inset-10 border border-white/[0.03]" />
 
-            <div className="relative z-10 animate-softFade" style={{ animationDelay: '0.1s' }}>
-              <div className="flex items-center gap-5">
-                <div className="flex h-16 w-16 items-center justify-center rounded-sm bg-white p-2 shadow-2xl">
+            <div className="relative z-10 my-auto py-12">
+              <div className="animate-gentleFade mb-8 flex items-center gap-5" style={{ animationDelay: '0.32s' }}>
+                <div className="flex h-24 w-24 items-center justify-center rounded-sm bg-white p-3 shadow-2xl shrink-0">
                   <img src="/safpa-logo.png" alt="SAFPA" className="h-full w-full object-contain" />
                 </div>
-                <div>
-                  <div className="h-px w-5 bg-[var(--accent-soft)]" />
-                  <div className="mt-3 text-xs uppercase tracking-[0.34em] text-[var(--panel-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                    SAFPA Federation
-                  </div>
+                <div className="min-w-0">
+                  <div className="h-px w-24 bg-[var(--accent-soft)]" />
+                  <p
+                    className="mt-4 uppercase text-[var(--accent-soft)]"
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontSize: 'clamp(0.9rem, 1.4vw, 1.15rem)',
+                      letterSpacing: '0.22em',
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    The Funeral Parlour
+                    <br />
+                    Operations Platform
+                  </p>
+                  <div className="mt-3 h-px bg-gradient-to-r from-[var(--accent-soft)]/60 via-[var(--accent-soft)]/20 to-transparent" />
                 </div>
-              </div>
-            </div>
-
-            <div className="relative z-10 my-auto py-12">
-              <div className="animate-drawLine mb-8 h-px w-24 bg-[var(--accent-soft)]" style={{ animationDelay: '0.25s' }} />
-              <div className="animate-gentleFade mb-8" style={{ animationDelay: '0.32s' }}>
-                <p
-                  className="uppercase text-[var(--accent-soft)]"
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 'clamp(0.9rem, 1.4vw, 1.15rem)',
-                    letterSpacing: '0.22em',
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  The Funeral Parlour
-                  <br />
-                  Operations Platform
-                </p>
-                <div className="mt-3 h-px bg-gradient-to-r from-[var(--accent-soft)]/60 via-[var(--accent-soft)]/20 to-transparent" />
               </div>
 
               <h1
@@ -301,7 +302,7 @@ export default function LoginPage() {
               </h1>
 
               <p className="mt-8 max-w-md text-lg leading-relaxed text-[var(--panel-muted)] animate-gentleFade" style={{ animationDelay: '0.5s' }}>
-                {roleDescriptions[role]}
+                Sign into the SAFPA Funeral Parlour Operations Platform to move between administration, member servicing, collections, and funeral case execution from one secure workspace.
               </p>
 
               <div className="mt-10 grid max-w-md grid-cols-2 gap-x-8 gap-y-4 animate-gentleFade" style={{ animationDelay: '0.62s' }}>
@@ -327,6 +328,17 @@ export default function LoginPage() {
                 <p className="mt-3 text-base italic text-[var(--panel-muted)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   Where memory is held, dignity remains.
                 </p>
+                <div className="mt-5 max-w-md border-l border-[var(--accent-soft)]/45 pl-4">
+                  <div className="text-xs uppercase tracking-[0.28em] text-[var(--accent-soft)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    Selected workspace
+                  </div>
+                  <p className="mt-2 text-lg text-[var(--panel-ink)]" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}>
+                    {roleLabels[role]}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--panel-muted)]">
+                    {roleDescriptions[role]}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-12 animate-gentleFade text-right" style={{ animationDelay: '0.82s' }}>
@@ -342,7 +354,7 @@ export default function LoginPage() {
 
           <section className="relative flex items-center justify-center px-6 py-16 sm:px-12 lg:px-20">
             <div className="absolute left-1/2 top-10 -translate-x-1/2 lg:hidden">
-              <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-white p-1.5 shadow-md">
+              <div className="flex h-20 w-20 items-center justify-center rounded-sm bg-white p-2.5 shadow-md">
                 <img src="/safpa-logo.png" alt="SAFPA" className="h-full w-full object-contain" />
               </div>
             </div>
