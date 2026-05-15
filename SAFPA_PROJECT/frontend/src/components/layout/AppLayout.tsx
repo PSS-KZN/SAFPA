@@ -2,15 +2,15 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { TenantBrandingProvider } from '../../contexts/TenantBrandingContext';
-import { useTenantBranding } from '../../contexts/useTenantBranding';
 
 function AppShell() {
-  const { parlourBrand, isTenantBranded } = useTenantBranding();
-
   return (
     <div
-      className="flex h-screen overflow-hidden bg-slate-50 text-slate-800 selection:bg-red-500/20"
-      style={isTenantBranded ? { background: `linear-gradient(180deg, ${parlourBrand?.primaryColor ?? '#f8fafc'}14 0%, #f8fafc 18%)` } : undefined}
+      className="flex h-screen overflow-hidden selection:bg-[var(--app-accent)]/20"
+      style={{
+        background: 'linear-gradient(180deg, rgba(255, 250, 242, 0.98) 0%, rgba(245, 240, 232, 1) 24%, rgba(239, 230, 220, 0.96) 100%)',
+        color: 'var(--app-ink)',
+      }}
     >
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative">

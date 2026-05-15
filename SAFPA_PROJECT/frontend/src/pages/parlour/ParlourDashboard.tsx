@@ -1,5 +1,4 @@
 import { useRole } from '../../contexts/RoleContext';
-import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import { Users, FileText, Wallet, HeartHandshake, TrendingUp, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -27,7 +26,6 @@ interface DashboardState {
 
 export default function ParlourDashboard() {
   const { currentUser } = useRole();
-  const { parlourBrand, isTenantBranded } = useTenantBranding();
   const parlourId = currentUser.parlourId || 'p1';
   const [parlour, setParlour] = useState<Parlour | null>(null);
   const [stats, setStats] = useState<DashboardState | null>(null);
@@ -120,14 +118,14 @@ export default function ParlourDashboard() {
     { label: 'New Leads', value: stats.newLeads, icon: <UserPlus size={24} className="text-white" />, gradient: 'from-slate-800 to-slate-900' },
   ];
 
-  const dashboardPrimary = isTenantBranded ? parlourBrand?.primaryColor ?? parlour.primaryColor : parlour.primaryColor;
-  const dashboardSecondary = isTenantBranded ? parlourBrand?.secondaryColor ?? '#0f172a' : '#0f172a';
-  const dashboardAccent = isTenantBranded ? parlourBrand?.accentColor ?? '#e31837' : '#e31837';
+  const dashboardPrimary = '#7a2e2e';
+  const dashboardSecondary = '#2a221c';
+  const dashboardAccent = '#c89a6d';
   const heroAddress = parlour.physicalAddress || `${parlour.region}, ${parlour.province}`;
 
   return (
     <div className="relative z-10 animate-fade-in-up">
-      <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="mb-8 overflow-hidden rounded-3xl border bg-[var(--app-surface)] shadow-sm" style={{ borderColor: 'var(--app-border-soft)' }}>
         <div className="grid grid-cols-1 gap-8 px-8 py-8 md:grid-cols-[1.2fr_0.8fr]" style={{ background: `linear-gradient(135deg, ${dashboardPrimary}, ${dashboardSecondary})` }}>
           <div className="text-white">
             <div className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-white/65">Internal tenant view</div>
@@ -168,7 +166,7 @@ export default function ParlourDashboard() {
             </div>
             <div>
               <p className="text-[13px] text-slate-500 font-semibold uppercase tracking-wider">{c.label}</p>
-              <p className="text-3xl font-bold text-slate-800 mt-1 tracking-tight">{c.value}</p>
+              <p className="mt-1 text-3xl font-bold tracking-tight text-[var(--app-ink)]">{c.value}</p>
             </div>
           </div>
         ))}
@@ -176,27 +174,27 @@ export default function ParlourDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         <div className="card p-6">
-          <h3 className="font-semibold text-slate-800 mb-6 text-lg">Monthly Collections</h3>
+          <h3 className="mb-6 text-lg font-semibold text-[var(--app-ink)]">Monthly Collections</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={stats.monthlyCollections}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} />
-              <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b5d4f' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#6b5d4f' }} tickFormatter={(v) => `R${Number(v).toLocaleString()}`} axisLine={false} tickLine={false} />
+              <Tooltip formatter={formatCurrencyTooltip} cursor={{ fill: '#f5f0e8' }} contentStyle={{ borderRadius: '8px', border: '1px solid #d8cab6', boxShadow: '0 4px 6px -1px rgba(42, 34, 28, 0.1)', backgroundColor: '#fffaf2' }} />
               <Bar dataKey="collected" fill={dashboardAccent} name="Collected" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="due" fill="#cbd5e1" name="Due" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="due" fill="#d8cab6" name="Due" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="card p-6">
-          <h3 className="font-semibold text-slate-800 mb-6 text-lg">Member Growth</h3>
+          <h3 className="mb-6 text-lg font-semibold text-[var(--app-ink)]">Member Growth</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={memberGrowth}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b5d4f' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#6b5d4f' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #d8cab6', boxShadow: '0 4px 6px -1px rgba(42, 34, 28, 0.1)', backgroundColor: '#fffaf2' }} />
               <Line type="monotone" dataKey="members" stroke={dashboardPrimary} strokeWidth={3} dot={{ r: 4, fill: dashboardPrimary, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -205,17 +203,17 @@ export default function ParlourDashboard() {
 
       {/* Recent Activity */}
       <div className="card p-6">
-        <h3 className="font-semibold text-slate-800 mb-6 text-lg">Recent Activity</h3>
+        <h3 className="mb-6 text-lg font-semibold text-[var(--app-ink)]">Recent Activity</h3>
         <div className="space-y-4 text-sm">
           {activity.map((a, i) => (
-            <div key={i} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/80 transition-colors">
+            <div key={i} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors hover:bg-[rgba(122,46,46,0.04)]" style={{ borderColor: 'rgba(122, 46, 46, 0.08)', background: 'rgba(255, 250, 242, 0.74)' }}>
               <div className="flex items-center gap-3">
-                <span className="text-slate-800">{a.text}</span>
+                <span className="text-[var(--app-ink)]">{a.text}</span>
               </div>
-              <span className="text-slate-500 text-xs font-medium whitespace-nowrap ml-4">{a.time}</span>
+              <span className="ml-4 whitespace-nowrap text-xs font-medium text-[var(--app-ink-muted)]">{a.time}</span>
             </div>
           ))}
-          {activity.length === 0 && <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-slate-500">No recent activity found.</div>}
+          {activity.length === 0 && <div className="rounded-xl border p-4 text-[var(--app-ink-muted)]" style={{ borderColor: 'rgba(122, 46, 46, 0.08)', background: 'rgba(255, 250, 242, 0.74)' }}>No recent activity found.</div>}
         </div>
       </div>
     </div>

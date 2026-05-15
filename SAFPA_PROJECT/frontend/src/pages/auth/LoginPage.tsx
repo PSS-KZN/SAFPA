@@ -33,29 +33,27 @@ const roleDescriptions: Record<UserRole, string> = {
   policyholder_customer: 'Access the customer portal for policies, payments, documents, and communication history.',
 };
 
-function getLoginTheme(selectedRole: UserRole): CSSProperties {
-  const isSafpaAdmin = selectedRole === 'safpa_admin';
-
+function getLoginTheme(): CSSProperties {
   return {
-    '--page-bg': isSafpaAdmin ? '#f5f0e8' : '#f4f7fb',
-    '--page-overlay-a': isSafpaAdmin ? 'rgba(122, 46, 46, 0.04)' : 'rgba(227, 24, 55, 0.06)',
-    '--page-overlay-b': isSafpaAdmin ? 'rgba(139, 90, 60, 0.05)' : 'rgba(15, 23, 42, 0.05)',
-    '--panel-bg': isSafpaAdmin ? '#1f1815' : '#0a0f1c',
-    '--panel-overlay-a': isSafpaAdmin ? 'rgba(122, 46, 46, 0.25)' : 'rgba(227, 24, 55, 0.28)',
-    '--panel-overlay-b': isSafpaAdmin ? 'rgba(139, 90, 60, 0.12)' : 'rgba(227, 24, 55, 0.12)',
-    '--panel-ink': isSafpaAdmin ? '#f5f0e8' : '#f8fafc',
-    '--panel-muted': isSafpaAdmin ? '#d6ccc0' : '#cbd5e1',
-    '--accent': isSafpaAdmin ? '#7a2e2e' : '#e31837',
-    '--accent-strong': isSafpaAdmin ? '#5e2323' : '#be123c',
-    '--accent-soft': isSafpaAdmin ? '#c89a6d' : '#fda4af',
-    '--ink': isSafpaAdmin ? '#2a221c' : '#0f172a',
-    '--ink-muted': isSafpaAdmin ? '#6b5d4f' : '#475569',
-    '--line': isSafpaAdmin ? '#c9bba6' : '#cbd5e1',
-    '--line-soft': isSafpaAdmin ? 'rgba(122, 46, 46, 0.14)' : 'rgba(227, 24, 55, 0.14)',
-    '--surface': isSafpaAdmin ? 'rgba(255, 252, 248, 0.82)' : 'rgba(255, 255, 255, 0.84)',
-    '--surface-strong': isSafpaAdmin ? '#fffaf2' : '#ffffff',
-    '--surface-soft': isSafpaAdmin ? 'rgba(122, 46, 46, 0.04)' : 'rgba(227, 24, 55, 0.05)',
-    '--shadow': isSafpaAdmin ? '0 24px 70px -34px rgba(42, 34, 28, 0.38)' : '0 24px 70px -34px rgba(15, 23, 42, 0.34)',
+    '--page-bg': '#f5f0e8',
+    '--page-overlay-a': 'rgba(122, 46, 46, 0.04)',
+    '--page-overlay-b': 'rgba(139, 90, 60, 0.05)',
+    '--panel-bg': '#1f1815',
+    '--panel-overlay-a': 'rgba(122, 46, 46, 0.25)',
+    '--panel-overlay-b': 'rgba(139, 90, 60, 0.12)',
+    '--panel-ink': '#f5f0e8',
+    '--panel-muted': '#d6ccc0',
+    '--accent': '#7a2e2e',
+    '--accent-strong': '#5e2323',
+    '--accent-soft': '#c89a6d',
+    '--ink': '#2a221c',
+    '--ink-muted': '#6b5d4f',
+    '--line': '#c9bba6',
+    '--line-soft': 'rgba(122, 46, 46, 0.14)',
+    '--surface': 'rgba(255, 252, 248, 0.82)',
+    '--surface-strong': '#fffaf2',
+    '--surface-soft': 'rgba(122, 46, 46, 0.04)',
+    '--shadow': '0 24px 70px -34px rgba(42, 34, 28, 0.38)',
     '--button-ink': '#f8fafc',
   } as CSSProperties;
 }
@@ -86,7 +84,7 @@ export default function LoginPage() {
   }
 
   const matchingUsers = availableUsers.filter((user) => user.role === role);
-  const theme = getLoginTheme(role);
+  const theme = getLoginTheme();
 
   const handleSubmit = async () => {
     try {
