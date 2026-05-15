@@ -1,8 +1,8 @@
 # SAFPA FPOS — Role & Page Reference
 
 **Platform:** SAFPA Funeral Parlour Operating System (FPOS)  
-**Version:** Demo v1.0  
-**Date:** April 2026
+**Version:** Demo v1.1  
+**Date:** May 2026
 
 This document describes every user role in the system, the pages each role can access, and every tab or section available within those pages.
 
@@ -65,11 +65,12 @@ The national overview dashboard.
 
 | Section | What it shows |
 |---------|--------------|
-| KPI Cards | Total parlours, active parlours, total members across the network, total policies, collection rate (%), new leads this month |
+| KPI Cards | Total parlours, active parlours, total members across the network, total policies, collection rate (%), premiums due, total arrears |
+| Adoption Snapshot Cards | Live parlours, active parlours in the last 7 days, dormant parlours in the last 30 days, at-risk parlours needing intervention |
 | Collections Trend Chart | Monthly bar chart of premiums collected vs due across all parlours |
 | Policy Status Breakdown | Pie chart showing the split of active, suspended, lapsed, draft, and pending policies |
 | Member Growth Chart | Line chart showing cumulative member growth across participating parlours |
-| Parlour Overview Table | List of all parlours with region, tier, onboarding progress bar, member count, branch count, and a View link |
+| Parlour Overview Table | List of all parlours with region, tier, onboarding progress, activity health, recent active-user/event counts, dormancy risk, and a View link |
 
 ---
 
@@ -79,7 +80,7 @@ List and management of all SAFPA member parlours.
 
 | Section | What it shows |
 |---------|--------------|
-| Parlour Table | Name, region, tier badge (basic/standard/premium), status badge (onboarding/active/suspended), onboarding progress %, member count, branch count, View action |
+| Parlour Table | Name, region, tier badge (basic/standard/premium), status badge (onboarding/active/suspended), onboarding progress %, activity health badge, recent active-user/event summary, member count, branch count, View action |
 | Add Parlour Button | Opens form to create a new parlour tenant |
 
 **Parlour Detail** `/safpa/parlours/:id`
@@ -88,6 +89,7 @@ List and management of all SAFPA member parlours.
 |---------|--------------|
 | Parlour Info Card | Name, status badge, tier, total members, contact email/phone, joined date |
 | Onboarding Progress | Step-by-step checklist (tenant created, branches configured, users added, website live, data imported, payment connected) |
+| Adoption & Activity | Health score, onboarding lifecycle status, activity in the last 30 days, last active date, go-live date, module usage, recent event history, and intervention badges |
 | Users | Grid of users for this parlour with role badges and status |
 | Branches | Table of branches with city, province, manager name, status |
 

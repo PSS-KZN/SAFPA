@@ -5,6 +5,7 @@ import type { Branch, Parlour, User } from '../../types';
 import { fetchParlourById, updateParlour } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
 import { fetchUsers } from '../../services/usersApi';
+import { fetchParlourAdoptionDetail, type ParlourAdoptionDetail } from '../../services/reportsApi';
 
 type ParlourFormState = {
   name: string;
@@ -45,8 +46,16 @@ export default function ParlourDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adoption, setAdoption] = useState<ParlourAdoptionDetail | null>(null);
   const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
   const [form, setForm] = useState<ParlourFormState | null>(null);
+
+  const formatStatusLabel = (value?: string | null) => (value ? value.replace(/_/g, ' ') : 'Not tracked');
+  const healthClasses = adoption?.healthStatus === 'green'
+    ? 'bg-green-100 text-green-700'
+    : adoption?.healthStatus === 'amber'
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-slate-100 text-slate-700';
 
   useEffect(() => {
     if (!id) {
@@ -57,20 +66,23 @@ export default function ParlourDetail() {
     const loadParlour = async () => {
       try {
         setError(null);
-        const [record, branches, users] = await Promise.all([
+        const [record, branches, users, adoptionDetail] = await Promise.all([
           fetchParlourById(id),
           fetchBranches(id),
           fetchUsers(id),
+          fetchParlourAdoptionDetail(id).catch(() => null),
         ]);
         setParlour(record);
         setForm(createFormState(record));
         setParlourBranches(branches);
         setParlourUsers(users);
+        setAdoption(adoptionDetail);
       } catch {
         setError('Failed to load parlour details.');
         setParlour(null);
         setParlourBranches([]);
         setParlourUsers([]);
+        setAdoption(null);
       } finally {
         setLoading(false);
       }
@@ -292,6 +304,81 @@ export default function ParlourDetail() {
           </div>
         </div>
       </div>
+
+      {adoption && (
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-slate-900">Adoption & Activity</h3>
+                <p className="mt-1 text-sm text-slate-500">Operational usage and rollout health for this parlour.</p>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${healthClasses}`}>
+                {adoption.healthStatus} health
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400">Onboarding</div>
+                <div className="mt-2 text-lg font-semibold capitalize text-slate-900">{formatStatusLabel(adoption.onboardingStatus)}</div>
+                <div className="mt-1 text-xs text-slate-500">{adoption.onboardingProgress}% complete</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400">Activity 30d</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{adoption.events30d}</div>
+                <div className="mt-1 text-xs text-slate-500">{adoption.activeUsers30d} active users</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400">Last Active</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{adoption.lastActiveAt || 'Not yet'}</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {adoption.daysSinceLastActivity === null ? 'Waiting for first event' : `${adoption.daysSinceLastActivity} days ago`}
+                </div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400">Go Live</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{adoption.goLiveAt || 'Pending'}</div>
+                <div className="mt-1 text-xs text-slate-500">Score {adoption.healthScore}/100</div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {adoption.isDormant && <span className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-700">Dormant parlour</span>}
+              {adoption.isAtRisk && <span className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-700">Needs intervention</span>}
+              {!adoption.isDormant && !adoption.isAtRisk && <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">Healthy adoption</span>}
+            </div>
+
+            <div className="mt-5">
+              <div className="mb-2 text-sm font-medium text-slate-700">Module activity</div>
+              <div className="flex flex-wrap gap-2">
+                {adoption.moduleActivity.length > 0 ? adoption.moduleActivity.map((item) => (
+                  <span key={item.module} className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600">
+                    {item.module} · {item.count}
+                  </span>
+                )) : <span className="text-sm text-slate-400">No module activity recorded yet.</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h3 className="font-semibold text-slate-900">Recent Activity</h3>
+            <div className="mt-4 space-y-3">
+              {adoption.recentEvents.length > 0 ? adoption.recentEvents.map((event) => (
+                <div key={event.id} className="rounded-xl border border-slate-100 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-medium capitalize text-slate-800">{formatStatusLabel(event.eventType)}</div>
+                    <div className="text-xs text-slate-400">{event.occurredOn}</div>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {event.module} · {event.userName || 'System'}{event.userRole ? ` (${formatStatusLabel(event.userRole)})` : ''}
+                  </div>
+                  {event.details && <div className="mt-2 text-sm text-slate-600">{event.details}</div>}
+                </div>
+              )) : <div className="text-sm text-slate-400">No recent activity has been tracked for this parlour yet.</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Branches Table */}
       <div className="mt-6 bg-white rounded-xl p-5 shadow-sm border border-slate-200">

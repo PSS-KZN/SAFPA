@@ -4,6 +4,7 @@ import { Eye, PencilLine } from 'lucide-react';
 import type { Parlour } from '../../types';
 import { fetchParlours, setParlourStatus } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
+import { fetchAdoptionOverview, type AdoptionOverviewParlour } from '../../services/reportsApi';
 
 function getOnboardingStage(progress: number): string {
   if (progress >= 100) {
@@ -29,18 +30,46 @@ export default function ParlourList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [branchCounts, setBranchCounts] = useState<Record<string, number>>({});
+  const [adoptionByParlourId, setAdoptionByParlourId] = useState<Record<string, AdoptionOverviewParlour>>({});
+
+  const getHealthClasses = (healthStatus?: AdoptionOverviewParlour['healthStatus']) => {
+    if (healthStatus === 'green') {
+      return 'bg-green-100 text-green-700';
+    }
+
+    if (healthStatus === 'amber') {
+      return 'bg-amber-100 text-amber-700';
+    }
+
+    return 'bg-slate-100 text-slate-600';
+  };
+
+  const formatStatusLabel = (value?: string | null) => {
+    if (!value) {
+      return 'Not tracked';
+    }
+
+    return value.replace(/_/g, ' ');
+  };
 
   const loadParlours = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [records, allBranches] = await Promise.all([fetchParlours(), fetchBranches()]);
+      const [records, allBranches, adoption] = await Promise.all([
+        fetchParlours(),
+        fetchBranches(),
+        fetchAdoptionOverview().catch(() => null),
+      ]);
       setParlours(records);
       const counts: Record<string, number> = {};
       for (const branch of allBranches) {
         counts[branch.parlourId] = (counts[branch.parlourId] || 0) + 1;
       }
       setBranchCounts(counts);
+      setAdoptionByParlourId(
+        Object.fromEntries((adoption?.parlours || []).map((item) => [item.parlourId, item]))
+      );
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Failed to load parlours');
     } finally {
@@ -85,6 +114,7 @@ export default function ParlourList() {
                 <th className="px-4 py-3">Tier</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Onboarding</th>
+                <th className="px-4 py-3">Activity</th>
                 <th className="px-4 py-3">Members</th>
                 <th className="px-4 py-3">Branches</th>
                 <th className="px-4 py-3">Actions</th>
@@ -93,6 +123,7 @@ export default function ParlourList() {
             <tbody>
               {parlours.map((p) => {
                 const branchCount = branchCounts[p.id] || 0;
+                const adoption = adoptionByParlourId[p.id];
                 return (
                   <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">{p.name}</td>
@@ -115,8 +146,29 @@ export default function ParlourList() {
                           </div>
                           <span className="text-xs text-slate-500">{p.onboardingProgress}%</span>
                         </div>
-                        <div className="text-xs text-slate-500">{getOnboardingStage(p.onboardingProgress)}</div>
+                        <div className="text-xs text-slate-500">{getOnboardingStage(p.onboardingProgress)}{adoption ? ` · ${formatStatusLabel(adoption.onboardingStatus)}` : ''}</div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {adoption ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-xs capitalize ${getHealthClasses(adoption.healthStatus)}`}>
+                              {adoption.healthStatus}
+                            </span>
+                            {adoption.isDormant && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700">Dormant</span>}
+                            {adoption.isAtRisk && !adoption.isDormant && <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">At risk</span>}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {adoption.activeUsers30d} active users · {adoption.events30d} events / 30d
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {adoption.lastActiveAt ? `Last active ${adoption.lastActiveAt}` : 'No tracked activity yet'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-400">No adoption data yet</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">{p.totalMembers.toLocaleString()}</td>
                     <td className="px-4 py-3">{branchCount}</td>

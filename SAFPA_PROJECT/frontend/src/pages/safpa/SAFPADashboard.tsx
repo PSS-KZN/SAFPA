@@ -1,7 +1,7 @@
 import { Building2, Users, FileText, Wallet, TrendingUp, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { useEffect, useState } from 'react';
-import { fetchNetworkDashboard, type NetworkDashboardData } from '../../services/reportsApi';
+import { fetchAdoptionOverview, fetchNetworkDashboard, type AdoptionOverviewData, type NetworkDashboardData } from '../../services/reportsApi';
 
 // Premium SAFPA Palette
 const COLORS = ['#e31837', '#f59e0b', '#0f172a', '#475569', '#94a3b8'];
@@ -25,14 +25,20 @@ const renderPolicyStatusLabel = (props: unknown) => {
 
 export default function SAFPADashboard() {
   const [stats, setStats] = useState<NetworkDashboardData | null>(null);
+  const [adoption, setAdoption] = useState<AdoptionOverviewData | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const records = await fetchNetworkDashboard();
-        setStats(records);
+        const [network, adoptionOverview] = await Promise.all([
+          fetchNetworkDashboard(),
+          fetchAdoptionOverview().catch(() => null),
+        ]);
+        setStats(network);
+        setAdoption(adoptionOverview);
       } catch {
         setStats(null);
+        setAdoption(null);
       }
     };
 
@@ -58,6 +64,31 @@ export default function SAFPADashboard() {
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">SAFPA Network</h1>
         <p className="text-[15px] text-slate-500 mt-1">Real-time performance metrics across all participating parlours.</p>
       </div>
+
+      {adoption && (
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Live Parlours</div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">{adoption.liveParlours}</div>
+            <div className="mt-1 text-xs text-slate-500">Activation complete</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Active 7d</div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">{adoption.activeParlours7d}</div>
+            <div className="mt-1 text-xs text-slate-500">Operationally active parlours</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Dormant 30d</div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">{adoption.dormantParlours}</div>
+            <div className="mt-1 text-xs text-slate-500">No tracked business activity</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wide text-slate-400">At Risk</div>
+            <div className="mt-2 text-2xl font-bold text-red-700">{adoption.atRiskParlours}</div>
+            <div className="mt-1 text-xs text-slate-500">Needs SAFPA follow-up</div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">

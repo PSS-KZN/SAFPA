@@ -41,6 +41,53 @@ export interface NetworkDashboardData {
   parlours: Array<{ id: string; name: string; province: string; tier: string; status: string }>;
 }
 
+export interface AdoptionOverviewParlour {
+  parlourId: string;
+  parlourName: string;
+  province: string;
+  tier: string;
+  status: string;
+  onboardingStatus: string;
+  onboardingProgress: number;
+  goLiveAt: string | null;
+  firstActiveAt: string | null;
+  lastActiveAt: string | null;
+  activeUsers7d: number;
+  activeUsers30d: number;
+  events7d: number;
+  events30d: number;
+  healthScore: number;
+  healthStatus: 'green' | 'amber' | 'red';
+  isDormant: boolean;
+  isAtRisk: boolean;
+}
+
+export interface AdoptionOverviewData {
+  totalParlours: number;
+  liveParlours: number;
+  activeParlours7d: number;
+  activeParlours30d: number;
+  dormantParlours: number;
+  atRiskParlours: number;
+  parlours: AdoptionOverviewParlour[];
+}
+
+export interface ParlourAdoptionDetail extends AdoptionOverviewParlour {
+  daysSinceLastActivity: number | null;
+  moduleActivity: Array<{ module: string; count: number }>;
+  recentEvents: Array<{
+    id: string;
+    occurredOn: string;
+    module: string;
+    eventType: string;
+    userName: string | null;
+    userRole: string | null;
+    details: string | null;
+    entityType: string | null;
+    entityId: string | null;
+  }>;
+}
+
 export function fetchReportsDashboard(parlourId: string, filters?: ReportsFilters): Promise<ReportsDashboardData> {
   const params = new URLSearchParams({ parlourId });
   if (filters?.branchId) {
@@ -60,4 +107,12 @@ export function fetchReportsDashboard(parlourId: string, filters?: ReportsFilter
 
 export function fetchNetworkDashboard(): Promise<NetworkDashboardData> {
   return request<NetworkDashboardData>('/api/reports/network');
+}
+
+export function fetchAdoptionOverview(): Promise<AdoptionOverviewData> {
+  return request<AdoptionOverviewData>('/api/reports/adoption/overview');
+}
+
+export function fetchParlourAdoptionDetail(parlourId: string): Promise<ParlourAdoptionDetail> {
+  return request<ParlourAdoptionDetail>(`/api/reports/adoption/parlours/${parlourId}`);
 }

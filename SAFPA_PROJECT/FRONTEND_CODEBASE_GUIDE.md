@@ -8,6 +8,7 @@ It provides:
 - Role-based dashboards and workflows
 - CRUD screens for core domains (parlours, branches, users, products, leads, members, policies, collections, funeral cases, documents, communications, reports)
 - Role-specific overview landing pages for policy administration and funeral operations
+- SAFPA adoption and active-usage visibility across dashboard and parlour management views
 - Customer self-service pages for policy, payments, and support details
 - Parlour branding management, logo upload, and hosted website readiness/publishing flows
 - Tenant-aware shell branding for parlour-scoped users
@@ -159,6 +160,10 @@ Examples:
 - subscriptionsApi.ts -> /api/subscriptions
 - auditApi.ts -> /api/audit
 
+reportsApi.ts now also exposes adoption-specific SAFPA reads:
+- `/api/reports/adoption/overview`
+- `/api/reports/adoption/parlours/:id`
+
 Pattern:
 1. Page calls service function
 2. Service uses request/jsonRequest from http.ts
@@ -173,6 +178,11 @@ Branding-specific behavior:
 Collections-specific behavior:
 - CollectionsDashboard includes five tabs: overview, portal, transactions, arrears, and reconciliation
 - The portal tab supports manual payment capture against a selected policy before returning the user to transaction history
+
+SAFPA adoption-specific behavior:
+- `SAFPADashboard.tsx` now surfaces live parlours, active parlours, dormant parlours, and at-risk parlours in addition to the existing network KPIs
+- `ParlourList.tsx` now shows activity health, active-user counts, recent-event counts, and dormancy/at-risk badges alongside onboarding progress
+- `ParlourDetail.tsx` now includes an adoption and activity panel with health score, recency, module usage, and recent event history
 
 ## 7) Styling and UI behavior
 
@@ -240,6 +250,7 @@ Note:
 - Tenant branding is not mocked in the layout; it is fetched from the backend parlour record for the active parlour context
 - Demo user data also includes a dedicated `policyholder_customer` user and customer self-service navigation
 - The customer portal UI is routed in the frontend, but the backend still needs a dedicated customer authorization profile for full end-to-end support
+- SAFPA admin adoption widgets degrade gracefully when telemetry is not yet present for a parlour
 - This keeps role-switching quick for demo while using backend persistence for flows
 
 ## 12) Quick troubleshooting

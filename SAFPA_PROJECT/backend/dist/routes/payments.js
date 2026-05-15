@@ -7,6 +7,7 @@ const audit_1 = require("../lib/audit");
 const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
+const usage_1 = require("../lib/usage");
 const createPaymentSchema = zod_1.z.object({
     policyId: zod_1.z.string().min(1),
     amount: zod_1.z.number().int().positive(),
@@ -332,6 +333,21 @@ exports.paymentsRouter.post('/', async (req, res) => {
             result.applicationSummary ? `nextDueDate=${result.applicationSummary.nextDueDate}` : null,
             result.applicationSummary ? `arrears=${result.applicationSummary.arrearsAmount}` : null,
         ].filter(Boolean).join(';'),
+    });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'payments',
+        eventType: 'payment_captured',
+        parlourId: result.payment.parlourId,
+        entityType: 'Payment',
+        entityId: result.payment.id,
+        details: result.payment.reference,
+        metadata: {
+            amount: result.payment.amount,
+            status: result.payment.status,
+            method: result.payment.method,
+            providerCode: result.payment.providerCode,
+            captureChannel: result.payment.captureChannel,
+        },
     });
     return res.status(201).json(result.payment);
 });

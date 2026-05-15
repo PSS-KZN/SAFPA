@@ -7,6 +7,7 @@ const audit_1 = require("../lib/audit");
 const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
+const usage_1 = require("../lib/usage");
 const caseStatusEnum = zod_1.z.enum(['logged', 'in_progress', 'scheduled', 'completed', 'archived']);
 const caseTypeEnum = zod_1.z.enum(['policy', 'cash', 'private']);
 const taskCategoryEnum = zod_1.z.enum(['documentation', 'logistics', 'family_support', 'ceremony', 'finance']);
@@ -370,6 +371,21 @@ exports.funeralCasesRouter.post('/', async (req, res) => {
         entityLabel: record.caseNumber,
         parlourId: record.parlourId,
         details: `informant=${parsed.data.informantName}`,
+    });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'funeral_cases',
+        eventType: 'funeral_case_created',
+        parlourId: record.parlourId,
+        branchId: record.branchId,
+        entityType: 'FuneralCase',
+        entityId: record.id,
+        details: record.caseNumber,
+        metadata: {
+            caseType: record.caseType,
+            status: record.status,
+            coordinatorId: record.coordinatorId,
+            hasPolicyLink: Boolean(record.policyId),
+        },
     });
     await dispatchFuneralCaseCommunication({
         funeralCase: record,

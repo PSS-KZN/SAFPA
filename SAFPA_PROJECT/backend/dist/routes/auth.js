@@ -4,6 +4,7 @@ exports.authRouter = void 0;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const prisma_1 = require("../lib/prisma");
+const usage_1 = require("../lib/usage");
 const DEMO_PASSWORD = 'demo123';
 const loginSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
@@ -46,6 +47,19 @@ exports.authRouter.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
     }
     const memberId = await resolveCustomerMemberId(user);
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'auth',
+        eventType: 'login_success',
+        parlourId: user.parlourId || undefined,
+        branchId: user.branchId || undefined,
+        entityType: 'User',
+        entityId: user.id,
+        actor: {
+            userId: user.id,
+            userName: user.name,
+            userRole: user.role,
+        },
+    });
     return res.json({
         token: user.id,
         user: {

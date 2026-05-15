@@ -5,6 +5,7 @@ import { writeAuditLog } from '../lib/audit';
 import { dispatchCommunication } from '../lib/communications';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
+import { writeUsageEvent } from '../lib/usage';
 
 const createPaymentSchema = z.object({
   policyId: z.string().min(1),
@@ -391,6 +392,22 @@ paymentsRouter.post('/', async (req, res) => {
       result.applicationSummary ? `nextDueDate=${result.applicationSummary.nextDueDate}` : null,
       result.applicationSummary ? `arrears=${result.applicationSummary.arrearsAmount}` : null,
     ].filter(Boolean).join(';'),
+  });
+
+  await writeUsageEvent(req, {
+    module: 'payments',
+    eventType: 'payment_captured',
+    parlourId: result.payment.parlourId,
+    entityType: 'Payment',
+    entityId: result.payment.id,
+    details: result.payment.reference,
+    metadata: {
+      amount: result.payment.amount,
+      status: result.payment.status,
+      method: result.payment.method,
+      providerCode: result.payment.providerCode,
+      captureChannel: result.payment.captureChannel,
+    },
   });
 
   return res.status(201).json(result.payment);

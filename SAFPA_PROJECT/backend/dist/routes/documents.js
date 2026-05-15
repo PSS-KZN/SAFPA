@@ -12,6 +12,7 @@ const zod_1 = require("zod");
 const audit_1 = require("../lib/audit");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
+const usage_1 = require("../lib/usage");
 const createDocumentSchema = zod_1.z.object({
     parlourId: zod_1.z.string().min(1),
     name: zod_1.z.string().min(2),
@@ -98,6 +99,20 @@ exports.documentsRouter.post('/', async (req, res) => {
         entityLabel: record.name,
         parlourId: record.parlourId,
     });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'documents',
+        eventType: 'document_uploaded',
+        parlourId: record.parlourId,
+        entityType: 'Document',
+        entityId: record.id,
+        details: record.name,
+        metadata: {
+            documentType: record.type,
+            entityType: record.entityType,
+            entityId: record.entityId,
+            uploadMode: 'metadata_only',
+        },
+    });
     return res.status(201).json(record);
 });
 exports.documentsRouter.post('/upload', upload.single('file'), async (req, res) => {
@@ -149,6 +164,21 @@ exports.documentsRouter.post('/upload', upload.single('file'), async (req, res) 
         entityLabel: record.name,
         parlourId: record.parlourId,
         details: `storagePath=${diskName}`,
+    });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'documents',
+        eventType: 'document_uploaded',
+        parlourId: record.parlourId,
+        entityType: 'Document',
+        entityId: record.id,
+        details: record.name,
+        metadata: {
+            documentType: record.type,
+            entityType: record.entityType,
+            entityId: record.entityId,
+            uploadMode: 'file_upload',
+            mimeType: record.mimeType,
+        },
     });
     return res.status(201).json(record);
 });

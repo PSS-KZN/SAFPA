@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
+import { writeUsageEvent } from '../lib/usage';
 
 const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Expected a valid hex colour');
 const websitePublishStatusSchema = z.enum(['draft', 'ready', 'published', 'needs_review']);
@@ -186,6 +187,30 @@ const brandingSchema = z.object({
 
 export const parloursRouter = Router();
 
+function deriveOnboardingStatus(progress: number, currentStatus: string, firstActiveAt?: string | null, goLiveAt?: string | null): string {
+  if (currentStatus === 'suspended') {
+    return 'dormant';
+  }
+
+  if (goLiveAt || currentStatus === 'active') {
+    return 'live';
+  }
+
+  if (firstActiveAt) {
+    return 'initial_use';
+  }
+
+  if (progress >= 80) {
+    return 'ready_to_launch';
+  }
+
+  if (progress >= 40) {
+    return 'configuration';
+  }
+
+  return 'setup';
+}
+
 parloursRouter.get('/availability/subdomain', async (req, res) => {
   const websiteSubdomain = typeof req.query.value === 'string' ? req.query.value.trim().toLowerCase() : '';
   const excludeParlourId = typeof req.query.excludeParlourId === 'string' ? req.query.excludeParlourId : undefined;
@@ -283,6 +308,10 @@ parloursRouter.post('/', async (req, res) => {
     data: {
       id,
       ...parsed.data,
+      onboardingStatus: deriveOnboardingStatus(parsed.data.onboardingProgress, parsed.data.status),
+      onboardingStartedAt: parsed.data.joinedDate,
+      onboardingCompletedAt: parsed.data.onboardingProgress >= 100 ? parsed.data.joinedDate : undefined,
+      goLiveAt: parsed.data.status === 'active' ? parsed.data.joinedDate : undefined,
       customDomainStatus,
       websitePublishStatus,
       websitePublished: websitePublishStatus === 'published',
@@ -329,9 +358,27 @@ parloursRouter.patch('/:id', async (req, res) => {
   }
 
   try {
+    const existingParlour = await prisma.parlour.findUnique({ where: { id: parlourId } });
+    if (!existingParlour) {
+      return res.status(404).json({ message: 'Parlour not found' });
+    }
+
+    const nextProgress = parsed.data.onboardingProgress ?? existingParlour.onboardingProgress;
+    const nextStatus = parsed.data.status ?? existingParlour.status;
+    const nextGoLiveAt = nextStatus === 'active'
+      ? existingParlour.goLiveAt ?? new Date().toISOString().slice(0, 10)
+      : existingParlour.goLiveAt;
+
     const parlour = await prisma.parlour.update({
       where: { id: parlourId },
-      data: parsed.data,
+      data: {
+        ...parsed.data,
+        onboardingStatus: deriveOnboardingStatus(nextProgress, nextStatus, existingParlour.firstActiveAt, nextGoLiveAt),
+        onboardingCompletedAt: nextProgress === 100
+          ? existingParlour.onboardingCompletedAt ?? new Date().toISOString().slice(0, 10)
+          : existingParlour.onboardingCompletedAt,
+        goLiveAt: nextGoLiveAt,
+      },
     });
 
     await writeAuditLog(req, {
@@ -343,7 +390,7 @@ parloursRouter.patch('/:id', async (req, res) => {
 
     return res.json(parlour);
   } catch {
-    return res.status(404).json({ message: 'Parlour not found' });
+    return res.status(500).json({ message: 'Failed to update parlour' });
   }
 });
 
@@ -404,10 +451,17 @@ parloursRouter.patch('/:id/branding', async (req, res) => {
       where: { id: req.params.id },
       data: {
         ...parsed.data,
+        onboardingStatus: deriveOnboardingStatus(
+          existingParlour.onboardingProgress,
+          existingParlour.status,
+          existingParlour.firstActiveAt,
+          websitePublishStatus === 'published' ? existingParlour.goLiveAt ?? new Date().toISOString().slice(0, 10) : existingParlour.goLiveAt
+        ),
         customDomainStatus,
         websitePublishStatus,
         websitePublished: websitePublishStatus === 'published',
         brandingCompletedAt: brandingReady ? parsed.data.brandingCompletedAt ?? existingParlour.brandingCompletedAt ?? new Date().toISOString().slice(0, 10) : parsed.data.brandingCompletedAt ?? existingParlour.brandingCompletedAt,
+        goLiveAt: websitePublishStatus === 'published' ? existingParlour.goLiveAt ?? new Date().toISOString().slice(0, 10) : existingParlour.goLiveAt,
       },
     });
 
@@ -417,6 +471,19 @@ parloursRouter.patch('/:id/branding', async (req, res) => {
       entityId: parlour.id,
       entityLabel: parlour.name,
       details: `brandingFields=${Object.keys(parsed.data).join(',')};publishStatus=${websitePublishStatus};subdomain=${parlour.websiteSubdomain ?? 'none'}`,
+    });
+
+    await writeUsageEvent(req, {
+      module: 'parlours',
+      eventType: websitePublishStatus === 'published' ? 'website_published' : 'branding_updated',
+      parlourId: parlour.id,
+      entityType: 'Parlour',
+      entityId: parlour.id,
+      details: `publishStatus=${websitePublishStatus}`,
+      metadata: {
+        websitePublishStatus,
+        brandingReady,
+      },
     });
 
     return res.json(parlour);
@@ -480,7 +547,10 @@ parloursRouter.post('/:id/logo', brandingUpload.single('file'), async (req, res)
   const logoPath = `/uploads/branding/${diskName}`;
   const updated = await prisma.parlour.update({
     where: { id: parlourId },
-    data: { logo: logoPath },
+    data: {
+      logo: logoPath,
+      onboardingStatus: deriveOnboardingStatus(parlour.onboardingProgress, parlour.status, parlour.firstActiveAt, parlour.goLiveAt),
+    },
   });
 
   await writeAuditLog(req, {
@@ -489,6 +559,15 @@ parloursRouter.post('/:id/logo', brandingUpload.single('file'), async (req, res)
     entityId: updated.id,
     entityLabel: updated.name,
     details: `logoPath=${logoPath};mimeType=${req.file.mimetype};dimensions=${width}x${height}`,
+  });
+
+  await writeUsageEvent(req, {
+    module: 'parlours',
+    eventType: 'branding_updated',
+    parlourId: updated.id,
+    entityType: 'Parlour',
+    entityId: updated.id,
+    details: 'logo_uploaded',
   });
 
   return res.json(updated);
@@ -505,9 +584,30 @@ parloursRouter.patch('/:id/status', async (req, res) => {
   }
 
   try {
+    const existingParlour = await prisma.parlour.findUnique({ where: { id: req.params.id } });
+    if (!existingParlour) {
+      return res.status(404).json({ message: 'Parlour not found' });
+    }
+
+    const nextGoLiveAt = parsed.data.status === 'active'
+      ? existingParlour.goLiveAt ?? new Date().toISOString().slice(0, 10)
+      : existingParlour.goLiveAt;
+
     const parlour = await prisma.parlour.update({
       where: { id: req.params.id },
-      data: { status: parsed.data.status },
+      data: {
+        status: parsed.data.status,
+        onboardingStatus: deriveOnboardingStatus(
+          existingParlour.onboardingProgress,
+          parsed.data.status,
+          existingParlour.firstActiveAt,
+          nextGoLiveAt
+        ),
+        onboardingCompletedAt: parsed.data.status === 'active'
+          ? existingParlour.onboardingCompletedAt ?? new Date().toISOString().slice(0, 10)
+          : existingParlour.onboardingCompletedAt,
+        goLiveAt: nextGoLiveAt,
+      },
     });
 
     await writeAuditLog(req, {
@@ -518,8 +618,17 @@ parloursRouter.patch('/:id/status', async (req, res) => {
       details: `status=${parlour.status}`,
     });
 
+    await writeUsageEvent(req, {
+      module: 'parlours',
+      eventType: 'parlour_status_changed',
+      parlourId: parlour.id,
+      entityType: 'Parlour',
+      entityId: parlour.id,
+      details: `status=${parlour.status}`,
+    });
+
     return res.json(parlour);
   } catch {
-    return res.status(404).json({ message: 'Parlour not found' });
+    return res.status(500).json({ message: 'Failed to update parlour status' });
   }
 });

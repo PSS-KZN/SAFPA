@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { writeUsageEvent } from '../lib/usage';
 
 const DEMO_PASSWORD = 'demo123';
 
@@ -55,6 +56,20 @@ authRouter.post('/login', async (req, res) => {
   }
 
   const memberId = await resolveCustomerMemberId(user);
+
+  await writeUsageEvent(req, {
+    module: 'auth',
+    eventType: 'login_success',
+    parlourId: user.parlourId || undefined,
+    branchId: user.branchId || undefined,
+    entityType: 'User',
+    entityId: user.id,
+    actor: {
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+    },
+  });
 
   return res.json({
     token: user.id,

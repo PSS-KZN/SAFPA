@@ -20,6 +20,13 @@ model Parlour {
   tier               String
   status             String
   onboardingProgress Int
+  onboardingStatus   String   @default("setup")
+  onboardingStartedAt String?
+  onboardingCompletedAt String?
+  onboardingOwnerId  String?
+  goLiveAt           String?
+  firstActiveAt      String?
+  lastActiveAt       String?
   totalMembers       Int
   totalPolicies      Int
   contactEmail       String
@@ -320,6 +327,29 @@ model AuditEntry {
   entityId    String
   entityLabel String
   parlourId   String?
+  branchId    String?
   details     String?
   createdAt   DateTime @default(now())
+}
+
+model ParlourUsageEvent {
+  id         String   @id
+  parlourId  String
+  branchId   String?
+  userId     String?
+  userName   String?
+  userRole   String?
+  module     String
+  eventType  String
+  entityType String?
+  entityId   String?
+  details    String?
+  metadata   Json?
+  occurredOn String
+  createdAt  DateTime @default(now())
+
+  @@index([parlourId, occurredOn])
+  @@index([parlourId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
 }

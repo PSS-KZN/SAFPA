@@ -5,6 +5,7 @@ import { writeAuditLog } from '../lib/audit';
 import { dispatchCommunication } from '../lib/communications';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
+import { writeUsageEvent } from '../lib/usage';
 
 const caseStatusEnum = z.enum(['logged', 'in_progress', 'scheduled', 'completed', 'archived']);
 const caseTypeEnum = z.enum(['policy', 'cash', 'private']);
@@ -432,6 +433,22 @@ funeralCasesRouter.post('/', async (req, res) => {
     entityLabel: record.caseNumber,
     parlourId: record.parlourId,
     details: `informant=${parsed.data.informantName}`,
+  });
+
+  await writeUsageEvent(req, {
+    module: 'funeral_cases',
+    eventType: 'funeral_case_created',
+    parlourId: record.parlourId,
+    branchId: record.branchId,
+    entityType: 'FuneralCase',
+    entityId: record.id,
+    details: record.caseNumber,
+    metadata: {
+      caseType: record.caseType,
+      status: record.status,
+      coordinatorId: record.coordinatorId,
+      hasPolicyLink: Boolean(record.policyId),
+    },
   });
 
   await dispatchFuneralCaseCommunication({

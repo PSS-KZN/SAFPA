@@ -8,6 +8,7 @@ import { dispatchCommunication } from '../lib/communications';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
 import { assertBulkImportLimit } from '../lib/subscription';
+import { writeUsageEvent } from '../lib/usage';
 
 const policyStatusEnum = z.enum([
   'draft',
@@ -459,6 +460,20 @@ policiesRouter.post('/', async (req, res) => {
     parlourId: policy.parlourId,
   });
 
+  await writeUsageEvent(req, {
+    module: 'policies',
+    eventType: 'policy_created',
+    parlourId: policy.parlourId,
+    entityType: 'Policy',
+    entityId: policy.id,
+    details: policy.policyNumber,
+    metadata: {
+      status: policy.status,
+      premiumAmount: policy.premiumAmount,
+      productName: policy.productName,
+    },
+  });
+
   return res.status(201).json(policy);
 });
 
@@ -575,6 +590,19 @@ policiesRouter.patch('/:id/status', async (req, res) => {
     details: `status=${updated.status}`,
   });
 
+  await writeUsageEvent(req, {
+    module: 'policies',
+    eventType: 'policy_status_changed',
+    parlourId: updated.parlourId,
+    entityType: 'Policy',
+    entityId: updated.id,
+    details: `status=${updated.status}`,
+    metadata: {
+      fromStatus: existing.status,
+      toStatus: updated.status,
+    },
+  });
+
   return res.json(updated);
 });
 
@@ -635,6 +663,22 @@ policiesRouter.post('/bulk-import', async (req, res) => {
     parlourId: parsed.data.parlourId,
     details: `created=${createdCount};errors=${errors.length}`,
   });
+
+  if (createdCount > 0) {
+    await writeUsageEvent(req, {
+      module: 'policies',
+      eventType: 'policy_bulk_imported',
+      parlourId: parsed.data.parlourId,
+      entityType: 'PolicyImport',
+      entityId: generateId('usage-import'),
+      details: `created=${createdCount};errors=${errors.length}`,
+      metadata: {
+        totalRows: parsed.data.rows.length,
+        createdCount,
+        errorCount: errors.length,
+      },
+    });
+  }
 
   return res.json({
     totalRows: parsed.data.rows.length,

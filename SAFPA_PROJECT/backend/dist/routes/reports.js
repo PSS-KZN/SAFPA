@@ -66,6 +66,132 @@ function currentMonthRange() {
         endDate: end.toISOString().slice(0, 10),
     };
 }
+function dateDaysAgo(days) {
+    const now = new Date();
+    now.setUTCDate(now.getUTCDate() - days);
+    return now.toISOString().slice(0, 10);
+}
+function daysSince(dateText) {
+    if (!dateText) {
+        return null;
+    }
+    const parsed = new Date(`${dateText}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+    const diffMs = Date.now() - parsed.getTime();
+    return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
+}
+function uniqueActiveUsers(events) {
+    return new Set(events.map((event) => event.userId).filter((userId) => Boolean(userId))).size;
+}
+function calculateHealthScore(params) {
+    const onboarding = Math.round(Math.min(params.onboardingProgress, 100) * 0.3);
+    const users = Math.min(params.activeUsers30d * 8, 25);
+    const events = Math.min(params.events30d * 2, 25);
+    const recency = Math.min(params.events7d * 4, 10);
+    const goLive = params.goLiveAt ? 10 : 0;
+    return Math.max(0, Math.min(100, onboarding + users + events + recency + goLive));
+}
+function healthStatusFromScore(score) {
+    if (score >= 75) {
+        return 'green';
+    }
+    if (score >= 45) {
+        return 'amber';
+    }
+    return 'red';
+}
+function buildAdoptionSnapshot(params) {
+    const activeUsers7d = uniqueActiveUsers(params.events7d);
+    const activeUsers30d = uniqueActiveUsers(params.events30d);
+    const events7d = params.events7d.length;
+    const events30d = params.events30d.length;
+    const healthScore = calculateHealthScore({
+        onboardingProgress: params.parlour.onboardingProgress,
+        activeUsers30d,
+        events7d,
+        events30d,
+        goLiveAt: params.parlour.goLiveAt,
+    });
+    const healthStatus = healthStatusFromScore(healthScore);
+    const inactivityDays = daysSince(params.parlour.lastActiveAt);
+    const isDormant = Boolean(params.parlour.firstActiveAt) && events30d === 0;
+    const isAtRisk = healthStatus !== 'green' || inactivityDays !== null && inactivityDays > 14;
+    return {
+        parlourId: params.parlour.id,
+        parlourName: params.parlour.name,
+        province: params.parlour.province,
+        tier: params.parlour.tier,
+        status: params.parlour.status,
+        onboardingStatus: params.parlour.onboardingStatus,
+        onboardingProgress: params.parlour.onboardingProgress,
+        goLiveAt: params.parlour.goLiveAt,
+        firstActiveAt: params.parlour.firstActiveAt,
+        lastActiveAt: params.parlour.lastActiveAt,
+        activeUsers7d,
+        activeUsers30d,
+        events7d,
+        events30d,
+        healthScore,
+        healthStatus,
+        isDormant,
+        isAtRisk,
+    };
+}
+async function buildAdoptionSnapshots(parlourId) {
+    const [parlours, usageEvents] = await Promise.all([
+        prisma_1.prisma.parlour.findMany({
+            where: parlourId ? { id: parlourId } : undefined,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                name: true,
+                province: true,
+                tier: true,
+                status: true,
+                onboardingStatus: true,
+                onboardingProgress: true,
+                goLiveAt: true,
+                firstActiveAt: true,
+                lastActiveAt: true,
+            },
+        }),
+        prisma_1.prisma.parlourUsageEvent.findMany({
+            where: parlourId ? { parlourId } : undefined,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                parlourId: true,
+                userId: true,
+                userName: true,
+                userRole: true,
+                module: true,
+                eventType: true,
+                entityType: true,
+                entityId: true,
+                details: true,
+                occurredOn: true,
+                createdAt: true,
+            },
+        }),
+    ]);
+    const window7d = dateDaysAgo(7);
+    const window30d = dateDaysAgo(30);
+    const groupedEvents = new Map();
+    for (const event of usageEvents) {
+        const current = groupedEvents.get(event.parlourId) || [];
+        current.push(event);
+        groupedEvents.set(event.parlourId, current);
+    }
+    const snapshots = parlours.map((parlour) => {
+        const parlourEvents = groupedEvents.get(parlour.id) || [];
+        const events7d = parlourEvents.filter((event) => event.occurredOn >= window7d);
+        const events30d = parlourEvents.filter((event) => event.occurredOn >= window30d);
+        return buildAdoptionSnapshot({ parlour, events7d, events30d });
+    });
+    return { snapshots, usageEvents };
+}
 async function buildParlourDashboard(params) {
     const memberWhere = params.parlourId ? { parlourId: params.parlourId, ...(params.branchId ? { branchId: params.branchId } : {}) } : undefined;
     const [members, policies, payments, funeralCases, branches] = await Promise.all([
@@ -271,6 +397,57 @@ exports.reportsRouter.get('/network', async (_req, res) => {
         memberGrowth,
         funeralCaseTrend,
         parlours,
+    });
+});
+exports.reportsRouter.get('/adoption/overview', async (req, res) => {
+    if (req.actor?.role !== 'safpa_admin') {
+        return res.status(403).json({ message: 'Only SAFPA admins can view network adoption analytics' });
+    }
+    const { snapshots } = await buildAdoptionSnapshots();
+    return res.json({
+        totalParlours: snapshots.length,
+        liveParlours: snapshots.filter((snapshot) => snapshot.onboardingStatus === 'live').length,
+        activeParlours7d: snapshots.filter((snapshot) => snapshot.events7d > 0).length,
+        activeParlours30d: snapshots.filter((snapshot) => snapshot.events30d > 0).length,
+        dormantParlours: snapshots.filter((snapshot) => snapshot.isDormant).length,
+        atRiskParlours: snapshots.filter((snapshot) => snapshot.isAtRisk).length,
+        parlours: snapshots,
+    });
+});
+exports.reportsRouter.get('/adoption/parlours/:id', async (req, res) => {
+    const parlourId = req.params.id;
+    if (req.actor?.role !== 'safpa_admin' && req.actor?.parlourId !== parlourId) {
+        return res.status(403).json({ message: 'Parlour scope violation' });
+    }
+    const { snapshots, usageEvents } = await buildAdoptionSnapshots(parlourId);
+    const snapshot = snapshots[0];
+    if (!snapshot) {
+        return res.status(404).json({ message: 'Parlour not found' });
+    }
+    const recentEvents = usageEvents
+        .slice(0, 12)
+        .map((event) => ({
+        id: event.id,
+        occurredOn: event.occurredOn,
+        module: event.module,
+        eventType: event.eventType,
+        userName: event.userName,
+        userRole: event.userRole,
+        details: event.details,
+        entityType: event.entityType,
+        entityId: event.entityId,
+    }));
+    const moduleCounts = new Map();
+    for (const event of usageEvents) {
+        moduleCounts.set(event.module, (moduleCounts.get(event.module) || 0) + 1);
+    }
+    return res.json({
+        ...snapshot,
+        daysSinceLastActivity: daysSince(snapshot.lastActiveAt),
+        moduleActivity: Array.from(moduleCounts.entries())
+            .map(([module, count]) => ({ module, count }))
+            .sort((left, right) => right.count - left.count),
+        recentEvents,
     });
 });
 //# sourceMappingURL=reports.js.map

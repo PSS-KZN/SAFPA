@@ -9,6 +9,8 @@ It is responsible for:
 - Parlour branding, hosted website readiness, subdomain checks, and logo asset management
 - Authentication/session resolution and tenant scope enforcement
 - Role-based access checks in middleware
+- Adoption and active-usage telemetry for parlours
+- SAFPA-facing adoption and usage reporting endpoints
 - Subscription-tier feature limits
 - Input validation via Zod
 - Database persistence via Prisma
@@ -64,6 +66,7 @@ Default frontend origin expected by CORS:
 - backend/src/lib/
   - prisma.ts: shared Prisma client
   - audit.ts: centralized audit writer
+  - usage.ts: centralized parlour adoption and activity telemetry writer
   - id.ts: ID generation helper
   - openapi.ts: generated OpenAPI document builder for Swagger UI
   - routeCatalog.ts: route enumeration helper used by `/api/routes` and `/api/docs`
@@ -224,6 +227,13 @@ Important parlour subroutes implemented in parlours.ts:
 - POST /api/parlours/:id/logo
 - PATCH /api/parlours/:id/status
 
+Important reporting subroutes implemented in reports.ts:
+- GET /api/reports/dashboard
+- GET /api/reports/dashboard/export
+- GET /api/reports/network
+- GET /api/reports/adoption/overview
+- GET /api/reports/adoption/parlours/:id
+
 ## 9) Data model overview
 
 Core Prisma models:
@@ -243,6 +253,7 @@ Core Prisma models:
 - ParlourSubscription
 - FuneralCase
 - AuditEntry
+- ParlourUsageEvent
 
 Many workflow-heavy fields are JSON-based (tasks, dependants, beneficiaries, notes, metadata, tags).
 
@@ -251,6 +262,23 @@ Parlour now also carries branding and website fields such as:
 - logo, tagline, businessDescription, supportEmail, supportPhone, physicalAddress
 - websiteTemplate, websiteSubdomain, customDomain, customDomainStatus, customDomainDnsTarget, customDomainNotes
 - websitePublished, websitePublishStatus, brandingCompletedAt
+
+Parlour now also carries adoption lifecycle fields such as:
+- onboardingStatus
+- onboardingStartedAt
+- onboardingCompletedAt
+- onboardingOwnerId
+- goLiveAt
+- firstActiveAt
+- lastActiveAt
+
+ParlourUsageEvent stores the dedicated analytics event stream used for adoption and activity reporting:
+- parlourId, branchId
+- userId, userName, userRole
+- module, eventType
+- entityType, entityId
+- details, metadata
+- occurredOn, createdAt
 
 ## 10) Cross-cutting backend features
 
@@ -276,7 +304,22 @@ Behavior:
 
 writeAuditLog is used across mutation-heavy routes to persist who changed what and when.
 
-### 10.2 Subscription tier gates
+### 10.2 Adoption and active-usage telemetry
+
+The backend now separates analytics telemetry from audit logging.
+
+`usage.ts` writes high-value operational events into `ParlourUsageEvent` and updates parlour lifecycle fields such as first activity, last activity, and go-live state.
+
+Current phase-1 instrumentation includes:
+- successful login in `auth.ts`
+- member creation and member bulk import in `members.ts`
+- policy creation, policy status change, and policy bulk import in `policies.ts`
+- payment capture in `payments.ts`
+- funeral case creation in `funeralCases.ts`
+- document upload and metadata-only document creation in `documents.ts`
+- branding updates, website publish, and parlour status changes in `parlours.ts`
+
+### 10.3 Subscription tier gates
 
 subscription.ts enforces limits by parlour tier:
 - branches count
@@ -285,7 +328,19 @@ subscription.ts enforces limits by parlour tier:
 - bulk import row limits
 - report export availability
 
-### 10.3 File upload/storage flow
+### 10.4 SAFPA adoption reporting
+
+reports.ts now exposes SAFPA-facing adoption analytics:
+- `/api/reports/adoption/overview`
+  - network-level live, active, dormant, and at-risk parlour metrics
+- `/api/reports/adoption/parlours/:id`
+  - per-parlour health score, recent activity, module usage, and recency indicators
+
+Access model:
+- network adoption overview is SAFPA-admin only
+- per-parlour adoption detail is available to SAFPA admin and the scoped parlour tenant
+
+### 10.5 File upload/storage flow
 
 documents.ts provides:
 - Metadata-only document creation
@@ -301,21 +356,21 @@ parlours.ts also provides branding logo upload handling:
 - Disk write into backend/uploads/branding
 - Cleanup of previously managed branding logo assets when replaced
 
-### 10.4 Automation endpoint
+### 10.6 Automation endpoint
 
 communications.ts provides reminder automation:
 - POST /api/communications/run-reminders
   - Creates reminder log rows for due/overdue policies
   - Writes audit entry for dispatch run
 
-### 10.5 Subscription administration
+### 10.7 Subscription administration
 
 subscriptions.ts provides SAFPA-admin subscription operations:
 - Subscription listing and detail reads
 - Create and update subscription records
 - Access limited to SAFPA admin actors by authScopeMiddleware
 
-### 10.6 Branding and hosted website workflow
+### 10.8 Branding and hosted website workflow
 
 parlours.ts provides branding-specific domain behavior:
 - Subdomain availability checks for SAFPA-hosted tenant sites
@@ -342,15 +397,16 @@ Implemented in auth.ts:
 2. Implement route handler
 3. Perform Prisma read/write
 4. Add writeAuditLog for state changes
-5. Return typed JSON payload
-6. Run npm run build
-7. Smoke-test endpoint with role/scope headers
+5. Add `writeUsageEvent` when the endpoint represents meaningful adoption or operational activity
+6. Return typed JSON payload
+7. Run npm run build
+8. Smoke-test endpoint with role/scope headers
 
 For branding or upload changes, also run:
-8. npm run test:branding
+9. npm run test:branding
 
 For route catalog or Swagger documentation changes, also:
-9. Verify `/api/routes` and `/api/docs` locally
+10. Verify `/api/routes` and `/api/docs` locally
 
 ## 13) Quick troubleshooting
 
@@ -395,5 +451,7 @@ Validated flows include:
 - Document upload/download/delete lifecycle
 - Funeral case updates and task progression
 - Reporting endpoints including network and filtered dashboards
+- Adoption overview and per-parlour activity reporting
+- Dedicated usage telemetry across phase-1 operational events
 - Audit logging across core mutations
 - Generated route index and Swagger API docs

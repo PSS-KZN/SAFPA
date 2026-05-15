@@ -23,7 +23,8 @@ Run each app from its own folder, or use npm --prefix from the project root.
 6. Domain route validates payload with Zod
 7. Prisma reads/writes SQLite database
 8. Route writes audit logs for key state changes
-9. Response returns to frontend and page updates UI state
+9. Adoption and usage telemetry is written for high-value operational actions
+10. Response returns to frontend and page updates UI state
 
 ## 3) Prerequisites
 
@@ -143,6 +144,7 @@ If VITE_API_BASE_URL is not set, frontend defaults to http://localhost:4000.
 - SAFPA admin: parlours, subscriptions, resources, network reporting, audit
 - Parlour admin: branches, users, products, templates, branding workspace, website config
 - Operations/CRM: leads, members, policies, payments, collections, funeral cases, policy-admin overview, operations overview
+- Adoption analytics: dedicated backend telemetry plus SAFPA activity/health views for parlours
 - Customer self-service: customer policy, payments, and support pages driven from the same frontend service layer
 - Shared records: documents, communications, reports, audit
 
@@ -155,13 +157,15 @@ Website lead to reporting:
 4. Member gets policy
 5. Payment and billing events are recorded
 6. Communication reminders/receipts are logged
-7. Reports aggregate this data
-8. Audit trail captures key transitions
+7. Usage telemetry captures key adoption and operational events
+8. Reports aggregate business data and adoption/activity state
+9. Audit trail captures key transitions
 
 ## 10) Files and storage interactions
 
 - Database:
   - SQLite file from DATABASE_URL
+  - Includes dedicated parlour adoption fields and a `ParlourUsageEvent` analytics stream
 
 - Uploaded documents:
   - Stored on disk in backend/uploads
@@ -193,6 +197,17 @@ Website lead to reporting:
   - GET /api/parlours/availability/subdomain
 - These actions write to communication logs and audit logs
 
+Adoption and activity tracking interactions now also include:
+- login success
+- member creation and bulk import
+- policy creation and status changes
+- payment capture
+- funeral case creation
+- document uploads
+- branding updates and website publish state changes
+
+These actions also write to the dedicated usage telemetry stream used by SAFPA adoption dashboards.
+
 ## 12) Build and verification
 
 ### Build both apps
@@ -222,6 +237,11 @@ Invoke-RestMethod -Method Get -Uri 'http://localhost:4000/api/parlours/availabil
 ```
 
 You can run additional endpoint checks using x-user-* headers to verify role-scoped behavior.
+
+Adoption reporting smoke checks:
+```powershell
+Invoke-RestMethod -Method Get -Uri 'http://localhost:4000/api/reports/adoption/overview' -Headers @{ 'x-user-id'='u1'; 'x-user-name'='Kagiso Mabena'; 'x-user-role'='safpa_admin'; Authorization='Bearer u1' }
+```
 
 ## 13) Troubleshooting
 

@@ -46,6 +46,7 @@ const communications_1 = require("../lib/communications");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const subscription_1 = require("../lib/subscription");
+const usage_1 = require("../lib/usage");
 const policyStatusEnum = zod_1.z.enum([
     'draft',
     'pending',
@@ -407,6 +408,19 @@ exports.policiesRouter.post('/', async (req, res) => {
         entityLabel: policy.policyNumber,
         parlourId: policy.parlourId,
     });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'policies',
+        eventType: 'policy_created',
+        parlourId: policy.parlourId,
+        entityType: 'Policy',
+        entityId: policy.id,
+        details: policy.policyNumber,
+        metadata: {
+            status: policy.status,
+            premiumAmount: policy.premiumAmount,
+            productName: policy.productName,
+        },
+    });
     return res.status(201).json(policy);
 });
 exports.policiesRouter.patch('/:id', async (req, res) => {
@@ -503,6 +517,18 @@ exports.policiesRouter.patch('/:id/status', async (req, res) => {
         parlourId: updated.parlourId,
         details: `status=${updated.status}`,
     });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'policies',
+        eventType: 'policy_status_changed',
+        parlourId: updated.parlourId,
+        entityType: 'Policy',
+        entityId: updated.id,
+        details: `status=${updated.status}`,
+        metadata: {
+            fromStatus: existing.status,
+            toStatus: updated.status,
+        },
+    });
     return res.json(updated);
 });
 exports.policiesRouter.post('/bulk-import', async (req, res) => {
@@ -556,6 +582,21 @@ exports.policiesRouter.post('/bulk-import', async (req, res) => {
         parlourId: parsed.data.parlourId,
         details: `created=${createdCount};errors=${errors.length}`,
     });
+    if (createdCount > 0) {
+        await (0, usage_1.writeUsageEvent)(req, {
+            module: 'policies',
+            eventType: 'policy_bulk_imported',
+            parlourId: parsed.data.parlourId,
+            entityType: 'PolicyImport',
+            entityId: (0, id_1.generateId)('usage-import'),
+            details: `created=${createdCount};errors=${errors.length}`,
+            metadata: {
+                totalRows: parsed.data.rows.length,
+                createdCount,
+                errorCount: errors.length,
+            },
+        });
+    }
     return res.json({
         totalRows: parsed.data.rows.length,
         createdCount,

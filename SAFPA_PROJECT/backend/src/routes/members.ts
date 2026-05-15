@@ -6,6 +6,7 @@ import { writeAuditLog } from '../lib/audit';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
 import { assertBulkImportLimit } from '../lib/subscription';
+import { writeUsageEvent } from '../lib/usage';
 
 const dependantSchema = z.object({
   id: z.string().optional(),
@@ -159,6 +160,16 @@ membersRouter.post('/', async (req, res) => {
     parlourId: member.parlourId,
   });
 
+  await writeUsageEvent(req, {
+    module: 'members',
+    eventType: 'member_created',
+    parlourId: member.parlourId,
+    branchId: member.branchId,
+    entityType: 'Member',
+    entityId: member.id,
+    details: `${member.firstName} ${member.lastName}`,
+  });
+
   return res.status(201).json(member);
 });
 
@@ -254,6 +265,23 @@ membersRouter.post('/bulk-import', async (req, res) => {
     parlourId: parsed.data.parlourId,
     details: `created=${createdCount};errors=${errors.length}`,
   });
+
+  if (createdCount > 0) {
+    await writeUsageEvent(req, {
+      module: 'members',
+      eventType: 'member_bulk_imported',
+      parlourId: parsed.data.parlourId,
+      branchId: parsed.data.defaultBranchId,
+      entityType: 'MemberImport',
+      entityId: generateId('usage-import'),
+      details: `created=${createdCount};errors=${errors.length}`,
+      metadata: {
+        totalRows: parsed.data.rows.length,
+        createdCount,
+        errorCount: errors.length,
+      },
+    });
+  }
 
   return res.json({
     totalRows: parsed.data.rows.length,

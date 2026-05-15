@@ -45,6 +45,7 @@ const audit_1 = require("../lib/audit");
 const id_1 = require("../lib/id");
 const prisma_1 = require("../lib/prisma");
 const subscription_1 = require("../lib/subscription");
+const usage_1 = require("../lib/usage");
 const dependantSchema = zod_1.z.object({
     id: zod_1.z.string().optional(),
     firstName: zod_1.z.string().min(1),
@@ -172,6 +173,15 @@ exports.membersRouter.post('/', async (req, res) => {
         entityLabel: `${member.firstName} ${member.lastName}`,
         parlourId: member.parlourId,
     });
+    await (0, usage_1.writeUsageEvent)(req, {
+        module: 'members',
+        eventType: 'member_created',
+        parlourId: member.parlourId,
+        branchId: member.branchId,
+        entityType: 'Member',
+        entityId: member.id,
+        details: `${member.firstName} ${member.lastName}`,
+    });
     return res.status(201).json(member);
 });
 exports.membersRouter.patch('/:id', async (req, res) => {
@@ -255,6 +265,22 @@ exports.membersRouter.post('/bulk-import', async (req, res) => {
         parlourId: parsed.data.parlourId,
         details: `created=${createdCount};errors=${errors.length}`,
     });
+    if (createdCount > 0) {
+        await (0, usage_1.writeUsageEvent)(req, {
+            module: 'members',
+            eventType: 'member_bulk_imported',
+            parlourId: parsed.data.parlourId,
+            branchId: parsed.data.defaultBranchId,
+            entityType: 'MemberImport',
+            entityId: (0, id_1.generateId)('usage-import'),
+            details: `created=${createdCount};errors=${errors.length}`,
+            metadata: {
+                totalRows: parsed.data.rows.length,
+                createdCount,
+                errorCount: errors.length,
+            },
+        });
+    }
     return res.json({
         totalRows: parsed.data.rows.length,
         createdCount,

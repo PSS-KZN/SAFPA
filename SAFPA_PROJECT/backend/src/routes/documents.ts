@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
+import { writeUsageEvent } from '../lib/usage';
 
 const createDocumentSchema = z.object({
   parlourId: z.string().min(1),
@@ -111,6 +112,21 @@ documentsRouter.post('/', async (req, res) => {
     parlourId: record.parlourId,
   });
 
+  await writeUsageEvent(req, {
+    module: 'documents',
+    eventType: 'document_uploaded',
+    parlourId: record.parlourId,
+    entityType: 'Document',
+    entityId: record.id,
+    details: record.name,
+    metadata: {
+      documentType: record.type,
+      entityType: record.entityType,
+      entityId: record.entityId,
+      uploadMode: 'metadata_only',
+    },
+  });
+
   return res.status(201).json(record);
 });
 
@@ -170,6 +186,22 @@ documentsRouter.post('/upload', upload.single('file'), async (req, res) => {
     entityLabel: record.name,
     parlourId: record.parlourId,
     details: `storagePath=${diskName}`,
+  });
+
+  await writeUsageEvent(req, {
+    module: 'documents',
+    eventType: 'document_uploaded',
+    parlourId: record.parlourId,
+    entityType: 'Document',
+    entityId: record.id,
+    details: record.name,
+    metadata: {
+      documentType: record.type,
+      entityType: record.entityType,
+      entityId: record.entityId,
+      uploadMode: 'file_upload',
+      mimeType: record.mimeType,
+    },
   });
 
   return res.status(201).json(record);
