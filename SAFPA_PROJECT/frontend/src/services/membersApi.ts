@@ -11,8 +11,9 @@ export interface BulkImportResult {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-export function fetchMembers(parlourId: string): Promise<Member[]> {
-  return request<Member[]>(`/api/members?parlourId=${encodeURIComponent(parlourId)}`);
+export function fetchMembers(parlourId?: string): Promise<Member[]> {
+  const query = parlourId ? `?parlourId=${encodeURIComponent(parlourId)}` : '';
+  return request<Member[]>(`/api/members${query}`);
 }
 
 export function fetchMember(id: string): Promise<Member> {

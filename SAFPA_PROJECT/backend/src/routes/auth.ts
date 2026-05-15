@@ -13,6 +13,59 @@ const loginSchema = z.object({
 
 export const authRouter = Router();
 
+async function resolvePolicyholderUser(email: string) {
+  const member = await prisma.member.findFirst({
+    where: { email },
+    select: {
+      id: true,
+      parlourId: true,
+      branchId: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  });
+
+  if (!member) {
+    return null;
+  }
+
+  const displayName = `${member.firstName} ${member.lastName}`.trim();
+  const existing = await prisma.appUser.findFirst({
+    where: {
+      OR: [{ email }, { memberId: member.id }],
+    },
+  });
+
+  if (existing) {
+    return prisma.appUser.update({
+      where: { id: existing.id },
+      data: {
+        name: displayName,
+        email,
+        role: 'policyholder_customer',
+        parlourId: member.parlourId,
+        branchId: member.branchId,
+        memberId: member.id,
+        status: 'active',
+      },
+    });
+  }
+
+  return prisma.appUser.create({
+    data: {
+      id: `u-customer-${member.id}`,
+      name: displayName,
+      email,
+      role: 'policyholder_customer',
+      parlourId: member.parlourId,
+      branchId: member.branchId,
+      memberId: member.id,
+      status: 'active',
+    },
+  });
+}
+
 async function resolveCustomerMemberId(user: { role: string; email: string; parlourId?: string | null; memberId?: string | null }) {
   if (user.role !== 'policyholder_customer') {
     return user.memberId || undefined;
@@ -43,13 +96,17 @@ authRouter.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
-  const user = await prisma.appUser.findFirst({
+  let user = await prisma.appUser.findFirst({
     where: {
       email: parsed.data.email,
       role: parsed.data.role,
       status: 'active',
     },
   });
+
+  if (!user && parsed.data.role === 'policyholder_customer') {
+    user = await resolvePolicyholderUser(parsed.data.email);
+  }
 
   if (!user) {
     return res.status(401).json({ message: 'Invalid credentials' });

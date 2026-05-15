@@ -4,6 +4,7 @@ import { Eye, PencilLine } from 'lucide-react';
 import type { Parlour } from '../../types';
 import { fetchParlours, setParlourStatus } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
+import { fetchMembers } from '../../services/membersApi';
 import { fetchAdoptionOverview, type AdoptionOverviewParlour } from '../../services/reportsApi';
 
 function getOnboardingStage(progress: number): string {
@@ -30,6 +31,7 @@ export default function ParlourList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [branchCounts, setBranchCounts] = useState<Record<string, number>>({});
+  const [memberCounts, setMemberCounts] = useState<Record<string, number> | null>(null);
   const [adoptionByParlourId, setAdoptionByParlourId] = useState<Record<string, AdoptionOverviewParlour>>({});
 
   const getHealthClasses = (healthStatus?: AdoptionOverviewParlour['healthStatus']) => {
@@ -56,20 +58,50 @@ export default function ParlourList() {
     try {
       setLoading(true);
       setError(null);
-      const [records, allBranches, adoption] = await Promise.all([
+      const [recordsResult, branchesResult, membersResult, adoptionResult] = await Promise.allSettled([
         fetchParlours(),
         fetchBranches(),
-        fetchAdoptionOverview().catch(() => null),
+        fetchMembers(),
+        fetchAdoptionOverview(),
       ]);
-      setParlours(records);
-      const counts: Record<string, number> = {};
-      for (const branch of allBranches) {
-        counts[branch.parlourId] = (counts[branch.parlourId] || 0) + 1;
+
+      if (recordsResult.status !== 'fulfilled') {
+        throw recordsResult.reason;
       }
-      setBranchCounts(counts);
-      setAdoptionByParlourId(
-        Object.fromEntries((adoption?.parlours || []).map((item) => [item.parlourId, item]))
-      );
+
+      const records = recordsResult.value;
+      setParlours(records);
+      if (branchesResult.status === 'fulfilled') {
+        const counts: Record<string, number> = {};
+        for (const branch of branchesResult.value) {
+          counts[branch.parlourId] = (counts[branch.parlourId] || 0) + 1;
+        }
+        setBranchCounts(counts);
+      } else {
+        setBranchCounts({});
+      }
+
+      if (membersResult.status === 'fulfilled') {
+        const counts: Record<string, number> = {};
+        for (const member of membersResult.value) {
+          counts[member.parlourId] = (counts[member.parlourId] || 0) + 1;
+        }
+        setMemberCounts(counts);
+      } else {
+        setMemberCounts(null);
+      }
+
+      if (adoptionResult.status === 'fulfilled') {
+        setAdoptionByParlourId(
+          Object.fromEntries((adoptionResult.value.parlours || []).map((item) => [item.parlourId, item]))
+        );
+      } else {
+        setAdoptionByParlourId({});
+      }
+
+      if (branchesResult.status !== 'fulfilled' || membersResult.status !== 'fulfilled' || adoptionResult.status !== 'fulfilled') {
+        setError('Some supporting endpoint data could not be loaded. Core parlour records are shown below.');
+      }
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Failed to load parlours');
     } finally {
@@ -123,11 +155,15 @@ export default function ParlourList() {
             <tbody>
               {parlours.map((p) => {
                 const branchCount = branchCounts[p.id] || 0;
+                const memberCount = memberCounts ? (memberCounts[p.id] || 0) : p.totalMembers;
                 const adoption = adoptionByParlourId[p.id];
                 return (
                   <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">{p.name}</td>
-                    <td className="px-4 py-3 text-slate-500">{p.province}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      <div>{p.region}</div>
+                      <div className="text-xs text-slate-400">{p.province}</div>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${p.tier === 'premium' ? 'bg-violet-100 text-violet-700' : p.tier === 'standard' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}`}>
                         {p.tier}
@@ -170,8 +206,8 @@ export default function ParlourList() {
                         <div className="text-xs text-slate-400">No adoption data yet</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">{p.totalMembers.toLocaleString()}</td>
-                    <td className="px-4 py-3">{branchCount}</td>
+                    <td className="px-4 py-3">{memberCount.toLocaleString()}</td>
+                    <td className="px-4 py-3">{branchCount || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Link to={`/safpa/parlours/${p.id}`} className="text-red-600 hover:text-red-800" title="View details">

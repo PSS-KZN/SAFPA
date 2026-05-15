@@ -93,7 +93,7 @@ export default function SAFPADashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {cards.map((c) => (
-          <div key={c.label} className="card card-hover p-6 flex items-center gap-5">
+          <div key={c.label} className="flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
             <div className={`flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${c.gradient} shadow-lg shrink-0`}>
               {c.icon}
             </div>
@@ -109,7 +109,7 @@ export default function SAFPADashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         {/* Collections Trend */}
-        <div className="card p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="font-semibold text-slate-900 text-lg">Collections vs Due</h3>
@@ -129,7 +129,7 @@ export default function SAFPADashboard() {
         </div>
 
         {/* Policy Status Breakdown */}
-        <div className="card p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="font-semibold text-slate-900 text-lg">Policy Status</h3>
@@ -151,7 +151,7 @@ export default function SAFPADashboard() {
 
       {/* Member Growth + Parlour Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="font-semibold text-slate-900 text-lg">Member Growth</h3>
@@ -169,7 +169,7 @@ export default function SAFPADashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="card p-0 overflow-hidden flex flex-col">
+        <div className="rounded-2xl border border-slate-200 bg-white p-0 shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-slate-900 text-lg">Parlours Directory</h3>

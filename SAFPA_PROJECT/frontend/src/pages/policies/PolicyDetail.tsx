@@ -110,6 +110,9 @@ export default function PolicyDetail() {
     return <div className="text-center py-12 text-slate-500">Policy not found</div>;
   }
 
+  const canRecordPayment = ['parlour_owner', 'policy_admin', 'collections_clerk'].includes(currentUser.role);
+  const canReinstate = ['parlour_owner', 'policy_admin'].includes(currentUser.role);
+
   const handleRecordPayment = async () => {
     try {
       setBusy(true);
@@ -213,8 +216,8 @@ export default function PolicyDetail() {
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <button disabled={busy} onClick={() => void handleRecordPayment()} className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:opacity-60">Record Payment</button>
-            {policy.status === 'suspended' && <button disabled={busy} onClick={() => void handleReinstate()} className="text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-60">Reinstate</button>}
+            {canRecordPayment && <button disabled={busy} onClick={() => void handleRecordPayment()} className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:opacity-60">Record Payment</button>}
+            {canReinstate && policy.status === 'suspended' && <button disabled={busy} onClick={() => void handleReinstate()} className="text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-60">Reinstate</button>}
           </div>
         </div>
       </div>

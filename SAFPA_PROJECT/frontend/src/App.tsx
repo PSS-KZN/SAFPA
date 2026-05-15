@@ -156,10 +156,10 @@ function AppRoutes() {
         <Route path="/members/:id" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <MemberDetail />)} />
 
         {/* Policies */}
-        <Route path="/policies" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <PolicyList />)} />
+        <Route path="/policies" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk'], <PolicyList />)} />
         <Route path="/policies/new" element={withAccess(['parlour_owner', 'policy_admin'], <NewPolicy />)} />
         <Route path="/policies/import" element={withAccess(['parlour_owner', 'policy_admin'], <BulkImportPolicies />)} />
-        <Route path="/policies/:id" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin'], <PolicyDetail />)} />
+        <Route path="/policies/:id" element={withAccess(['parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk'], <PolicyDetail />)} />
 
         {/* Collections */}
         <Route path="/collections" element={withAccess(['parlour_owner', 'branch_manager', 'collections_clerk'], <CollectionsDashboard />)} />

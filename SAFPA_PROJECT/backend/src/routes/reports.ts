@@ -41,6 +41,23 @@ interface AdoptionSnapshot {
   isAtRisk: boolean;
 }
 
+interface MonthRange {
+  month: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface UsageSummaryRow {
+  parlourId: string;
+  parlourName: string;
+  tier: string;
+  status: string;
+  activeUsers: number;
+  events: number;
+  topModule: string | null;
+  lastActivityAt: string | null;
+}
+
 function monthKey(dateText: string): string {
   if (dateText.length >= 7) {
     return dateText.slice(0, 7);
@@ -112,6 +129,21 @@ function currentMonthRange(): { startDate: string; endDate: string } {
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
 
   return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+}
+
+function monthRange(month?: string): MonthRange {
+  const normalized = month && /^\d{4}-\d{2}$/.test(month) ? month : new Date().toISOString().slice(0, 7);
+  const [yearText, monthText] = normalized.split('-');
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 0));
+
+  return {
+    month: normalized,
     startDate: start.toISOString().slice(0, 10),
     endDate: end.toISOString().slice(0, 10),
   };
@@ -467,12 +499,24 @@ reportsRouter.get('/dashboard/export', async (req, res) => {
 });
 
 reportsRouter.get('/network', async (_req, res) => {
-  const [parlours, members, policies, payments, funeralCases] = await Promise.all([
+  const selectedMonth = typeof _req.query.month === 'string' ? _req.query.month : undefined;
+  const selectedRange = monthRange(selectedMonth);
+
+  const [parlours, members, policies, payments, funeralCases, usageEvents] = await Promise.all([
     prisma.parlour.findMany({ orderBy: { createdAt: 'desc' } }),
     prisma.member.findMany(),
     prisma.policy.findMany(),
     prisma.paymentTransaction.findMany(),
     prisma.funeralCase.findMany(),
+    prisma.parlourUsageEvent.findMany({
+      where: {
+        occurredOn: {
+          gte: selectedRange.startDate,
+          lte: selectedRange.endDate,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   const totalParlours = parlours.length;
@@ -483,12 +527,36 @@ reportsRouter.get('/network', async (_req, res) => {
   const totalArrears = policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
   const openFuneralCases = funeralCases.filter((item) => isOpenFuneralCase(item.status)).length;
 
-  const nowMonth = new Date().toISOString().slice(0, 7);
+  const nowMonth = selectedRange.month;
   const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
   const premiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
   const paymentsThisMonth = payments.filter((payment) => monthKey(payment.date) === nowMonth && payment.status === 'successful');
   const premiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);
   const collectionRate = premiumsDueThisMonth > 0 ? Math.round((premiumsCollectedThisMonth / premiumsDueThisMonth) * 100) : 0;
+
+  const usageSummary = parlours
+    .map<UsageSummaryRow>((parlour) => {
+      const parlourEvents = usageEvents.filter((event) => event.parlourId === parlour.id);
+      const moduleCounts = new Map<string, number>();
+      for (const event of parlourEvents) {
+        moduleCounts.set(event.module, (moduleCounts.get(event.module) || 0) + 1);
+      }
+
+      const topModule = Array.from(moduleCounts.entries()).sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
+      const activeUsers = new Set(parlourEvents.map((event) => event.userId).filter((value): value is string => Boolean(value))).size;
+
+      return {
+        parlourId: parlour.id,
+        parlourName: parlour.name,
+        tier: parlour.tier,
+        status: parlour.status,
+        activeUsers,
+        events: parlourEvents.length,
+        topModule,
+        lastActivityAt: parlourEvents[0]?.occurredOn ?? null,
+      };
+    })
+    .sort((left, right) => right.events - left.events || right.activeUsers - left.activeUsers);
 
   const monthlyMap = new Map<string, MonthlyAggregation>();
   for (const payment of payments) {
@@ -512,6 +580,7 @@ reportsRouter.get('/network', async (_req, res) => {
   const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);
 
   return res.json({
+    selectedMonth: selectedRange.month,
     totalParlours,
     activeParlours,
     totalMembers,
@@ -527,6 +596,7 @@ reportsRouter.get('/network', async (_req, res) => {
     memberGrowth,
     funeralCaseTrend,
     parlours,
+    usageSummary,
   });
 });
 

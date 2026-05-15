@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, PhoneCall } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
-import type { Lead } from '../../types';
+import type { Lead, User } from '../../types';
 import { createLead } from '../../services/leadsApi';
+import { fetchUsers } from '../../services/usersApi';
 
 type LeadFormState = {
   firstName: string;
@@ -38,10 +39,36 @@ export default function AddLead() {
   const [form, setForm] = useState<LeadFormState>(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [policyAdmins, setPolicyAdmins] = useState<User[]>([]);
 
   const updateForm = <K extends keyof LeadFormState>(field: K, value: LeadFormState[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
   };
+
+  useEffect(() => {
+    const loadPolicyAdmins = async () => {
+      try {
+        const users = await fetchUsers(parlourId);
+        setPolicyAdmins(
+          users.filter((user) => {
+            if (user.role !== 'policy_admin' || user.status !== 'active') {
+              return false;
+            }
+
+            if (!currentUser.branchId) {
+              return true;
+            }
+
+            return !user.branchId || user.branchId === currentUser.branchId;
+          })
+        );
+      } catch {
+        setPolicyAdmins([]);
+      }
+    };
+
+    void loadPolicyAdmins();
+  }, [currentUser.branchId, parlourId]);
 
   const saveLead = async () => {
     if (!form.firstName || !form.lastName || !form.phone) {
@@ -125,7 +152,12 @@ export default function AddLead() {
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Assigned To</label>
-              <input value={form.assignedTo} onChange={(event) => updateForm('assignedTo', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+              <select value={form.assignedTo} onChange={(event) => updateForm('assignedTo', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                <option value="">Unassigned</option>
+                {policyAdmins.map((user) => (
+                  <option key={user.id} value={user.name}>{user.name}</option>
+                ))}
+              </select>
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm text-slate-600">Notes</label>

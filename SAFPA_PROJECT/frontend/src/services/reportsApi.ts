@@ -24,6 +24,7 @@ export interface ReportsFilters {
 }
 
 export interface NetworkDashboardData {
+  selectedMonth: string;
   totalParlours: number;
   activeParlours: number;
   totalMembers: number;
@@ -39,6 +40,16 @@ export interface NetworkDashboardData {
   memberGrowth: Array<{ month: string; members: number }>;
   funeralCaseTrend: Array<{ month: string; total: number; open: number; closed: number }>;
   parlours: Array<{ id: string; name: string; province: string; tier: string; status: string }>;
+  usageSummary: Array<{
+    parlourId: string;
+    parlourName: string;
+    tier: string;
+    status: string;
+    activeUsers: number;
+    events: number;
+    topModule: string | null;
+    lastActivityAt: string | null;
+  }>;
 }
 
 export interface AdoptionOverviewParlour {
@@ -105,8 +116,14 @@ export function fetchReportsDashboard(parlourId: string, filters?: ReportsFilter
   return request<ReportsDashboardData>(`/api/reports/dashboard?${params.toString()}`);
 }
 
-export function fetchNetworkDashboard(): Promise<NetworkDashboardData> {
-  return request<NetworkDashboardData>('/api/reports/network');
+export function fetchNetworkDashboard(month?: string): Promise<NetworkDashboardData> {
+  const params = new URLSearchParams();
+  if (month) {
+    params.set('month', month);
+  }
+
+  const query = params.toString();
+  return request<NetworkDashboardData>(`/api/reports/network${query ? `?${query}` : ''}`);
 }
 
 export function fetchAdoptionOverview(): Promise<AdoptionOverviewData> {

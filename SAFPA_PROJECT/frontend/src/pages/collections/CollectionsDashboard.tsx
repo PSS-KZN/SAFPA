@@ -3,7 +3,9 @@ import { CheckCircle, XCircle, Clock, AlertTriangle, Upload, FileDown, CheckSqua
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PaymentTransaction, Policy } from '../../types';
+import type { Member, PaymentTransaction, Policy } from '../../types';
+import { sendCommunication } from '../../services/communicationsApi';
+import { fetchMembers } from '../../services/membersApi';
 import { createPayment, createReconciliationImport, fetchPaymentProviders, fetchPayments, fetchReconciliationImports, generateBillingEvents, type PaymentProvider, type ReconciliationImportRecord } from '../../services/paymentsApi';
 import { fetchPolicies } from '../../services/policiesApi';
 
@@ -17,11 +19,14 @@ export default function CollectionsDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'portal' | 'transactions' | 'arrears' | 'reconciliation'>('overview');
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [reconImports, setReconImports] = useState<ReconciliationImportRecord[]>([]);
   const [providers, setProviders] = useState<PaymentProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [capturingPayment, setCapturingPayment] = useState(false);
+  const [sendingReminderPolicyId, setSendingReminderPolicyId] = useState<string | null>(null);
   const [portalForm, setPortalForm] = useState({
     policyId: '',
     amount: 0,
@@ -38,15 +43,17 @@ export default function CollectionsDashboard() {
       setLoading(true);
       setError(null);
 
-      const [paymentRecords, policyRecords, importRecords, providerResponse] = await Promise.all([
+      const [paymentRecords, policyRecords, memberRecords, importRecords, providerResponse] = await Promise.all([
         fetchPayments(parlourId),
         fetchPolicies(parlourId),
+        fetchMembers(parlourId),
         fetchReconciliationImports(parlourId),
         fetchPaymentProviders(),
       ]);
 
       setPayments(paymentRecords);
       setPolicies(policyRecords);
+      setMembers(memberRecords);
       setReconImports(importRecords);
       setProviders(providerResponse.providers);
       if (policyRecords.length > 0) {
@@ -103,6 +110,7 @@ export default function CollectionsDashboard() {
     try {
       setCapturingPayment(true);
       setError(null);
+      setNotice(null);
       await createPayment({
         policyId: portalForm.policyId,
         amount: portalForm.amount,
@@ -117,6 +125,49 @@ export default function CollectionsDashboard() {
       setError(captureError instanceof Error ? captureError.message : 'Failed to capture payment');
     } finally {
       setCapturingPayment(false);
+    }
+  };
+
+  const sendReminder = async (policy: Policy) => {
+    const member = members.find((item) => item.id === policy.memberId);
+    if (!member) {
+      setError('Member details were not found for this policy.');
+      return;
+    }
+
+    const recipientContact = member.phone || member.email;
+    if (!recipientContact) {
+      setError('The policyholder has no phone or email contact for reminders.');
+      return;
+    }
+
+    try {
+      setSendingReminderPolicyId(policy.id);
+      setError(null);
+      setNotice(null);
+      await sendCommunication({
+        parlourId,
+        type: member.phone ? 'sms' : 'email',
+        recipientName: `${member.firstName} ${member.lastName}`.trim(),
+        recipientContact,
+        trigger: 'payment_reminder',
+        templateName: 'Arrears Reminder',
+        subject: member.phone ? undefined : `Payment reminder for ${policy.policyNumber}`,
+        message: `Dear ${member.firstName}, your policy ${policy.policyNumber} is in arrears by R${policy.arrearsAmount}. Please contact the parlour or make payment to keep cover active.`,
+        metadata: {
+          memberId: member.id,
+          policyId: policy.id,
+          policyNumber: policy.policyNumber,
+          arrearsAmount: policy.arrearsAmount,
+          relatedEntityType: 'policy',
+          relatedEntityId: policy.id,
+        },
+      });
+      setNotice(`Reminder sent for ${policy.policyNumber}.`);
+    } catch (reminderError) {
+      setError(reminderError instanceof Error ? reminderError.message : 'Failed to send reminder');
+    } finally {
+      setSendingReminderPolicyId(null);
     }
   };
 
@@ -206,6 +257,7 @@ export default function CollectionsDashboard() {
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
+      {notice && <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{notice}</div>}
 
       {loading && <div className="mb-4 rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">Loading collections...</div>}
 
@@ -429,7 +481,13 @@ export default function CollectionsDashboard() {
                   </td>
                   <td className="px-4 py-3 text-slate-500">{p.lastPaymentDate || 'Never'}</td>
                   <td className="px-4 py-3">
-                    <button className="text-red-600 hover:text-red-800 text-xs mr-2">Send Reminder</button>
+                    <button
+                      onClick={() => void sendReminder(p)}
+                      disabled={sendingReminderPolicyId === p.id}
+                      className="text-red-600 hover:text-red-800 text-xs mr-2 disabled:text-slate-300"
+                    >
+                      {sendingReminderPolicyId === p.id ? 'Sending...' : 'Send Reminder'}
+                    </button>
                     <Link to={`/policies/${p.id}`} className="text-slate-500 hover:text-slate-700 text-xs">View Policy</Link>
                   </td>
                 </tr>

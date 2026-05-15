@@ -28,6 +28,19 @@ function humanizeLabel(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
+function formatMonthLabel(value: string): string {
+  const [yearText, monthText] = value.split('-');
+  const year = Number(yearText);
+  const month = Number(monthText) - 1;
+  const date = new Date(Date.UTC(year, month, 1));
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
 type CsvValue = string | number;
 
 function csvCell(value: CsvValue): string {
@@ -396,6 +409,61 @@ function OperationsKPIGrid({
   );
 }
 
+function UsageSummaryTable({
+  selectedMonth,
+  rows,
+}: {
+  selectedMonth: string;
+  rows: NetworkDashboardData['usageSummary'];
+}) {
+  return (
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 lg:col-span-2">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <h3 className="font-semibold">Platform Usage Activity</h3>
+          <p className="mt-1 text-sm text-slate-500">Month-scoped usage tracking for {formatMonthLabel(selectedMonth)}.</p>
+        </div>
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+          {rows.length.toLocaleString()} parlours tracked
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="pb-2">Parlour</th>
+              <th className="pb-2">Tier</th>
+              <th className="pb-2">Status</th>
+              <th className="pb-2">Active Users</th>
+              <th className="pb-2">Events</th>
+              <th className="pb-2">Top Module</th>
+              <th className="pb-2">Last Activity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.parlourId} className="border-b border-slate-100 last:border-b-0">
+                <td className="py-3 font-medium">{row.parlourName}</td>
+                <td className="py-3 capitalize">{row.tier}</td>
+                <td className="py-3 capitalize">{row.status}</td>
+                <td className="py-3">{row.activeUsers.toLocaleString()}</td>
+                <td className="py-3">{row.events.toLocaleString()}</td>
+                <td className="py-3 capitalize">{row.topModule ? humanizeLabel(row.topModule) : 'No activity'}</td>
+                <td className="py-3">{row.lastActivityAt || 'No activity'}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="py-10 text-center text-slate-400">No usage activity found for this month</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
   const activeParlourRate = data.totalParlours > 0 ? (data.activeParlours / data.totalParlours) * 100 : 0;
   const averageMembersPerParlour = data.totalParlours > 0 ? data.totalMembers / data.totalParlours : 0;
@@ -426,7 +494,7 @@ function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
           <div className="text-xl font-semibold">{data.activeParlours.toLocaleString()}</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="text-xs text-slate-500">Premiums Due (This Month)</div>
+          <div className="text-xs text-slate-500">Premiums Due ({formatMonthLabel(data.selectedMonth)})</div>
           <div className="text-xl font-semibold">{formatCurrency(data.premiumsDueThisMonth)}</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -496,6 +564,8 @@ function NetworkAdminView({ data }: { data: NetworkDashboardData }) {
 
         <MonthlyPerformanceTable title="Collections Efficiency by Month" rows={monthlyRows} />
 
+        <UsageSummaryTable selectedMonth={data.selectedMonth} rows={data.usageSummary} />
+
         <MemberGrowthChart title="Member Growth" data={data.memberGrowth} />
         <FuneralCaseTrendChart title="Network Funeral Case Trend" data={data.funeralCaseTrend} />
 
@@ -543,6 +613,7 @@ export default function ReportsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [reportMonth, setReportMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [productName, setProductName] = useState('');
   const [productOptions, setProductOptions] = useState<string[]>([]);
 
@@ -570,7 +641,7 @@ export default function ReportsDashboard() {
         setError(null);
 
         if (isNetworkRole) {
-          const records = await fetchNetworkDashboard();
+          const records = await fetchNetworkDashboard(reportMonth || undefined);
           setNetworkData(records);
           setData(null);
         } else {
@@ -619,7 +690,7 @@ export default function ReportsDashboard() {
     };
 
     void load();
-  }, [isNetworkRole, isOperationsRole, userParlourId, currentUser.role, currentUser.branchId, startDate, endDate, productName]);
+  }, [isNetworkRole, isOperationsRole, userParlourId, currentUser.role, currentUser.branchId, startDate, endDate, reportMonth, productName]);
 
   const collectionsReport = data?.monthlyCollections || [];
   const memberGrowth = data?.memberGrowth || [];
@@ -928,6 +999,13 @@ export default function ReportsDashboard() {
           <Download size={14} /> Export CSV
         </button>
       </div>
+
+      {isNetworkRole && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+          <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+          <div className="text-sm text-slate-500">Usage activity and current-month KPIs are scoped to the selected month.</div>
+        </div>
+      )}
 
       {!isNetworkRole && (
         <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-3">
