@@ -18,6 +18,7 @@ async function clearDatabase() {
     prisma.auditEntry.deleteMany(),
     prisma.funeralCase.deleteMany(),
     prisma.parlourSubscription.deleteMany(),
+    prisma.subscriptionPlan.deleteMany(),
     prisma.resourceAsset.deleteMany(),
     prisma.documentRecord.deleteMany(),
     prisma.communicationLog.deleteMany(),

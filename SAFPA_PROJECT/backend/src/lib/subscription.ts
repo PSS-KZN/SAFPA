@@ -34,6 +34,51 @@ const TIER_LIMITS: Record<Tier, TierLimit> = {
   },
 };
 
+const DEFAULT_SUBSCRIPTION_PLANS: Array<{
+  id: string;
+  tier: Tier;
+  name: string;
+  amount: number;
+  description: string;
+  isActive: boolean;
+}> = [
+  {
+    id: 'plan_basic',
+    tier: 'basic',
+    name: 'Basic',
+    amount: 999,
+    description: 'Starter subscription for smaller parlours.',
+    isActive: true,
+  },
+  {
+    id: 'plan_standard',
+    tier: 'standard',
+    name: 'Standard',
+    amount: 2499,
+    description: 'Growth subscription for scaling parlours.',
+    isActive: true,
+  },
+  {
+    id: 'plan_premium',
+    tier: 'premium',
+    name: 'Premium',
+    amount: 4999,
+    description: 'Enterprise subscription for multi-branch operators.',
+    isActive: true,
+  },
+];
+
+export async function ensureDefaultSubscriptionPlans(): Promise<void> {
+  const existingCount = await prisma.subscriptionPlan.count();
+  if (existingCount > 0) {
+    return;
+  }
+
+  for (const plan of DEFAULT_SUBSCRIPTION_PLANS) {
+    await prisma.subscriptionPlan.create({ data: plan });
+  }
+}
+
 async function getTier(parlourId: string): Promise<Tier> {
   const parlour = await prisma.parlour.findUnique({ where: { id: parlourId }, select: { tier: true } });
   return (parlour?.tier as Tier) || 'basic';

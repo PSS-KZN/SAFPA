@@ -3,166 +3,130 @@ import { z } from 'zod';
 import { writeAuditLog } from '../lib/audit';
 import { generateId } from '../lib/id';
 import { prisma } from '../lib/prisma';
+import { ensureDefaultSubscriptionPlans } from '../lib/subscription';
 
-const createSubscriptionSchema = z.object({
-  parlourId: z.string().min(2),
+const createSubscriptionPlanSchema = z.object({
   tier: z.enum(['basic', 'standard', 'premium']),
-  status: z.enum(['active', 'paused', 'cancelled']).default('active'),
-  billingCycle: z.enum(['monthly', 'quarterly', 'annually']).default('monthly'),
+  name: z.string().min(2).max(50),
   amount: z.number().int().min(0),
-  startDate: z.string().min(8),
-  endDate: z.string().min(8).optional(),
-  autoRenew: z.boolean().default(true),
-  notes: z.string().max(500).optional(),
+  description: z.string().max(500).optional(),
+  isActive: z.boolean().default(true),
 });
 
-const updateSubscriptionSchema = createSubscriptionSchema
-  .omit({ parlourId: true })
-  .partial();
+const updateSubscriptionPlanSchema = createSubscriptionPlanSchema.omit({ tier: true }).partial();
 
 export const subscriptionsRouter = Router();
 
 subscriptionsRouter.get('/', async (req, res) => {
-  const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
+  await ensureDefaultSubscriptionPlans();
 
-  const subscriptions = await prisma.parlourSubscription.findMany({
-    where: parlourId ? { parlourId } : undefined,
-    orderBy: { updatedAt: 'desc' },
+  const plans = await prisma.subscriptionPlan.findMany({
+    orderBy: [{ amount: 'asc' }, { name: 'asc' }],
   });
 
-  const parlours = await prisma.parlour.findMany({
-    where: { id: { in: subscriptions.map((subscription) => subscription.parlourId) } },
-    select: { id: true, name: true },
-  });
-
-  const parlourNameById = new Map(parlours.map((parlour) => [parlour.id, parlour.name]));
-
-  return res.json(
-    subscriptions.map((subscription) => ({
-      ...subscription,
-      parlourName: parlourNameById.get(subscription.parlourId) || 'Unknown Parlour',
-    }))
-  );
+  return res.json(plans);
 });
 
 subscriptionsRouter.post('/', async (req, res) => {
-  const parsed = createSubscriptionSchema.safeParse(req.body);
+  const parsed = createSubscriptionPlanSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
-      message: 'Invalid subscription payload',
+      message: 'Invalid subscription plan payload',
       errors: parsed.error.flatten(),
     });
   }
 
-  const parlour = await prisma.parlour.findUnique({ where: { id: parsed.data.parlourId } });
-  if (!parlour) {
-    return res.status(404).json({ message: 'Parlour not found' });
-  }
-
-  const existing = await prisma.parlourSubscription.findUnique({
-    where: { parlourId: parsed.data.parlourId },
+  const existing = await prisma.subscriptionPlan.findUnique({
+    where: { tier: parsed.data.tier },
   });
 
   if (existing) {
-    return res.status(409).json({ message: 'Parlour already has a subscription. Update it instead.' });
+    return res.status(409).json({ message: 'A plan for this tier already exists. Update it instead.' });
   }
 
-  const subscription = await prisma.parlourSubscription.create({
+  const subscriptionPlan = await prisma.subscriptionPlan.create({
     data: {
-      id: generateId('sub'),
+      id: generateId('plan'),
       ...parsed.data,
     },
   });
 
-  if (parlour.tier !== parsed.data.tier) {
-    await prisma.parlour.update({
-      where: { id: parsed.data.parlourId },
-      data: { tier: parsed.data.tier },
-    });
-  }
-
   await writeAuditLog(req, {
-    action: 'SUBSCRIPTION_CREATED',
-    entityType: 'Subscription',
-    entityId: subscription.id,
-    entityLabel: parlour.name,
-    parlourId: subscription.parlourId,
-    details: `tier=${subscription.tier}; status=${subscription.status}; amount=${subscription.amount}`,
+    action: 'SUBSCRIPTION_PLAN_CREATED',
+    entityType: 'SubscriptionPlan',
+    entityId: subscriptionPlan.id,
+    entityLabel: subscriptionPlan.name,
+    details: `tier=${subscriptionPlan.tier}; amount=${subscriptionPlan.amount}`,
   });
 
-  return res.status(201).json({
-    ...subscription,
-    parlourName: parlour.name,
-  });
+  return res.status(201).json(subscriptionPlan);
 });
 
 subscriptionsRouter.patch('/:id', async (req, res) => {
-  const parsed = updateSubscriptionSchema.safeParse(req.body);
+  const parsed = updateSubscriptionPlanSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
-      message: 'Invalid subscription payload',
+      message: 'Invalid subscription plan payload',
       errors: parsed.error.flatten(),
     });
   }
 
   try {
-    const subscription = await prisma.parlourSubscription.update({
+    const existingPlan = await prisma.subscriptionPlan.findUnique({ where: { id: req.params.id } });
+    if (!existingPlan) {
+      return res.status(404).json({ message: 'Subscription plan not found' });
+    }
+
+    const subscriptionPlan = await prisma.subscriptionPlan.update({
       where: { id: req.params.id },
       data: parsed.data,
     });
 
-    if (parsed.data.tier) {
-      await prisma.parlour.update({
-        where: { id: subscription.parlourId },
-        data: { tier: parsed.data.tier },
+    if (parsed.data.amount !== undefined) {
+      await prisma.parlourSubscription.updateMany({
+        where: { tier: existingPlan.tier },
+        data: { amount: parsed.data.amount },
       });
     }
 
-    const parlour = await prisma.parlour.findUnique({
-      where: { id: subscription.parlourId },
-      select: { id: true, name: true },
-    });
-
     await writeAuditLog(req, {
-      action: 'SUBSCRIPTION_UPDATED',
-      entityType: 'Subscription',
-      entityId: subscription.id,
-      entityLabel: parlour?.name || subscription.parlourId,
-      parlourId: subscription.parlourId,
+      action: 'SUBSCRIPTION_PLAN_UPDATED',
+      entityType: 'SubscriptionPlan',
+      entityId: subscriptionPlan.id,
+      entityLabel: subscriptionPlan.name,
       details: [
-        parsed.data.tier ? `tier=${parsed.data.tier}` : undefined,
-        parsed.data.status ? `status=${parsed.data.status}` : undefined,
+        parsed.data.name ? `name=${parsed.data.name}` : undefined,
         parsed.data.amount !== undefined ? `amount=${parsed.data.amount}` : undefined,
+        parsed.data.isActive !== undefined ? `isActive=${parsed.data.isActive}` : undefined,
       ]
         .filter(Boolean)
         .join('; '),
     });
 
-    return res.json({
-      ...subscription,
-      parlourName: parlour?.name || 'Unknown Parlour',
-    });
+    return res.json(subscriptionPlan);
   } catch {
-    return res.status(404).json({ message: 'Subscription not found' });
+    return res.status(404).json({ message: 'Subscription plan not found' });
   }
 });
 
 subscriptionsRouter.delete('/:id', async (req, res) => {
-  const existing = await prisma.parlourSubscription.findUnique({ where: { id: req.params.id } });
+  const existing = await prisma.subscriptionPlan.findUnique({ where: { id: req.params.id } });
   if (!existing) {
-    return res.status(404).json({ message: 'Subscription not found' });
+    return res.status(404).json({ message: 'Subscription plan not found' });
   }
 
-  const parlour = await prisma.parlour.findUnique({ where: { id: existing.parlourId } });
+  const assignments = await prisma.parlourSubscription.count({ where: { tier: existing.tier } });
+  if (assignments > 0) {
+    return res.status(409).json({ message: 'This plan is currently assigned to parlours. Reassign them before deleting the plan.' });
+  }
 
-  await prisma.parlourSubscription.delete({ where: { id: req.params.id } });
+  await prisma.subscriptionPlan.delete({ where: { id: req.params.id } });
 
   await writeAuditLog(req, {
-    action: 'SUBSCRIPTION_DELETED',
-    entityType: 'Subscription',
+    action: 'SUBSCRIPTION_PLAN_DELETED',
+    entityType: 'SubscriptionPlan',
     entityId: existing.id,
-    entityLabel: parlour?.name || existing.parlourId,
-    parlourId: existing.parlourId,
+    entityLabel: existing.name,
   });
 
   return res.status(204).send();

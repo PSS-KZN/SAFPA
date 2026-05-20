@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ensureDefaultSubscriptionPlans = ensureDefaultSubscriptionPlans;
 exports.assertCreateLimit = assertCreateLimit;
 exports.assertBulkImportLimit = assertBulkImportLimit;
 exports.assertReportExportAllowed = assertReportExportAllowed;
@@ -27,6 +28,41 @@ const TIER_LIMITS = {
         reportExport: true,
     },
 };
+const DEFAULT_SUBSCRIPTION_PLANS = [
+    {
+        id: 'plan_basic',
+        tier: 'basic',
+        name: 'Basic',
+        amount: 999,
+        description: 'Starter subscription for smaller parlours.',
+        isActive: true,
+    },
+    {
+        id: 'plan_standard',
+        tier: 'standard',
+        name: 'Standard',
+        amount: 2499,
+        description: 'Growth subscription for scaling parlours.',
+        isActive: true,
+    },
+    {
+        id: 'plan_premium',
+        tier: 'premium',
+        name: 'Premium',
+        amount: 4999,
+        description: 'Enterprise subscription for multi-branch operators.',
+        isActive: true,
+    },
+];
+async function ensureDefaultSubscriptionPlans() {
+    const existingCount = await prisma_1.prisma.subscriptionPlan.count();
+    if (existingCount > 0) {
+        return;
+    }
+    for (const plan of DEFAULT_SUBSCRIPTION_PLANS) {
+        await prisma_1.prisma.subscriptionPlan.create({ data: plan });
+    }
+}
 async function getTier(parlourId) {
     const parlour = await prisma_1.prisma.parlour.findUnique({ where: { id: parlourId }, select: { tier: true } });
     return parlour?.tier || 'basic';

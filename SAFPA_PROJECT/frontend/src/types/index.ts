@@ -68,6 +68,17 @@ export interface ParlourSubscription {
   updatedAt: string;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  tier: 'basic' | 'standard' | 'premium';
+  name: string;
+  amount: number;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Branch {
   id: string;
   parlourId: string;

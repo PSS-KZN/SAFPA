@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, CheckCircle2, Wallet } from 'lucide-react';
-import type { Parlour, ParlourSubscription } from '../../types';
-import { fetchParlours } from '../../services/parloursApi';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Wallet } from 'lucide-react';
+import type { SubscriptionPlan } from '../../types';
 import {
   createSubscription,
   fetchSubscriptions,
@@ -11,41 +10,35 @@ import {
 } from '../../services/subscriptionsApi';
 
 interface SubscriptionForm {
-  parlourId: string;
-  tier: ParlourSubscription['tier'];
-  status: ParlourSubscription['status'];
-  billingCycle: ParlourSubscription['billingCycle'];
+  tier: SubscriptionPlan['tier'];
+  name: string;
   amount: number;
-  startDate: string;
-  endDate: string;
-  autoRenew: boolean;
-  notes: string;
+  description: string;
+  isActive: boolean;
 }
 
 const initialFormState: SubscriptionForm = {
-  parlourId: '',
   tier: 'basic',
-  status: 'active',
-  billingCycle: 'monthly',
+  name: '',
   amount: 0,
-  startDate: new Date().toISOString().slice(0, 10),
-  endDate: '',
-  autoRenew: true,
-  notes: '',
+  description: '',
+  isActive: true,
 };
 
 const guidance = [
-  'Select the tenant once and keep it locked during edits.',
-  'Set billing and status clearly so finance changes are auditable.',
-  'Use notes for exceptions like discounts, paused service, or manual approvals.',
+  'Keep one active record per tier so parlour assignments stay predictable.',
+  'Update the plan amount here and all future parlour assignments will use it.',
+  'Deactivate plans you want hidden from new parlour assignments.',
 ];
 
 export default function SubscriptionEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
+  const returnTo = searchParams.get('returnTo') || '/safpa/subscriptions';
+  const backLabel = 'Back to Subscriptions';
   const [form, setForm] = useState<SubscriptionForm>(initialFormState);
-  const [parlours, setParlours] = useState<Parlour[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +48,6 @@ export default function SubscriptionEditor() {
       try {
         setLoading(true);
         setError(null);
-
-        const parlourRows = await fetchParlours();
-        setParlours(parlourRows);
 
         if (id) {
           const subscriptions = await fetchSubscriptions();
@@ -69,23 +59,14 @@ export default function SubscriptionEditor() {
           }
 
           setForm({
-            parlourId: existing.parlourId,
             tier: existing.tier,
-            status: existing.status,
-            billingCycle: existing.billingCycle,
+            name: existing.name,
             amount: existing.amount,
-            startDate: existing.startDate,
-            endDate: existing.endDate || '',
-            autoRenew: existing.autoRenew,
-            notes: existing.notes || '',
+            description: existing.description || '',
+            isActive: existing.isActive,
           });
           return;
         }
-
-        setForm((previous) => ({
-          ...previous,
-          parlourId: previous.parlourId || parlourRows[0]?.id || '',
-        }));
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load subscription form');
       } finally {
@@ -101,8 +82,8 @@ export default function SubscriptionEditor() {
   };
 
   const save = async () => {
-    if (!form.parlourId || !form.startDate) {
-      setError('Parlour and start date are required.');
+    if (!form.name.trim()) {
+      setError('Plan name is required.');
       return;
     }
 
@@ -112,32 +93,24 @@ export default function SubscriptionEditor() {
 
       if (isEditing && id) {
         await updateSubscription(id, {
-          tier: form.tier,
-          status: form.status,
-          billingCycle: form.billingCycle,
+          name: form.name,
           amount: form.amount,
-          startDate: form.startDate,
-          endDate: form.endDate || undefined,
-          autoRenew: form.autoRenew,
-          notes: form.notes || undefined,
+          description: form.description || undefined,
+          isActive: form.isActive,
         });
       } else {
         const payload: CreateSubscriptionInput = {
-          parlourId: form.parlourId,
           tier: form.tier,
-          status: form.status,
-          billingCycle: form.billingCycle,
+          name: form.name,
           amount: form.amount,
-          startDate: form.startDate,
-          endDate: form.endDate || undefined,
-          autoRenew: form.autoRenew,
-          notes: form.notes || undefined,
+          description: form.description || undefined,
+          isActive: form.isActive,
         };
 
         await createSubscription(payload);
       }
 
-      navigate('/safpa/subscriptions');
+      navigate(returnTo);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save subscription');
     } finally {
@@ -145,12 +118,10 @@ export default function SubscriptionEditor() {
     }
   };
 
-  const selectedParlour = parlours.find((parlour) => parlour.id === form.parlourId);
-
   return (
     <div className="space-y-6">
-      <Link to="/safpa/subscriptions" className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800">
-        <ArrowLeft size={16} /> Back to Subscriptions
+      <Link to={returnTo} className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800">
+        <ArrowLeft size={16} /> {backLabel}
       </Link>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -175,35 +146,14 @@ export default function SubscriptionEditor() {
             <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Subscription Details</h2>
-                <p className="mt-1 text-sm text-slate-500">Capture the billing agreement and renewal behavior for the selected parlour.</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Selected tenant</div>
-                <div className="text-sm font-semibold text-slate-700">{selectedParlour?.name || 'Choose parlour'}</div>
+                <p className="mt-1 text-sm text-slate-500">Maintain the plan catalog that parlour billing records inherit from.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Parlour*</label>
-                <select
-                  disabled={isEditing}
-                  value={form.parlourId}
-                  onChange={(event) => onChange('parlourId', event.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:bg-slate-100"
-                >
-                  <option value="">Select parlour</option>
-                  {parlours.map((parlour) => (
-                    <option key={parlour.id} value={parlour.id}>
-                      {parlour.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Tier*</label>
-                <select value={form.tier} onChange={(event) => onChange('tier', event.target.value as ParlourSubscription['tier'])} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                <select disabled={isEditing} value={form.tier} onChange={(event) => onChange('tier', event.target.value as SubscriptionPlan['tier'])} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:bg-slate-100">
                   <option value="basic">Basic</option>
                   <option value="standard">Standard</option>
                   <option value="premium">Premium</option>
@@ -211,21 +161,8 @@ export default function SubscriptionEditor() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-600">Status*</label>
-                <select value={form.status} onChange={(event) => onChange('status', event.target.value as ParlourSubscription['status'])} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">Billing Cycle*</label>
-                <select value={form.billingCycle} onChange={(event) => onChange('billingCycle', event.target.value as ParlourSubscription['billingCycle'])} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annually">Annually</option>
-                </select>
+                <label className="mb-1 block text-sm text-slate-600">Plan Name*</label>
+                <input value={form.name} onChange={(event) => onChange('name', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
               </div>
 
               <div>
@@ -234,36 +171,21 @@ export default function SubscriptionEditor() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-600">Start Date*</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5">
-                  <CalendarDays size={16} className="text-slate-400" />
-                  <input type="date" value={form.startDate} onChange={(event) => onChange('startDate', event.target.value)} className="w-full bg-transparent text-sm outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">End Date</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5">
-                  <CalendarDays size={16} className="text-slate-400" />
-                  <input type="date" value={form.endDate} onChange={(event) => onChange('endDate', event.target.value)} className="w-full bg-transparent text-sm outline-none" />
-                </div>
-              </div>
-
-              <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input type="checkbox" checked={form.autoRenew} onChange={(event) => onChange('autoRenew', event.target.checked)} />
-                  Auto renew subscription
-                </label>
+                <label className="mb-1 block text-sm text-slate-600">Status</label>
+                <select value={form.isActive ? 'active' : 'inactive'} onChange={(event) => onChange('isActive', event.target.value === 'active')} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
 
               <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-600">Notes</label>
-                <textarea value={form.notes} onChange={(event) => onChange('notes', event.target.value)} className="min-h-28 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" placeholder="Optional internal notes for billing, approvals, or exceptions" />
+                <label className="mb-1 block text-sm text-slate-600">Description</label>
+                <textarea value={form.description} onChange={(event) => onChange('description', event.target.value)} className="min-h-28 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" placeholder="Optional summary for this subscription tier" />
               </div>
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-              <Link to="/safpa/subscriptions" className="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm text-slate-600">
+              <Link to={returnTo} className="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm text-slate-600">
                 Cancel
               </Link>
               <button onClick={() => void save()} disabled={saving} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">

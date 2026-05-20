@@ -21,6 +21,7 @@ const ROLE_PERMISSIONS: Array<{ prefix: string; methods?: string[]; roles: strin
   { prefix: '/api/audit', roles: ['safpa_admin', 'parlour_owner'] },
   { prefix: '/api/reports', roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator'] },
   { prefix: '/api/subscriptions', roles: ['safpa_admin'] },
+  { prefix: '/api/parlour-subscriptions', roles: ['safpa_admin'] },
 ];
 
 function pathIsPublic(path: string): boolean {

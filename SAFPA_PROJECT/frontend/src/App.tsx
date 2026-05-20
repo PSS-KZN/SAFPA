@@ -13,6 +13,7 @@ import AddParlour from './pages/safpa/AddParlour';
 import ParlourDetail from './pages/safpa/ParlourDetail';
 import Subscriptions from './pages/safpa/Subscriptions';
 import SubscriptionEditor from './pages/safpa/SubscriptionEditor';
+import ParlourSubscriptionEditor from './pages/safpa/ParlourSubscriptionEditor';
 import SAFPAResources from './pages/safpa/SAFPAResources';
 
 // Parlour Admin
@@ -159,6 +160,8 @@ function AppRoutes() {
         <Route path="/safpa/subscriptions" element={withAccess(['safpa_admin'], <Subscriptions />)} />
         <Route path="/safpa/subscriptions/new" element={withAccess(['safpa_admin'], <SubscriptionEditor />)} />
         <Route path="/safpa/subscriptions/:id/edit" element={withAccess(['safpa_admin'], <SubscriptionEditor />)} />
+        <Route path="/safpa/parlour-subscriptions/new" element={withAccess(['safpa_admin'], <ParlourSubscriptionEditor />)} />
+        <Route path="/safpa/parlour-subscriptions/:id/edit" element={withAccess(['safpa_admin'], <ParlourSubscriptionEditor />)} />
         <Route path="/safpa/resources" element={withAccess(['safpa_admin'], <SAFPAResources />)} />
 
         {/* Parlour Admin */}

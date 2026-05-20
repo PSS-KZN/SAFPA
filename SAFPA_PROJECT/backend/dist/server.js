@@ -21,6 +21,7 @@ const leads_1 = require("./routes/leads");
 const members_1 = require("./routes/members");
 const parlours_1 = require("./routes/parlours");
 const payments_1 = require("./routes/payments");
+const parlourSubscriptions_1 = require("./routes/parlourSubscriptions");
 const policies_1 = require("./routes/policies");
 const products_1 = require("./routes/products");
 const reports_1 = require("./routes/reports");
@@ -52,6 +53,7 @@ const mountedRouters = [
     { basePath: '/api/audit', router: audit_1.auditRouter },
     { basePath: '/api/resources', router: resources_1.resourcesRouter },
     { basePath: '/api/subscriptions', router: subscriptions_1.subscriptionsRouter },
+    { basePath: '/api/parlour-subscriptions', router: parlourSubscriptions_1.parlourSubscriptionsRouter },
 ];
 function getDocumentedEndpoints() {
     return (0, routeCatalog_1.collectMountedRoutes)(mountedRouters, [
@@ -115,6 +117,7 @@ exports.app.use('/api/reports', reports_1.reportsRouter);
 exports.app.use('/api/audit', audit_1.auditRouter);
 exports.app.use('/api/resources', resources_1.resourcesRouter);
 exports.app.use('/api/subscriptions', subscriptions_1.subscriptionsRouter);
+exports.app.use('/api/parlour-subscriptions', parlourSubscriptions_1.parlourSubscriptionsRouter);
 if (require.main === module) {
     exports.app.listen(port, () => {
         // eslint-disable-next-line no-console

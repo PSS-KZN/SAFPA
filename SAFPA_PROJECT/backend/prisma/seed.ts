@@ -194,6 +194,33 @@ async function main() {
     },
   ] as const;
 
+  const baseSubscriptionPlans = [
+    {
+      id: 'plan_basic',
+      tier: 'basic',
+      name: 'Basic',
+      amount: 999,
+      description: 'Starter subscription for smaller parlours.',
+      isActive: true,
+    },
+    {
+      id: 'plan_standard',
+      tier: 'standard',
+      name: 'Standard',
+      amount: 2499,
+      description: 'Growth subscription for scaling parlours.',
+      isActive: true,
+    },
+    {
+      id: 'plan_premium',
+      tier: 'premium',
+      name: 'Premium',
+      amount: 4999,
+      description: 'Enterprise subscription for multi-branch operators.',
+      isActive: true,
+    },
+  ] as const;
+
   const baseProducts = [
     { id: 'pr1', parlourId: 'p1', name: 'Individual Plan', description: 'Cover for a single individual', premiumFrom: 99, coverFrom: 15000, maxDependants: 0, isActive: true },
     { id: 'pr2', parlourId: 'p1', name: 'Family Plan', description: 'Cover for member plus dependants', premiumFrom: 199, coverFrom: 25000, maxDependants: 6, isActive: true },
@@ -707,6 +734,14 @@ async function main() {
       where: { id: user.id },
       update: user,
       create: user,
+    });
+  }
+
+  for (const subscriptionPlan of baseSubscriptionPlans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { id: subscriptionPlan.id },
+      update: subscriptionPlan,
+      create: subscriptionPlan,
     });
   }
 

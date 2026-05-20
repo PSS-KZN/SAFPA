@@ -15,6 +15,7 @@ import { leadsRouter } from './routes/leads';
 import { membersRouter } from './routes/members';
 import { parloursRouter } from './routes/parlours';
 import { paymentsRouter } from './routes/payments';
+import { parlourSubscriptionsRouter } from './routes/parlourSubscriptions';
 import { policiesRouter } from './routes/policies';
 import { productsRouter } from './routes/products';
 import { reportsRouter } from './routes/reports';
@@ -47,6 +48,7 @@ const mountedRouters: MountedRouter[] = [
   { basePath: '/api/audit', router: auditRouter },
   { basePath: '/api/resources', router: resourcesRouter },
   { basePath: '/api/subscriptions', router: subscriptionsRouter },
+  { basePath: '/api/parlour-subscriptions', router: parlourSubscriptionsRouter },
 ];
 
 function getDocumentedEndpoints() {
@@ -125,6 +127,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
+app.use('/api/parlour-subscriptions', parlourSubscriptionsRouter);
 
 if (require.main === module) {
   app.listen(port, () => {

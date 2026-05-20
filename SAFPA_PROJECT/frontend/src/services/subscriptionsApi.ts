@@ -1,40 +1,31 @@
-import type { ParlourSubscription } from '../types';
+import type { SubscriptionPlan } from '../types';
 import { jsonRequest, request } from './http';
 
 export interface CreateSubscriptionInput {
-  parlourId: string;
-  tier: ParlourSubscription['tier'];
-  status: ParlourSubscription['status'];
-  billingCycle: ParlourSubscription['billingCycle'];
+  tier: SubscriptionPlan['tier'];
+  name: string;
   amount: number;
-  startDate: string;
-  endDate?: string;
-  autoRenew: boolean;
-  notes?: string;
+  description?: string;
+  isActive: boolean;
 }
 
 export type UpdateSubscriptionInput = Partial<{
-  tier: ParlourSubscription['tier'];
-  status: ParlourSubscription['status'];
-  billingCycle: ParlourSubscription['billingCycle'];
+  name: string;
   amount: number;
-  startDate: string;
-  endDate: string;
-  autoRenew: boolean;
-  notes: string;
+  description: string;
+  isActive: boolean;
 }>;
 
-export function fetchSubscriptions(parlourId?: string): Promise<ParlourSubscription[]> {
-  const query = parlourId ? `?parlourId=${encodeURIComponent(parlourId)}` : '';
-  return request<ParlourSubscription[]>(`/api/subscriptions${query}`);
+export function fetchSubscriptions(): Promise<SubscriptionPlan[]> {
+  return request<SubscriptionPlan[]>('/api/subscriptions');
 }
 
-export function createSubscription(input: CreateSubscriptionInput): Promise<ParlourSubscription> {
-  return request<ParlourSubscription>('/api/subscriptions', jsonRequest(input, { method: 'POST' }));
+export function createSubscription(input: CreateSubscriptionInput): Promise<SubscriptionPlan> {
+  return request<SubscriptionPlan>('/api/subscriptions', jsonRequest(input, { method: 'POST' }));
 }
 
-export function updateSubscription(id: string, input: UpdateSubscriptionInput): Promise<ParlourSubscription> {
-  return request<ParlourSubscription>(`/api/subscriptions/${id}`, jsonRequest(input, { method: 'PATCH' }));
+export function updateSubscription(id: string, input: UpdateSubscriptionInput): Promise<SubscriptionPlan> {
+  return request<SubscriptionPlan>(`/api/subscriptions/${id}`, jsonRequest(input, { method: 'PATCH' }));
 }
 
 export function deleteSubscription(id: string): Promise<void> {

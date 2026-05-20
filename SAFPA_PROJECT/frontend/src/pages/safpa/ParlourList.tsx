@@ -143,7 +143,7 @@ export default function ParlourList() {
               <tr className="text-left text-slate-500">
                 <th className="px-4 py-3">Parlour Name</th>
                 <th className="px-4 py-3">Region</th>
-                <th className="px-4 py-3">Tier</th>
+                <th className="px-4 py-3">Subscription</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Onboarding</th>
                 <th className="px-4 py-3">Activity</th>

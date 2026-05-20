@@ -1,9 +1,10 @@
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Building2, Users, Mail, Phone, Calendar, PencilLine, Save, X } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Mail, Phone, Calendar, PencilLine, Save, Wallet, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Branch, Parlour, User } from '../../types';
+import type { Branch, Parlour, ParlourSubscription, User } from '../../types';
 import { fetchParlourById, updateParlour } from '../../services/parloursApi';
 import { fetchBranches } from '../../services/branchesApi';
+import { fetchParlourSubscriptions } from '../../services/parlourSubscriptionsApi';
 import { fetchUsers } from '../../services/usersApi';
 import { fetchParlourAdoptionDetail, type ParlourAdoptionDetail } from '../../services/reportsApi';
 
@@ -51,6 +52,7 @@ export default function ParlourDetail() {
   const [parlour, setParlour] = useState<Parlour | null>(null);
   const [parlourBranches, setParlourBranches] = useState<Branch[]>([]);
   const [parlourUsers, setParlourUsers] = useState<User[]>([]);
+  const [subscription, setSubscription] = useState<ParlourSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,22 +78,25 @@ export default function ParlourDetail() {
     const loadParlour = async () => {
       try {
         setError(null);
-        const [record, branches, users, adoptionDetail] = await Promise.all([
+        const [record, branches, users, subscriptionRecord, adoptionDetail] = await Promise.all([
           fetchParlourById(id),
           fetchBranches(id),
           fetchUsers(id),
+          fetchParlourSubscriptions(id).then((items) => items[0] ?? null),
           fetchParlourAdoptionDetail(id).catch(() => null),
         ]);
         setParlour(record);
         setForm(createFormState(record));
         setParlourBranches(branches);
         setParlourUsers(users);
+        setSubscription(subscriptionRecord);
         setAdoption(adoptionDetail);
       } catch {
         setError('Failed to load parlour details.');
         setParlour(null);
         setParlourBranches([]);
         setParlourUsers([]);
+        setSubscription(null);
         setAdoption(null);
       } finally {
         setLoading(false);
@@ -103,6 +108,10 @@ export default function ParlourDetail() {
 
   if (loading) return <div className="text-center py-12 text-slate-500">Loading parlour...</div>;
   if (!parlour) return <div className="text-center py-12 text-slate-500">Parlour not found</div>;
+
+  const subscriptionManagementPath = subscription
+    ? `/safpa/parlour-subscriptions/${subscription.id}/edit?returnTo=${encodeURIComponent(`/safpa/parlours/${parlour.id}`)}`
+    : `/safpa/parlour-subscriptions/new?parlourId=${encodeURIComponent(parlour.id)}&returnTo=${encodeURIComponent(`/safpa/parlours/${parlour.id}`)}`;
 
   const onboardingProgress = isEditing && form ? form.onboardingProgress : parlour.onboardingProgress;
   const onboardingSteps = onboardingStepDefinitions.map((step) => ({
@@ -234,20 +243,18 @@ export default function ParlourDetail() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-slate-600">Tier</label>
-                  <select value={form.tier} onChange={(event) => updateForm('tier', event.target.value as Parlour['tier'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 capitalize">
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                  </select>
-                </div>
-                <div>
                   <label className="mb-1 block text-slate-600">Status</label>
                   <select value={form.status} onChange={(event) => updateForm('status', event.target.value as Parlour['status'])} className="w-full rounded-lg border border-slate-300 px-3 py-2 capitalize">
                     <option value="onboarding">Onboarding</option>
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
                   </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-slate-600">Billing</label>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
+                    Manage subscription in the Billing & Subscription section.
+                  </div>
                 </div>
               </div>
               <div>
@@ -276,7 +283,6 @@ export default function ParlourDetail() {
             </div>
           ) : (
             <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-slate-600"><Building2 size={16} /> Tier: <span className="font-medium capitalize">{parlour.tier}</span></div>
               <div className="flex items-center gap-2 text-slate-600"><Users size={16} /> Members: <span className="font-medium">{parlour.totalMembers.toLocaleString()}</span></div>
               <div className="flex items-center gap-2 text-slate-600"><Mail size={16} /> {parlour.contactEmail}</div>
               <div className="flex items-center gap-2 text-slate-600"><Phone size={16} /> {parlour.contactPhone}</div>
@@ -327,6 +333,35 @@ export default function ParlourDetail() {
         </div>
 
         {/* Users */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">Billing & Subscription</h3>
+              <p className="mt-1 text-sm text-slate-500">Keep plan and billing changes explicit and separate from the general parlour profile.</p>
+            </div>
+            <Link to={subscriptionManagementPath} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <Wallet size={16} /> {subscription ? 'Manage Subscription' : 'Create Subscription'}
+            </Link>
+          </div>
+
+          {subscription ? (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2 text-slate-600"><Building2 size={16} /> Subscription plan: <span className="font-medium capitalize">{subscription.tier}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Wallet size={16} /> Billing cycle: <span className="font-medium capitalize">{subscription.billingCycle}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Calendar size={16} /> Start date: <span className="font-medium">{subscription.startDate}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Calendar size={16} /> End date: <span className="font-medium">{subscription.endDate || 'Open-ended'}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Mail size={16} /> Status: <span className="font-medium capitalize">{subscription.status}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Users size={16} /> Amount: <span className="font-medium">R{subscription.amount.toLocaleString()}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><Phone size={16} /> Auto renew: <span className="font-medium">{subscription.autoRenew ? 'Yes' : 'No'}</span></div>
+              {subscription.notes && <p className="rounded-lg bg-slate-50 px-3 py-3 leading-6 text-slate-600">{subscription.notes}</p>}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+              No billing record exists yet for this parlour. Create one here to start managing its subscription.
+            </div>
+          )}
+        </div>
+
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold mb-4">Users ({parlourUsers.length})</h3>
           <div className="space-y-2">
