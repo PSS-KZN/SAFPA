@@ -6,7 +6,7 @@ interface LoginResponse {
   user: User;
 }
 
-export interface DemoLoginUser extends User {}
+export type DemoLoginUser = User;
 
 export function loginRequest(input: { email: string; password: string; role: UserRole }): Promise<LoginResponse> {
   return request<LoginResponse>('/api/auth/login', jsonRequest(input, { method: 'POST' }));

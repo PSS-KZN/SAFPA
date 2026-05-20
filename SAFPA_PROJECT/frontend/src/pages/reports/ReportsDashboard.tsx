@@ -776,7 +776,7 @@ export default function ReportsDashboard() {
     void load();
   }, [isNetworkRole, isOperationsRole, userParlourId, currentUser.role, currentUser.branchId, startDate, endDate, reportMonth, productName]);
 
-  const collectionsReport = data?.monthlyCollections || [];
+  const collectionsReport = useMemo(() => data?.monthlyCollections || [], [data]);
   const memberGrowth = data?.memberGrowth || [];
   const funeralCaseTrend = data?.funeralCaseTrend || [];
 
