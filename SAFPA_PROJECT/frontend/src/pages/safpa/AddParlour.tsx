@@ -32,19 +32,97 @@ const onboardingChecklist = [
   'Continue onboarding from the parlour detail page after save.',
 ];
 
+type ParlourField = keyof ParlourFormState;
+type ParlourFieldErrors = Partial<Record<ParlourField, string>>;
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateParlourField(field: ParlourField, value: string): string | undefined {
+  const trimmed = value.trim();
+
+  if (field === 'contactEmail') {
+    if (!trimmed) {
+      return 'Owner login email is required.';
+    }
+    if (!emailPattern.test(trimmed)) {
+      return 'Enter a valid email address.';
+    }
+    return undefined;
+  }
+
+  if (field === 'contactPhone') {
+    if (!trimmed) {
+      return 'Contact phone is required.';
+    }
+    if (trimmed.length < 7) {
+      return 'Enter at least 7 characters.';
+    }
+    return undefined;
+  }
+
+  if (field === 'name' || field === 'region' || field === 'province' || field === 'ownerName') {
+    if (!trimmed) {
+      return 'This field is required.';
+    }
+    if (trimmed.length < 2) {
+      return 'Enter at least 2 characters.';
+    }
+  }
+
+  return undefined;
+}
+
+function validateParlourForm(form: ParlourFormState): ParlourFieldErrors {
+  return {
+    name: validateParlourField('name', form.name),
+    region: validateParlourField('region', form.region),
+    province: validateParlourField('province', form.province),
+    ownerName: validateParlourField('ownerName', form.ownerName),
+    contactEmail: validateParlourField('contactEmail', form.contactEmail),
+    contactPhone: validateParlourField('contactPhone', form.contactPhone),
+  };
+}
+
+function hasParlourErrors(errors: ParlourFieldErrors): boolean {
+  return Object.values(errors).some(Boolean);
+}
+
 export default function AddParlour() {
   const navigate = useNavigate();
   const [form, setForm] = useState<ParlourFormState>(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ParlourFieldErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<ParlourField, boolean>>>({});
 
   const updateForm = <K extends keyof ParlourFormState>(field: K, value: ParlourFormState[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
+    if (field !== 'tier' && field !== 'primaryColor') {
+      setFieldErrors((previous) => ({ ...previous, [field]: validateParlourField(field, value) }));
+    }
   };
 
+  const markTouched = (field: ParlourField) => {
+    setTouched((previous) => ({ ...previous, [field]: true }));
+    setFieldErrors((previous) => ({ ...previous, [field]: validateParlourField(field, form[field]) }));
+  };
+
+  const inputClassName = (field: ParlourField) => `w-full rounded-xl border px-3 py-2.5 text-sm ${touched[field] && fieldErrors[field] ? 'border-red-300 bg-red-50/40' : 'border-slate-300'}`;
+
   const submit = async () => {
-    if (!form.name || !form.region || !form.province || !form.ownerName || !form.contactEmail || !form.contactPhone) {
-      setError('Please complete all required fields before saving.');
+    const nextErrors = validateParlourForm(form);
+    setFieldErrors(nextErrors);
+    setTouched({
+      name: true,
+      region: true,
+      province: true,
+      ownerName: true,
+      contactEmail: true,
+      contactPhone: true,
+    });
+
+    if (hasParlourErrors(nextErrors)) {
+      setError(null);
       return;
     }
 
@@ -103,27 +181,33 @@ export default function AddParlour() {
               <input
                 value={form.name}
                 onChange={(e) => updateForm('name', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('name')}
+                className={inputClassName('name')}
                 placeholder="Example: Sunrise Funeral Home"
               />
+              {touched.name && fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Region*</label>
               <input
                 value={form.region}
                 onChange={(e) => updateForm('region', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('region')}
+                className={inputClassName('region')}
                 placeholder="Example: Highveld"
               />
+              {touched.region && fieldErrors.region && <p className="mt-1 text-xs text-red-600">{fieldErrors.region}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Province*</label>
               <input
                 value={form.province}
                 onChange={(e) => updateForm('province', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('province')}
+                className={inputClassName('province')}
                 placeholder="Example: Gauteng"
               />
+              {touched.province && fieldErrors.province && <p className="mt-1 text-xs text-red-600">{fieldErrors.province}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Subscription Tier*</label>
@@ -142,9 +226,11 @@ export default function AddParlour() {
               <input
                 value={form.ownerName}
                 onChange={(e) => updateForm('ownerName', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('ownerName')}
+                className={inputClassName('ownerName')}
                 placeholder="Example: Thandi Mokoena"
               />
+              {touched.ownerName && fieldErrors.ownerName && <p className="mt-1 text-xs text-red-600">{fieldErrors.ownerName}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Primary Brand Color*</label>
@@ -164,9 +250,11 @@ export default function AddParlour() {
                 type="email"
                 value={form.contactEmail}
                 onChange={(e) => updateForm('contactEmail', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('contactEmail')}
+                className={inputClassName('contactEmail')}
                 placeholder="owner@parlour.co.za"
               />
+              {touched.contactEmail && fieldErrors.contactEmail && <p className="mt-1 text-xs text-red-600">{fieldErrors.contactEmail}</p>}
               <p className="mt-1 text-xs text-slate-400">This email becomes the initial owner sign-in. Demo password: demo123.</p>
             </div>
             <div>
@@ -174,9 +262,11 @@ export default function AddParlour() {
               <input
                 value={form.contactPhone}
                 onChange={(e) => updateForm('contactPhone', e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                onBlur={() => markTouched('contactPhone')}
+                className={inputClassName('contactPhone')}
                 placeholder="011 234 5678"
               />
+              {touched.contactPhone && fieldErrors.contactPhone && <p className="mt-1 text-xs text-red-600">{fieldErrors.contactPhone}</p>}
             </div>
           </div>
 

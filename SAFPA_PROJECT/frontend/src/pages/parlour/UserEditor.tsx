@@ -46,6 +46,47 @@ const guidance = [
   'Keep status active only for staff ready to log in immediately.',
 ];
 
+type UserField = keyof UserFormState;
+type UserFieldErrors = Partial<Record<UserField, string>>;
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateUserField(field: UserField, value: string): string | undefined {
+  const trimmed = value.trim();
+
+  if (field === 'email') {
+    if (!trimmed) {
+      return 'Email is required.';
+    }
+    if (!emailPattern.test(trimmed)) {
+      return 'Enter a valid email address.';
+    }
+    return undefined;
+  }
+
+  if (field === 'name') {
+    if (!trimmed) {
+      return 'Name is required.';
+    }
+    if (trimmed.length < 2) {
+      return 'Enter at least 2 characters.';
+    }
+  }
+
+  return undefined;
+}
+
+function validateUserForm(form: UserFormState): UserFieldErrors {
+  return {
+    name: validateUserField('name', form.name),
+    email: validateUserField('email', form.email),
+  };
+}
+
+function hasUserErrors(errors: UserFieldErrors): boolean {
+  return Object.values(errors).some(Boolean);
+}
+
 export default function UserEditor() {
   const { id } = useParams();
   const { currentUser } = useRole();
@@ -57,6 +98,8 @@ export default function UserEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<UserFieldErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<UserField, boolean>>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -99,11 +142,27 @@ export default function UserEditor() {
 
   const updateForm = <K extends keyof UserFormState>(field: K, value: UserFormState[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
+    if (field === 'name' || field === 'email') {
+      setFieldErrors((previous) => ({ ...previous, [field]: validateUserField(field, value) }));
+    }
   };
 
+  const markTouched = (field: UserField) => {
+    setTouched((previous) => ({ ...previous, [field]: true }));
+    if (field === 'name' || field === 'email') {
+      setFieldErrors((previous) => ({ ...previous, [field]: validateUserField(field, form[field]) }));
+    }
+  };
+
+  const inputClassName = (field: 'name' | 'email') => `w-full rounded-xl border px-3 py-2.5 text-sm ${touched[field] && fieldErrors[field] ? 'border-red-300 bg-red-50/40' : 'border-slate-300'}`;
+
   const saveUser = async () => {
-    if (!form.name || !form.email) {
-      setError('Please complete all required user fields before saving.');
+    const nextErrors = validateUserForm(form);
+    setFieldErrors(nextErrors);
+    setTouched((previous) => ({ ...previous, name: true, email: true }));
+
+    if (hasUserErrors(nextErrors)) {
+      setError(null);
       return;
     }
 
@@ -163,11 +222,13 @@ export default function UserEditor() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-600">Name*</label>
-                <input value={form.name} onChange={(event) => updateForm('name', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.name} onChange={(event) => updateForm('name', event.target.value)} onBlur={() => markTouched('name')} className={inputClassName('name')} />
+                {touched.name && fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-600">Email*</label>
-                <input type="email" value={form.email} onChange={(event) => updateForm('email', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input type="email" value={form.email} onChange={(event) => updateForm('email', event.target.value)} onBlur={() => markTouched('email')} className={inputClassName('email')} />
+                {touched.email && fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Role*</label>

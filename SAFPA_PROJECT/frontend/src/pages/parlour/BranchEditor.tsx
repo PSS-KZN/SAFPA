@@ -28,6 +28,37 @@ const branchChecklist = [
   'Return to the branch list after save to manage status changes.',
 ];
 
+type BranchField = keyof BranchFormState;
+type BranchFieldErrors = Partial<Record<BranchField, string>>;
+
+function validateBranchField(field: BranchField, value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return 'This field is required.';
+  }
+
+  if (field === 'phone') {
+    return trimmed.length >= 7 ? undefined : 'Enter at least 7 characters.';
+  }
+
+  return trimmed.length >= 2 ? undefined : 'Enter at least 2 characters.';
+}
+
+function validateBranchForm(form: BranchFormState): BranchFieldErrors {
+  return {
+    name: validateBranchField('name', form.name),
+    address: validateBranchField('address', form.address),
+    city: validateBranchField('city', form.city),
+    province: validateBranchField('province', form.province),
+    manager: validateBranchField('manager', form.manager),
+    phone: validateBranchField('phone', form.phone),
+  };
+}
+
+function hasBranchErrors(errors: BranchFieldErrors): boolean {
+  return Object.values(errors).some(Boolean);
+}
+
 export default function BranchEditor() {
   const { id } = useParams();
   const { currentUser } = useRole();
@@ -38,6 +69,8 @@ export default function BranchEditor() {
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<BranchFieldErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<BranchField, boolean>>>({});
 
   useEffect(() => {
     if (!id) {
@@ -76,11 +109,23 @@ export default function BranchEditor() {
 
   const updateForm = <K extends keyof BranchFormState>(field: K, value: BranchFormState[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
+    setFieldErrors((previous) => ({ ...previous, [field]: validateBranchField(field, value) }));
   };
 
+  const markTouched = (field: BranchField) => {
+    setTouched((previous) => ({ ...previous, [field]: true }));
+    setFieldErrors((previous) => ({ ...previous, [field]: validateBranchField(field, form[field]) }));
+  };
+
+  const inputClassName = (field: BranchField) => `w-full rounded-xl border px-3 py-2.5 text-sm ${touched[field] && fieldErrors[field] ? 'border-red-300 bg-red-50/40' : 'border-slate-300'}`;
+
   const saveBranch = async () => {
-    if (!form.name || !form.address || !form.city || !form.province || !form.manager || !form.phone) {
-      setError('Please complete all branch fields before saving.');
+    const nextErrors = validateBranchForm(form);
+    setFieldErrors(nextErrors);
+    setTouched({ name: true, address: true, city: true, province: true, manager: true, phone: true });
+
+    if (hasBranchErrors(nextErrors)) {
+      setError(null);
       return;
     }
 
@@ -137,27 +182,33 @@ export default function BranchEditor() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-600">Branch Name*</label>
-                <input value={form.name} onChange={(event) => updateForm('name', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.name} onChange={(event) => updateForm('name', event.target.value)} onBlur={() => markTouched('name')} className={inputClassName('name')} />
+                {touched.name && fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-600">Address*</label>
-                <input value={form.address} onChange={(event) => updateForm('address', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.address} onChange={(event) => updateForm('address', event.target.value)} onBlur={() => markTouched('address')} className={inputClassName('address')} />
+                {touched.address && fieldErrors.address && <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">City*</label>
-                <input value={form.city} onChange={(event) => updateForm('city', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.city} onChange={(event) => updateForm('city', event.target.value)} onBlur={() => markTouched('city')} className={inputClassName('city')} />
+                {touched.city && fieldErrors.city && <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Province*</label>
-                <input value={form.province} onChange={(event) => updateForm('province', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.province} onChange={(event) => updateForm('province', event.target.value)} onBlur={() => markTouched('province')} className={inputClassName('province')} />
+                {touched.province && fieldErrors.province && <p className="mt-1 text-xs text-red-600">{fieldErrors.province}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Manager*</label>
-                <input value={form.manager} onChange={(event) => updateForm('manager', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.manager} onChange={(event) => updateForm('manager', event.target.value)} onBlur={() => markTouched('manager')} className={inputClassName('manager')} />
+                {touched.manager && fieldErrors.manager && <p className="mt-1 text-xs text-red-600">{fieldErrors.manager}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm text-slate-600">Phone*</label>
-                <input value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} onBlur={() => markTouched('phone')} className={inputClassName('phone')} />
+                {touched.phone && fieldErrors.phone && <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>}
               </div>
             </div>
 

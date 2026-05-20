@@ -1,6 +1,11 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const SESSION_KEY = 'safpa_session';
 
+type ValidationErrorPayload = {
+  formErrors?: string[];
+  fieldErrors?: Record<string, string[] | undefined>;
+};
+
 function getSessionHeaders(): Record<string, string> {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -33,6 +38,41 @@ function getSessionHeaders(): Record<string, string> {
   }
 }
 
+function humanizeFieldName(field: string): string {
+  return field
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^./, (value) => value.toUpperCase());
+}
+
+function formatValidationErrors(errors: unknown): string {
+  if (!errors || typeof errors !== 'object') {
+    return '';
+  }
+
+  const payload = errors as ValidationErrorPayload;
+  const lines: string[] = [];
+
+  for (const message of payload.formErrors || []) {
+    if (message?.trim()) {
+      lines.push(message.trim());
+    }
+  }
+
+  for (const [field, fieldMessages] of Object.entries(payload.fieldErrors || {})) {
+    for (const message of fieldMessages || []) {
+      if (message?.trim()) {
+        lines.push(`${humanizeFieldName(field)}: ${message.trim()}`);
+      }
+    }
+  }
+
+  const uniqueLines = Array.from(new Set(lines));
+  return uniqueLines.length > 0 ? uniqueLines.join(' | ') : '';
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -44,7 +84,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { message?: string; errors?: unknown } | null;
     const message = payload?.message || 'Request failed';
-    const validationDetails = payload?.errors ? ` ${JSON.stringify(payload.errors)}` : '';
+    const validationSummary = formatValidationErrors(payload?.errors);
+    const validationDetails = validationSummary ? ` ${validationSummary}` : '';
     throw new Error(`${message} (${response.status})${validationDetails}`);
   }
 
