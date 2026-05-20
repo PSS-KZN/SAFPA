@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { prisma } from './prisma';
 
-const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/leads/website-inquiry']);
+const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/auth/demo-session/reset', '/api/auth/demo-users', '/api/leads/website-inquiry']);
 
 const ROLE_PERMISSIONS: Array<{ prefix: string; methods?: string[]; roles: string[] }> = [
   { prefix: '/api/members/', methods: ['PATCH'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'policyholder_customer'] },

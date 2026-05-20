@@ -11,7 +11,6 @@ interface RoleContextType {
   setCurrentUser: (user: User) => void;
   login: (input: { email: string; password: string; role: UserRole }) => Promise<void>;
   logout: () => void;
-  availableUsers: User[];
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -21,15 +20,12 @@ const FALLBACK_USER = users[0];
 
 function readStoredUser(): User | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) {
       return null;
     }
     const parsed = JSON.parse(raw) as User;
     if (!parsed?.id || !parsed?.role) {
-      return null;
-    }
-    if (!users.some((user) => user.id === parsed.id && user.role === parsed.role)) {
       return null;
     }
     return parsed;
@@ -48,11 +44,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
       return;
     }
 
-    localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
   }, [currentUser, isAuthenticated]);
 
   const login = async (input: { email: string; password: string; role: UserRole }) => {
@@ -67,7 +63,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <RoleContext.Provider value={{ currentUser, isAuthenticated, authLoading, setCurrentUser, login, logout, availableUsers: users }}>
+    <RoleContext.Provider value={{ currentUser, isAuthenticated, authLoading, setCurrentUser, login, logout }}>
       {children}
     </RoleContext.Provider>
   );

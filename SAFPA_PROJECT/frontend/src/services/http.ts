@@ -3,7 +3,7 @@ const SESSION_KEY = 'safpa_session';
 
 function getSessionHeaders(): Record<string, string> {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) {
       return {};
     }

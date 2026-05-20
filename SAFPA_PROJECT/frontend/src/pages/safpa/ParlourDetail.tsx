@@ -57,6 +57,8 @@ export default function ParlourDetail() {
   const [adoption, setAdoption] = useState<ParlourAdoptionDetail | null>(null);
   const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
   const [form, setForm] = useState<ParlourFormState | null>(null);
+  const createdOwnerEmail = searchParams.get('ownerEmail');
+  const createdOwnerName = searchParams.get('ownerName');
 
   const formatStatusLabel = (value?: string | null) => (value ? value.replace(/_/g, ' ') : 'Not tracked');
   const healthClasses = adoption?.healthStatus === 'green'
@@ -171,6 +173,13 @@ export default function ParlourDetail() {
       </Link>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
+
+      {createdOwnerEmail && (
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Initial owner account created for {createdOwnerName || 'this parlour'}.
+          Sign in with {createdOwnerEmail} and password demo123 to continue onboarding as the parlour owner.
+        </div>
+      )}
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">

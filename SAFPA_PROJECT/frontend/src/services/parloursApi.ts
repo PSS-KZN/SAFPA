@@ -6,9 +6,22 @@ export interface CreateParlourInput {
   region: string;
   province: string;
   tier: Parlour['tier'];
+  ownerName: string;
   contactEmail: string;
   contactPhone: string;
   primaryColor: string;
+}
+
+export interface CreateParlourResult {
+  parlour: Parlour;
+  ownerUser: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'parlour_owner';
+    parlourId?: string;
+    status: 'active' | 'inactive';
+  };
 }
 
 export interface UpdateParlourBrandingInput {
@@ -79,8 +92,8 @@ export function fetchParlourById(id: string): Promise<Parlour> {
   return request<Parlour>(`/api/parlours/${id}`);
 }
 
-export function createParlour(input: CreateParlourInput): Promise<Parlour> {
-  return request<Parlour>(
+export function createParlour(input: CreateParlourInput): Promise<CreateParlourResult> {
+  return request<CreateParlourResult>(
     '/api/parlours',
     jsonRequest(
       {

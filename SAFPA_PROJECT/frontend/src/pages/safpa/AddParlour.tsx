@@ -9,6 +9,7 @@ type ParlourFormState = {
   region: string;
   province: string;
   tier: Parlour['tier'];
+  ownerName: string;
   contactEmail: string;
   contactPhone: string;
   primaryColor: string;
@@ -19,6 +20,7 @@ const initialForm: ParlourFormState = {
   region: '',
   province: '',
   tier: 'basic',
+  ownerName: '',
   contactEmail: '',
   contactPhone: '',
   primaryColor: '#1e3a5f',
@@ -41,7 +43,7 @@ export default function AddParlour() {
   };
 
   const submit = async () => {
-    if (!form.name || !form.region || !form.province || !form.contactEmail || !form.contactPhone) {
+    if (!form.name || !form.region || !form.province || !form.ownerName || !form.contactEmail || !form.contactPhone) {
       setError('Please complete all required fields before saving.');
       return;
     }
@@ -50,7 +52,11 @@ export default function AddParlour() {
       setSaving(true);
       setError(null);
       const created = await createParlour(form);
-      navigate(`/safpa/parlours/${created.id}`);
+      const params = new URLSearchParams({
+        ownerEmail: created.ownerUser.email,
+        ownerName: created.ownerUser.name,
+      });
+      navigate(`/safpa/parlours/${created.parlour.id}?${params.toString()}`);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Failed to create parlour');
     } finally {
@@ -132,6 +138,15 @@ export default function AddParlour() {
               </select>
             </div>
             <div>
+              <label className="mb-1 block text-sm text-slate-600">Owner Name*</label>
+              <input
+                value={form.ownerName}
+                onChange={(e) => updateForm('ownerName', e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                placeholder="Example: Thandi Mokoena"
+              />
+            </div>
+            <div>
               <label className="mb-1 block text-sm text-slate-600">Primary Brand Color*</label>
               <div className="flex items-center gap-3 rounded-xl border border-slate-300 px-3 py-2">
                 <input
@@ -144,7 +159,7 @@ export default function AddParlour() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm text-slate-600">Contact Email*</label>
+              <label className="mb-1 block text-sm text-slate-600">Owner Login Email*</label>
               <input
                 type="email"
                 value={form.contactEmail}
@@ -152,6 +167,7 @@ export default function AddParlour() {
                 className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
                 placeholder="owner@parlour.co.za"
               />
+              <p className="mt-1 text-xs text-slate-400">This email becomes the initial owner sign-in. Demo password: demo123.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-600">Contact Phone*</label>

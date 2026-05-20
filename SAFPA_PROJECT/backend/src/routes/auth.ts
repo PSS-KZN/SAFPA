@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { resetDemoSessionData } from '../lib/demoReset';
 import { prisma } from '../lib/prisma';
 import { writeUsageEvent } from '../lib/usage';
 
@@ -12,6 +13,40 @@ const loginSchema = z.object({
 });
 
 export const authRouter = Router();
+
+authRouter.post('/demo-session/reset', async (_req, res) => {
+  try {
+    await resetDemoSessionData();
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(500).json({
+      message: error instanceof Error ? error.message : 'Failed to reset demo session data',
+    });
+  }
+});
+
+authRouter.get('/demo-users', async (req, res) => {
+  const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+  const users = await prisma.appUser.findMany({
+    where: {
+      status: 'active',
+      ...(role ? { role } : {}),
+    },
+    orderBy: [{ role: 'asc' }, { name: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      parlourId: true,
+      branchId: true,
+      memberId: true,
+      status: true,
+    },
+  });
+
+  return res.json(users);
+});
 
 async function resolvePolicyholderUser(email: string) {
   const member = await prisma.member.findFirst({

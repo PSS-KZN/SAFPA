@@ -63,6 +63,50 @@ interface UsageSummaryRow {
   lastActivityAt: string | null;
 }
 
+function sumNonNegative(values: number[]): number {
+  return values.reduce((sum, value) => sum + Math.max(0, value), 0);
+}
+
+function resolveScalingFactor(actualTotal: number, targetTotal: number): number {
+  if (actualTotal <= 0 || targetTotal <= actualTotal) {
+    return 1;
+  }
+
+  return targetTotal / actualTotal;
+}
+
+function scaleRounded(value: number, factor: number): number {
+  return factor === 1 ? value : Math.round(value * factor);
+}
+
+function scalePolicyStatusBreakdown(
+  rows: Array<{ status: string; count: number }>,
+  factor: number,
+  targetTotal: number,
+): Array<{ status: string; count: number }> {
+  if (factor === 1) {
+    return rows;
+  }
+
+  const scaled = rows.map((row) => ({
+    status: row.status,
+    count: Math.max(0, Math.round(row.count * factor)),
+  }));
+
+  const currentTotal = scaled.reduce((sum, row) => sum + row.count, 0);
+  const difference = targetTotal - currentTotal;
+  if (difference !== 0 && scaled.length > 0) {
+    const targetIndex = scaled.findIndex((row) => row.status === 'active');
+    const indexToAdjust = targetIndex >= 0 ? targetIndex : 0;
+    scaled[indexToAdjust] = {
+      ...scaled[indexToAdjust],
+      count: Math.max(0, scaled[indexToAdjust].count + difference),
+    };
+  }
+
+  return scaled;
+}
+
 function monthKey(dateText: string): string {
   if (dateText.length >= 7) {
     return dateText.slice(0, 7);
@@ -560,18 +604,24 @@ reportsRouter.get('/network', async (_req, res) => {
 
   const totalParlours = parlours.length;
   const activeParlours = parlours.filter((parlour) => parlour.status === 'active').length;
-  const totalMembers = members.length;
-  const totalPolicies = policies.length;
-  const activePolicies = policies.filter((policy) => policy.status === 'active').length;
-  const totalArrears = policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
+  const summarizedMembers = sumNonNegative(parlours.map((parlour) => parlour.totalMembers));
+  const summarizedPolicies = sumNonNegative(parlours.map((parlour) => parlour.totalPolicies));
+  const totalMembers = Math.max(members.length, summarizedMembers);
+  const totalPolicies = Math.max(policies.length, summarizedPolicies);
+  const actualActivePolicies = policies.filter((policy) => policy.status === 'active').length;
+  const policyScalingFactor = resolveScalingFactor(policies.length, totalPolicies);
+  const activePolicies = Math.min(totalPolicies, scaleRounded(actualActivePolicies, policyScalingFactor));
+  const totalArrears = scaleRounded(policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0), policyScalingFactor);
   const openFuneralCases = funeralCases.filter((item) => isOpenFuneralCase(item.status)).length;
 
   const nowMonth = selectedRange.month;
   const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
-  const premiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
+  const actualPremiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
   const paymentsThisMonth = payments.filter((payment) => monthKey(payment.date) === nowMonth && payment.status === 'successful');
-  const premiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);
-  const collectionRate = premiumsDueThisMonth > 0 ? Math.round((premiumsCollectedThisMonth / premiumsDueThisMonth) * 100) : 0;
+  const actualPremiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);
+  const premiumsDueThisMonth = scaleRounded(actualPremiumsDueThisMonth, policyScalingFactor);
+  const premiumsCollectedThisMonth = scaleRounded(actualPremiumsCollectedThisMonth, policyScalingFactor);
+  const collectionRate = actualPremiumsDueThisMonth > 0 ? Math.round((actualPremiumsCollectedThisMonth / actualPremiumsDueThisMonth) * 100) : 0;
 
   const usageSummary = parlours
     .map<UsageSummaryRow>((parlour) => {
@@ -607,13 +657,24 @@ reportsRouter.get('/network', async (_req, res) => {
     }
     monthlyMap.set(key, current);
   }
-  const monthlyCollections = Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-6);
+  const monthlyCollections = Array.from(monthlyMap.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-6)
+    .map((row) => ({
+      month: row.month,
+      collected: scaleRounded(row.collected, policyScalingFactor),
+      due: scaleRounded(row.due, policyScalingFactor),
+    }));
 
   const statusMap = new Map<string, number>();
   for (const policy of policies) {
     statusMap.set(policy.status, (statusMap.get(policy.status) || 0) + 1);
   }
-  const policyStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
+  const policyStatusBreakdown = scalePolicyStatusBreakdown(
+    Array.from(statusMap.entries()).map(([status, count]) => ({ status, count })),
+    policyScalingFactor,
+    totalPolicies,
+  );
 
   const parlourGrowth = buildParlourGrowthSeries(parlours);
   const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);

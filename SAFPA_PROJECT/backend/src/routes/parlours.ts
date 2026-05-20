@@ -137,6 +137,7 @@ const createParlourSchema = z.object({
   region: z.string().min(2),
   province: z.string().min(2),
   tier: z.enum(['basic', 'standard', 'premium']),
+  ownerName: z.string().trim().min(2),
   status: z.enum(['onboarding', 'active', 'suspended']).default('onboarding'),
   onboardingProgress: z.number().int().min(0).max(100).default(0),
   totalMembers: z.number().int().min(0).default(0),
@@ -304,43 +305,95 @@ parloursRouter.post('/', async (req, res) => {
     : 'not_requested';
 
   const id = `p${Date.now()}`;
-  const parlour = await prisma.parlour.create({
-    data: {
-      id,
-      ...parsed.data,
-      onboardingStatus: deriveOnboardingStatus(parsed.data.onboardingProgress, parsed.data.status),
-      onboardingStartedAt: parsed.data.joinedDate,
-      onboardingCompletedAt: parsed.data.onboardingProgress >= 100 ? parsed.data.joinedDate : undefined,
-      goLiveAt: parsed.data.status === 'active' ? parsed.data.joinedDate : undefined,
-      customDomainStatus,
-      websitePublishStatus,
-      websitePublished: websitePublishStatus === 'published',
-      brandingCompletedAt: brandingReady ? parsed.data.brandingCompletedAt ?? new Date().toISOString().slice(0, 10) : parsed.data.brandingCompletedAt,
-    },
-  });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const parlour = await tx.parlour.create({
+        data: {
+          id,
+          name: parsed.data.name,
+          region: parsed.data.region,
+          province: parsed.data.province,
+          tier: parsed.data.tier,
+          status: parsed.data.status,
+          onboardingProgress: parsed.data.onboardingProgress,
+          totalMembers: parsed.data.totalMembers,
+          totalPolicies: parsed.data.totalPolicies,
+          contactEmail: parsed.data.contactEmail,
+          contactPhone: parsed.data.contactPhone,
+          primaryColor: parsed.data.primaryColor,
+          secondaryColor: parsed.data.secondaryColor,
+          accentColor: parsed.data.accentColor,
+          businessDescription: parsed.data.businessDescription,
+          tagline: parsed.data.tagline,
+          supportEmail: parsed.data.supportEmail,
+          supportPhone: parsed.data.supportPhone,
+          physicalAddress: parsed.data.physicalAddress,
+          websiteTemplate: parsed.data.websiteTemplate,
+          websiteSubdomain: parsed.data.websiteSubdomain,
+          customDomain: parsed.data.customDomain,
+          customDomainStatus,
+          customDomainDnsTarget: parsed.data.customDomainDnsTarget,
+          customDomainNotes: parsed.data.customDomainNotes,
+          websitePublished: websitePublishStatus === 'published',
+          websitePublishStatus,
+          brandingCompletedAt: brandingReady ? parsed.data.brandingCompletedAt ?? new Date().toISOString().slice(0, 10) : parsed.data.brandingCompletedAt,
+          joinedDate: parsed.data.joinedDate,
+          logo: parsed.data.logo,
+          onboardingStatus: deriveOnboardingStatus(parsed.data.onboardingProgress, parsed.data.status),
+          onboardingStartedAt: parsed.data.joinedDate,
+          onboardingCompletedAt: parsed.data.onboardingProgress >= 100 ? parsed.data.joinedDate : undefined,
+          goLiveAt: parsed.data.status === 'active' ? parsed.data.joinedDate : undefined,
+        },
+      });
 
-  await prisma.communicationTemplate.create({
-    data: {
-      id: generateId('tpl'),
-      parlourId: parlour.id,
-      name: 'Default Payment Reminder',
-      type: 'sms',
-      trigger: 'payment_reminder',
-      body: 'Dear {member_name}, your premium is due on {due_date}.',
-      isActive: true,
-      createdOn: new Date().toISOString().slice(0, 10),
-      lastUpdated: new Date().toISOString().slice(0, 10),
-    },
-  });
+      const ownerUser = await tx.appUser.create({
+        data: {
+          id: generateId('u'),
+          name: parsed.data.ownerName,
+          email: parsed.data.contactEmail,
+          role: 'parlour_owner',
+          parlourId: parlour.id,
+          status: 'active',
+        },
+      });
 
-  await writeAuditLog(req, {
-    action: 'PARLOUR_CREATED',
-    entityType: 'Parlour',
-    entityId: parlour.id,
-    entityLabel: parlour.name,
-  });
+      await tx.communicationTemplate.create({
+        data: {
+          id: generateId('tpl'),
+          parlourId: parlour.id,
+          name: 'Default Payment Reminder',
+          type: 'sms',
+          trigger: 'payment_reminder',
+          body: 'Dear {member_name}, your premium is due on {due_date}.',
+          isActive: true,
+          createdOn: new Date().toISOString().slice(0, 10),
+          lastUpdated: new Date().toISOString().slice(0, 10),
+        },
+      });
 
-  return res.status(201).json(parlour);
+      return { parlour, ownerUser };
+    });
+
+    await writeAuditLog(req, {
+      action: 'PARLOUR_CREATED',
+      entityType: 'Parlour',
+      entityId: result.parlour.id,
+      entityLabel: result.parlour.name,
+    });
+
+    await writeAuditLog(req, {
+      action: 'USER_CREATED',
+      entityType: 'User',
+      entityId: result.ownerUser.id,
+      entityLabel: result.ownerUser.name,
+      parlourId: result.parlour.id,
+      details: 'Initial parlour owner created during onboarding',
+    });
+
+    return res.status(201).json(result);
+  } catch {
+    return res.status(409).json({ message: 'Parlour name or owner email is already in use' });
+  }
 });
 
 parloursRouter.patch('/:id', async (req, res) => {

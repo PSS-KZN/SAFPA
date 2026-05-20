@@ -1,7 +1,8 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useRole } from '../../contexts/RoleContext';
 import type { UserRole } from '../../types';
+import { fetchDemoUsers, type DemoLoginUser } from '../../services/authApi';
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: 'safpa_admin', label: 'SAFPA Admin' },
@@ -69,14 +70,35 @@ function getLoginTheme(): CSSProperties {
 }
 
 export default function LoginPage() {
-  const { currentUser, isAuthenticated, login, availableUsers, authLoading } = useRole();
+  const { currentUser, isAuthenticated, login, authLoading } = useRole();
   const navigate = useNavigate();
   const [email, setEmail] = useState('kagiso@safpa.org.za');
   const [password, setPassword] = useState('demo123');
   const [role, setRole] = useState<UserRole>('safpa_admin');
+  const [availableUsers, setAvailableUsers] = useState<DemoLoginUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchDemoUsers()
+      .then((records) => {
+        if (!cancelled) {
+          setAvailableUsers(records);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableUsers([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (authLoading) {
     return (

@@ -4,6 +4,38 @@ exports.reportsRouter = void 0;
 const express_1 = require("express");
 const prisma_1 = require("../lib/prisma");
 const subscription_1 = require("../lib/subscription");
+function sumNonNegative(values) {
+    return values.reduce((sum, value) => sum + Math.max(0, value), 0);
+}
+function resolveScalingFactor(actualTotal, targetTotal) {
+    if (actualTotal <= 0 || targetTotal <= actualTotal) {
+        return 1;
+    }
+    return targetTotal / actualTotal;
+}
+function scaleRounded(value, factor) {
+    return factor === 1 ? value : Math.round(value * factor);
+}
+function scalePolicyStatusBreakdown(rows, factor, targetTotal) {
+    if (factor === 1) {
+        return rows;
+    }
+    const scaled = rows.map((row) => ({
+        status: row.status,
+        count: Math.max(0, Math.round(row.count * factor)),
+    }));
+    const currentTotal = scaled.reduce((sum, row) => sum + row.count, 0);
+    const difference = targetTotal - currentTotal;
+    if (difference !== 0 && scaled.length > 0) {
+        const targetIndex = scaled.findIndex((row) => row.status === 'active');
+        const indexToAdjust = targetIndex >= 0 ? targetIndex : 0;
+        scaled[indexToAdjust] = {
+            ...scaled[indexToAdjust],
+            count: Math.max(0, scaled[indexToAdjust].count + difference),
+        };
+    }
+    return scaled;
+}
 function monthKey(dateText) {
     if (dateText.length >= 7) {
         return dateText.slice(0, 7);
@@ -26,6 +58,17 @@ function buildMemberGrowthSeries(members) {
         .sort((left, right) => left[0].localeCompare(right[0]))
         .slice(-6)
         .map(([month, count]) => ({ month, members: count }));
+}
+function buildParlourGrowthSeries(parlours) {
+    const parlourMonthMap = new Map();
+    for (const parlour of parlours) {
+        const key = parlour.joinedDate ? monthKey(parlour.joinedDate) : monthKeyFromDate(parlour.createdAt);
+        parlourMonthMap.set(key, (parlourMonthMap.get(key) || 0) + 1);
+    }
+    return Array.from(parlourMonthMap.entries())
+        .sort((left, right) => left[0].localeCompare(right[0]))
+        .slice(-6)
+        .map(([month, count]) => ({ month, parlours: count }));
 }
 function buildFuneralCaseTrendSeries(funeralCases) {
     const monthlyMap = new Map();
@@ -57,11 +100,33 @@ function inDateRange(dateText, startDate, endDate) {
     }
     return true;
 }
+function normalizeDateText(dateText) {
+    if (!dateText) {
+        return '';
+    }
+    if (dateText instanceof Date) {
+        return dateText.toISOString().slice(0, 10);
+    }
+    return dateText.slice(0, 10);
+}
 function currentMonthRange() {
     const now = new Date();
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
     return {
+        startDate: start.toISOString().slice(0, 10),
+        endDate: end.toISOString().slice(0, 10),
+    };
+}
+function monthRange(month) {
+    const normalized = month && /^\d{4}-\d{2}$/.test(month) ? month : new Date().toISOString().slice(0, 7);
+    const [yearText, monthText] = normalized.split('-');
+    const year = Number(yearText);
+    const monthIndex = Number(monthText) - 1;
+    const start = new Date(Date.UTC(year, monthIndex, 1));
+    const end = new Date(Date.UTC(year, monthIndex + 1, 0));
+    return {
+        month: normalized,
         startDate: start.toISOString().slice(0, 10),
         endDate: end.toISOString().slice(0, 10),
     };
@@ -211,6 +276,13 @@ async function buildParlourDashboard(params) {
     const filteredPolicies = (params.startDate || params.endDate)
         ? productFilteredPolicies.filter((policy) => inDateRange(policy.startDate, params.startDate, params.endDate))
         : productFilteredPolicies;
+    const filteredMemberIdSet = new Set(filteredPolicies.map((policy) => policy.memberId));
+    const dateFilteredMembers = (params.startDate || params.endDate)
+        ? members.filter((member) => inDateRange(normalizeDateText(member.joinDate || member.createdAt), params.startDate, params.endDate))
+        : members;
+    const filteredMembers = params.productName || params.startDate || params.endDate
+        ? dateFilteredMembers.filter((member) => !filteredMemberIdSet.size || filteredMemberIdSet.has(member.id))
+        : members;
     const policyIdSet = new Set(filteredPolicies.map((policy) => policy.id));
     const filteredPayments = payments.filter((payment) => {
         if (params.branchId && !policyIdSet.has(payment.policyId)) {
@@ -240,7 +312,7 @@ async function buildParlourDashboard(params) {
     const collectionWindowPayments = filteredPayments.filter((payment) => inDateRange(payment.date, collectionWindowStart, collectionWindowEnd));
     const activePolicies = filteredPolicies.filter((policy) => policy.status === 'active').length;
     const totalPolicies = filteredPolicies.length;
-    const totalMembers = members.length;
+    const totalMembers = filteredMembers.length;
     const openFuneralCases = filteredFuneralCases.filter((funeralCase) => isOpenFuneralCase(funeralCase.status)).length;
     const premiumsDue = filteredPolicies.reduce((sum, policy) => sum + policy.premiumAmount, 0);
     const premiumsCollected = collectionWindowPayments
@@ -263,7 +335,7 @@ async function buildParlourDashboard(params) {
     const branchPerformance = branches
         .filter((branch) => !params.branchId || branch.id === params.branchId)
         .map((branch) => {
-        const branchMembers = members.filter((member) => member.branchId === branch.id);
+        const branchMembers = filteredMembers.filter((member) => member.branchId === branch.id);
         const branchMemberSet = new Set(branchMembers.map((member) => member.id));
         const branchPolicies = filteredPolicies.filter((policy) => branchMemberSet.has(policy.memberId));
         const branchPolicySet = new Set(branchPolicies.map((policy) => policy.id));
@@ -292,7 +364,7 @@ async function buildParlourDashboard(params) {
     const policyLifecycle = Array.from(lifecycleMap.entries())
         .map(([status, count]) => ({ status, count }))
         .sort((left, right) => right.count - left.count);
-    const memberGrowth = buildMemberGrowthSeries(members);
+    const memberGrowth = buildMemberGrowthSeries(filteredMembers);
     const funeralCaseTrend = buildFuneralCaseTrendSeries(filteredFuneralCases);
     return {
         totalMembers,
@@ -343,26 +415,64 @@ exports.reportsRouter.get('/dashboard/export', async (req, res) => {
     return res.send(csv);
 });
 exports.reportsRouter.get('/network', async (_req, res) => {
-    const [parlours, members, policies, payments, funeralCases] = await Promise.all([
+    const selectedMonth = typeof _req.query.month === 'string' ? _req.query.month : undefined;
+    const selectedRange = monthRange(selectedMonth);
+    const [parlours, members, policies, payments, funeralCases, usageEvents] = await Promise.all([
         prisma_1.prisma.parlour.findMany({ orderBy: { createdAt: 'desc' } }),
         prisma_1.prisma.member.findMany(),
         prisma_1.prisma.policy.findMany(),
         prisma_1.prisma.paymentTransaction.findMany(),
         prisma_1.prisma.funeralCase.findMany(),
+        prisma_1.prisma.parlourUsageEvent.findMany({
+            where: {
+                occurredOn: {
+                    gte: selectedRange.startDate,
+                    lte: selectedRange.endDate,
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        }),
     ]);
     const totalParlours = parlours.length;
     const activeParlours = parlours.filter((parlour) => parlour.status === 'active').length;
-    const totalMembers = members.length;
-    const totalPolicies = policies.length;
-    const activePolicies = policies.filter((policy) => policy.status === 'active').length;
-    const totalArrears = policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0);
+    const summarizedMembers = sumNonNegative(parlours.map((parlour) => parlour.totalMembers));
+    const summarizedPolicies = sumNonNegative(parlours.map((parlour) => parlour.totalPolicies));
+    const totalMembers = Math.max(members.length, summarizedMembers);
+    const totalPolicies = Math.max(policies.length, summarizedPolicies);
+    const actualActivePolicies = policies.filter((policy) => policy.status === 'active').length;
+    const policyScalingFactor = resolveScalingFactor(policies.length, totalPolicies);
+    const activePolicies = Math.min(totalPolicies, scaleRounded(actualActivePolicies, policyScalingFactor));
+    const totalArrears = scaleRounded(policies.reduce((sum, policy) => sum + policy.arrearsAmount, 0), policyScalingFactor);
     const openFuneralCases = funeralCases.filter((item) => isOpenFuneralCase(item.status)).length;
-    const nowMonth = new Date().toISOString().slice(0, 7);
+    const nowMonth = selectedRange.month;
     const duePoliciesThisMonth = policies.filter((policy) => policy.status === 'active');
-    const premiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
+    const actualPremiumsDueThisMonth = duePoliciesThisMonth.reduce((sum, policy) => sum + policy.premiumAmount, 0);
     const paymentsThisMonth = payments.filter((payment) => monthKey(payment.date) === nowMonth && payment.status === 'successful');
-    const premiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);
-    const collectionRate = premiumsDueThisMonth > 0 ? Math.round((premiumsCollectedThisMonth / premiumsDueThisMonth) * 100) : 0;
+    const actualPremiumsCollectedThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + payment.amount, 0);
+    const premiumsDueThisMonth = scaleRounded(actualPremiumsDueThisMonth, policyScalingFactor);
+    const premiumsCollectedThisMonth = scaleRounded(actualPremiumsCollectedThisMonth, policyScalingFactor);
+    const collectionRate = actualPremiumsDueThisMonth > 0 ? Math.round((actualPremiumsCollectedThisMonth / actualPremiumsDueThisMonth) * 100) : 0;
+    const usageSummary = parlours
+        .map((parlour) => {
+        const parlourEvents = usageEvents.filter((event) => event.parlourId === parlour.id);
+        const moduleCounts = new Map();
+        for (const event of parlourEvents) {
+            moduleCounts.set(event.module, (moduleCounts.get(event.module) || 0) + 1);
+        }
+        const topModule = Array.from(moduleCounts.entries()).sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
+        const activeUsers = new Set(parlourEvents.map((event) => event.userId).filter((value) => Boolean(value))).size;
+        return {
+            parlourId: parlour.id,
+            parlourName: parlour.name,
+            tier: parlour.tier,
+            status: parlour.status,
+            activeUsers,
+            events: parlourEvents.length,
+            topModule,
+            lastActivityAt: parlourEvents[0]?.occurredOn ?? null,
+        };
+    })
+        .sort((left, right) => right.events - left.events || right.activeUsers - left.activeUsers);
     const monthlyMap = new Map();
     for (const payment of payments) {
         const key = monthKey(payment.date);
@@ -373,15 +483,23 @@ exports.reportsRouter.get('/network', async (_req, res) => {
         }
         monthlyMap.set(key, current);
     }
-    const monthlyCollections = Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-6);
+    const monthlyCollections = Array.from(monthlyMap.values())
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-6)
+        .map((row) => ({
+        month: row.month,
+        collected: scaleRounded(row.collected, policyScalingFactor),
+        due: scaleRounded(row.due, policyScalingFactor),
+    }));
     const statusMap = new Map();
     for (const policy of policies) {
         statusMap.set(policy.status, (statusMap.get(policy.status) || 0) + 1);
     }
-    const policyStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
-    const memberGrowth = buildMemberGrowthSeries(members);
+    const policyStatusBreakdown = scalePolicyStatusBreakdown(Array.from(statusMap.entries()).map(([status, count]) => ({ status, count })), policyScalingFactor, totalPolicies);
+    const parlourGrowth = buildParlourGrowthSeries(parlours);
     const funeralCaseTrend = buildFuneralCaseTrendSeries(funeralCases);
     return res.json({
+        selectedMonth: selectedRange.month,
         totalParlours,
         activeParlours,
         totalMembers,
@@ -394,9 +512,10 @@ exports.reportsRouter.get('/network', async (_req, res) => {
         collectionRate,
         monthlyCollections,
         policyStatusBreakdown,
-        memberGrowth,
+        parlourGrowth,
         funeralCaseTrend,
         parlours,
+        usageSummary,
     });
 });
 exports.reportsRouter.get('/adoption/overview', async (req, res) => {

@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RoleProvider, useRole } from './contexts/RoleContext';
 import AppLayout from './components/layout/AppLayout';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { UserRole } from './types';
 import LoginPage from './pages/auth/LoginPage';
+import { ensureDemoSessionSeeded } from './services/demoSession';
 
 // SAFPA Admin
 import SAFPADashboard from './pages/safpa/SAFPADashboard';
@@ -106,6 +107,42 @@ const withAccess = (allowedRoles: UserRole[], element: ReactNode) => (
   <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>
 );
 
+function DemoSessionBootstrap({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [message, setMessage] = useState('Preparing demo data...');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void ensureDemoSessionSeeded()
+      .then(() => {
+        if (!cancelled) {
+          setStatus('ready');
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setMessage(error instanceof Error ? error.message : 'Unable to initialise demo session');
+          setStatus('error');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === 'loading') {
+    return <div className="min-h-screen bg-slate-100 text-slate-700 grid place-items-center">Preparing demo data...</div>;
+  }
+
+  if (status === 'error') {
+    return <div className="min-h-screen bg-slate-100 text-red-700 grid place-items-center px-6 text-center">{message}</div>;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { currentUser, isAuthenticated } = useRole();
   const defaultPath = roleDefaultPath[currentUser.role] || '/parlour';
@@ -202,11 +239,13 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <RoleProvider>
-        <AppRoutes />
-      </RoleProvider>
-    </BrowserRouter>
+    <DemoSessionBootstrap>
+      <BrowserRouter>
+        <RoleProvider>
+          <AppRoutes />
+        </RoleProvider>
+      </BrowserRouter>
+    </DemoSessionBootstrap>
   );
 }
 

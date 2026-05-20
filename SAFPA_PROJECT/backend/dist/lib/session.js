@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authScopeMiddleware = authScopeMiddleware;
 const prisma_1 = require("./prisma");
-const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/leads/website-inquiry']);
+const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/session', '/api/auth/demo-session/reset', '/api/auth/demo-users', '/api/leads/website-inquiry']);
 const ROLE_PERMISSIONS = [
     { prefix: '/api/members/', methods: ['PATCH'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'policyholder_customer'] },
     { prefix: '/api/payments', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'collections_clerk', 'policyholder_customer'] },
