@@ -1,3 +1,6 @@
+import { DemoApiError, handleDemoRequest } from '../demo/api';
+import { IS_DEMO_MODE } from '../demo/config';
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const SESSION_KEY = 'safpa_session';
 
@@ -74,13 +77,29 @@ function formatValidationErrors(errors: unknown): string {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const mergedInit: RequestInit = {
     ...init,
     headers: {
       ...getSessionHeaders(),
       ...(init?.headers || {}),
     },
-  });
+  };
+
+  if (IS_DEMO_MODE) {
+    try {
+      return await handleDemoRequest<T>(path, mergedInit);
+    } catch (error) {
+      if (error instanceof DemoApiError) {
+        const validationSummary = formatValidationErrors(error.errors);
+        const validationDetails = validationSummary ? ` ${validationSummary}` : '';
+        throw new Error(`${error.message} (${error.status})${validationDetails}`);
+      }
+
+      throw error;
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, mergedInit);
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { message?: string; errors?: unknown } | null;
     const message = payload?.message || 'Request failed';
@@ -112,7 +131,7 @@ export function resolveAssetUrl(assetPath?: string | null): string | undefined {
     return undefined;
   }
 
-  if (/^https?:\/\//i.test(assetPath)) {
+  if (IS_DEMO_MODE || /^https?:\/\//i.test(assetPath) || assetPath.startsWith('data:') || assetPath.startsWith('blob:')) {
     return assetPath;
   }
 
