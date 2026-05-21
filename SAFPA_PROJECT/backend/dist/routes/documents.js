@@ -32,16 +32,38 @@ function allowedEntityTypesForRole(role) {
     if (role === 'policy_admin') {
         return ['member', 'policy'];
     }
+    if (role === 'policyholder_customer') {
+        return ['member', 'policy'];
+    }
     return ['member', 'policy', 'funeral_case'];
 }
 function actorCanAccessEntityType(actor, entityType) {
     return allowedEntityTypesForRole(actor?.role).includes(entityType);
 }
-function actorCanAccessDocument(actor, record) {
+async function actorCanAccessEntity(actor, record) {
     if (actor?.parlourId && actor.parlourId !== record.parlourId) {
         return false;
     }
-    return actorCanAccessEntityType(actor, record.entityType);
+    if (!actorCanAccessEntityType(actor, record.entityType)) {
+        return false;
+    }
+    if (actor?.role !== 'policyholder_customer') {
+        return true;
+    }
+    if (!actor.memberId) {
+        return false;
+    }
+    if (record.entityType === 'member') {
+        return record.entityId === actor.memberId;
+    }
+    if (record.entityType === 'policy') {
+        const policy = await prisma_1.prisma.policy.findUnique({
+            where: { id: record.entityId },
+            select: { memberId: true, parlourId: true },
+        });
+        return Boolean(policy && policy.memberId === actor.memberId && (!actor.parlourId || policy.parlourId === actor.parlourId));
+    }
+    return false;
 }
 function uploadsDir() {
     const dir = node_path_1.default.resolve(process.cwd(), 'uploads');
@@ -57,6 +79,32 @@ exports.documentsRouter.get('/', async (req, res) => {
     const allowedEntityTypes = allowedEntityTypesForRole(req.actor?.role);
     if (entityType && !allowedEntityTypes.includes(entityType)) {
         return res.json([]);
+    }
+    if (req.actor?.role === 'policyholder_customer') {
+        if (!req.actor.memberId) {
+            return res.status(403).json({ message: 'Customer account is not linked to a member profile' });
+        }
+        const ownedPolicies = await prisma_1.prisma.policy.findMany({
+            where: {
+                memberId: req.actor.memberId,
+                ...(req.actor.parlourId ? { parlourId: req.actor.parlourId } : {}),
+            },
+            select: { id: true },
+        });
+        const ownedPolicyIds = ownedPolicies.map((policy) => policy.id);
+        const records = await prisma_1.prisma.documentRecord.findMany({
+            where: {
+                parlourId: req.actor.parlourId || parlourId || undefined,
+                entityType: entityType || { in: allowedEntityTypes },
+                entityId: entityId || undefined,
+                OR: [
+                    { entityType: 'member', entityId: req.actor.memberId },
+                    { entityType: 'policy', entityId: { in: ownedPolicyIds } },
+                ],
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        return res.json(records);
     }
     const records = await prisma_1.prisma.documentRecord.findMany({
         where: {
@@ -76,8 +124,12 @@ exports.documentsRouter.post('/', async (req, res) => {
     if (!actorCanAccessEntityType(req.actor, parsed.data.entityType)) {
         return res.status(403).json({ message: 'You are not allowed to manage this document type' });
     }
-    if (req.actor?.parlourId && req.actor.parlourId !== parsed.data.parlourId) {
-        return res.status(403).json({ message: 'You are not allowed to manage documents outside your parlour' });
+    if (!(await actorCanAccessEntity(req.actor, {
+        parlourId: parsed.data.parlourId,
+        entityType: parsed.data.entityType,
+        entityId: parsed.data.entityId,
+    }))) {
+        return res.status(403).json({ message: 'You are not allowed to manage this document' });
     }
     const record = await prisma_1.prisma.documentRecord.create({
         data: {
@@ -131,8 +183,12 @@ exports.documentsRouter.post('/upload', upload.single('file'), async (req, res) 
     if (!actorCanAccessEntityType(req.actor, parsed.data.entityType)) {
         return res.status(403).json({ message: 'You are not allowed to manage this document type' });
     }
-    if (req.actor?.parlourId && req.actor.parlourId !== parsed.data.parlourId) {
-        return res.status(403).json({ message: 'You are not allowed to manage documents outside your parlour' });
+    if (!(await actorCanAccessEntity(req.actor, {
+        parlourId: parsed.data.parlourId,
+        entityType: parsed.data.entityType,
+        entityId: parsed.data.entityId,
+    }))) {
+        return res.status(403).json({ message: 'You are not allowed to manage this document' });
     }
     if (!req.file) {
         return res.status(400).json({ message: 'File is required' });
@@ -187,7 +243,11 @@ exports.documentsRouter.get('/:id/download', async (req, res) => {
     if (!record) {
         return res.status(404).json({ message: 'Document not found' });
     }
-    if (!actorCanAccessDocument(req.actor, { parlourId: record.parlourId, entityType: record.entityType })) {
+    if (!(await actorCanAccessEntity(req.actor, {
+        parlourId: record.parlourId,
+        entityType: record.entityType,
+        entityId: record.entityId,
+    }))) {
         return res.status(403).json({ message: 'You are not allowed to access this document' });
     }
     if (!record.storagePath || !node_fs_1.default.existsSync(record.storagePath)) {
@@ -203,7 +263,11 @@ exports.documentsRouter.delete('/:id', async (req, res) => {
         if (!existing) {
             return res.status(404).json({ message: 'Document not found' });
         }
-        if (!actorCanAccessDocument(req.actor, { parlourId: existing.parlourId, entityType: existing.entityType })) {
+        if (!(await actorCanAccessEntity(req.actor, {
+            parlourId: existing.parlourId,
+            entityType: existing.entityType,
+            entityId: existing.entityId,
+        }))) {
             return res.status(403).json({ message: 'You are not allowed to delete this document' });
         }
         const record = await prisma_1.prisma.documentRecord.delete({ where: { id: req.params.id } });

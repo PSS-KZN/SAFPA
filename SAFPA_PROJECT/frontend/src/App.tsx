@@ -65,6 +65,7 @@ import CommunicationComposer from './pages/communications/CommunicationComposer'
 
 // Customer
 import CustomerPortal from './pages/customer/CustomerPortal';
+import CustomerClaimsPage from './pages/customer/CustomerClaimsPage';
 import CustomerPolicyPage from './pages/customer/CustomerPolicyPage';
 import CustomerPaymentsPage from './pages/customer/CustomerPaymentsPage';
 import CustomerSupportPage from './pages/customer/CustomerSupportPage';
@@ -219,6 +220,7 @@ function AppRoutes() {
         <Route path="/customer" element={withAccess(['policyholder_customer'], <CustomerPortal />)}>
           <Route index element={<Navigate to="policy" replace />} />
           <Route path="policy" element={<CustomerPolicyPage />} />
+          <Route path="claim" element={<CustomerClaimsPage />} />
           <Route path="payments" element={<CustomerPaymentsPage />} />
           <Route path="support" element={<CustomerSupportPage />} />
         </Route>

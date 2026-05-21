@@ -293,10 +293,29 @@ async function dispatchFuneralCaseCommunication(params) {
     });
 }
 exports.funeralCasesRouter = (0, express_1.Router)();
+async function actorCanAccessFuneralCase(actor, record) {
+    if (!actor) {
+        return false;
+    }
+    if (actor.parlourId && actor.parlourId !== record.parlourId) {
+        return false;
+    }
+    if (actor.role !== 'policyholder_customer') {
+        return true;
+    }
+    return Boolean(actor.memberId && record.memberId === actor.memberId);
+}
 exports.funeralCasesRouter.get('/', async (req, res) => {
     const parlourId = typeof req.query.parlourId === 'string' ? req.query.parlourId : undefined;
     const records = await prisma_1.prisma.funeralCase.findMany({
-        where: parlourId ? { parlourId } : undefined,
+        where: req.actor?.role === 'policyholder_customer'
+            ? {
+                parlourId: req.actor.parlourId || parlourId || undefined,
+                memberId: req.actor.memberId || undefined,
+            }
+            : parlourId
+                ? { parlourId }
+                : undefined,
         orderBy: { createdAt: 'desc' },
     });
     return res.json(records.map((record) => normalizeCase(record)));
@@ -306,12 +325,30 @@ exports.funeralCasesRouter.get('/:id', async (req, res) => {
     if (!record) {
         return res.status(404).json({ message: 'Funeral case not found' });
     }
+    if (!(await actorCanAccessFuneralCase(req.actor, { parlourId: record.parlourId, memberId: record.memberId }))) {
+        return res.status(403).json({ message: 'You are not allowed to access this claim' });
+    }
     return res.json(normalizeCase(record));
 });
 exports.funeralCasesRouter.post('/', async (req, res) => {
     const parsed = createCaseSchema.safeParse(req.body);
     if (!parsed.success) {
         return res.status(400).json({ message: 'Invalid case payload', errors: parsed.error.flatten() });
+    }
+    if (req.actor?.role === 'policyholder_customer') {
+        if (!req.actor.memberId || !req.actor.parlourId) {
+            return res.status(403).json({ message: 'Customer account is not linked to a claimable policy profile' });
+        }
+        if (parsed.data.caseType !== 'policy') {
+            return res.status(403).json({ message: 'Customers may only submit policy claims' });
+        }
+        if (parsed.data.memberId !== req.actor.memberId) {
+            return res.status(403).json({ message: 'Claim must be linked to your own member profile' });
+        }
+        const policy = parsed.data.policyId ? await prisma_1.prisma.policy.findUnique({ where: { id: parsed.data.policyId } }) : null;
+        if (!policy || policy.memberId !== req.actor.memberId || policy.parlourId !== req.actor.parlourId) {
+            return res.status(403).json({ message: 'Claim must reference your own active policy' });
+        }
     }
     const createdOn = parsed.data.createdAt || new Date().toISOString().slice(0, 10);
     const record = await prisma_1.prisma.funeralCase.create({

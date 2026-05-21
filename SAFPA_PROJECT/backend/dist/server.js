@@ -13,6 +13,7 @@ const routeCatalog_1 = require("./lib/routeCatalog");
 const session_1 = require("./lib/session");
 const auth_1 = require("./routes/auth");
 const audit_1 = require("./routes/audit");
+const assistant_1 = require("./routes/assistant");
 const branches_1 = require("./routes/branches");
 const communications_1 = require("./routes/communications");
 const documents_1 = require("./routes/documents");
@@ -51,6 +52,7 @@ const mountedRouters = [
     { basePath: '/api/funeral-cases', router: funeralCases_1.funeralCasesRouter },
     { basePath: '/api/reports', router: reports_1.reportsRouter },
     { basePath: '/api/audit', router: audit_1.auditRouter },
+    { basePath: '/api/assistant', router: assistant_1.assistantRouter },
     { basePath: '/api/resources', router: resources_1.resourcesRouter },
     { basePath: '/api/subscriptions', router: subscriptions_1.subscriptionsRouter },
     { basePath: '/api/parlour-subscriptions', router: parlourSubscriptions_1.parlourSubscriptionsRouter },
@@ -115,6 +117,7 @@ exports.app.use('/api/documents', documents_1.documentsRouter);
 exports.app.use('/api/funeral-cases', funeralCases_1.funeralCasesRouter);
 exports.app.use('/api/reports', reports_1.reportsRouter);
 exports.app.use('/api/audit', audit_1.auditRouter);
+exports.app.use('/api/assistant', assistant_1.assistantRouter);
 exports.app.use('/api/resources', resources_1.resourcesRouter);
 exports.app.use('/api/subscriptions', subscriptions_1.subscriptionsRouter);
 exports.app.use('/api/parlour-subscriptions', parlourSubscriptions_1.parlourSubscriptionsRouter);

@@ -54,6 +54,7 @@ const navItems: NavItem[] = [
 
   // Customer Portal
   { label: 'My Policy', path: '/customer/policy', icon: <FileText size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
+  { label: 'Claims', path: '/customer/claim', icon: <HeartHandshake size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
   { label: 'Payments', path: '/customer/payments', icon: <Wallet size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
   { label: 'Support', path: '/customer/support', icon: <MessageSquare size={18} />, roles: ['policyholder_customer'], group: 'Self-Service' },
 

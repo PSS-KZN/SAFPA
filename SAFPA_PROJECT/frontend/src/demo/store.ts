@@ -29,6 +29,7 @@ import type {
   SubscriptionPlan,
   User,
 } from '../types';
+import type { ReconciliationImportRecord } from '../services/paymentsApi';
 
 export interface DemoAdoptionRecord {
   onboardingStatus: string;
@@ -54,6 +55,7 @@ export interface DemoState {
   products: Product[];
   policies: Policy[];
   payments: PaymentTransaction[];
+  reconciliationImports: ReconciliationImportRecord[];
   leads: Lead[];
   funeralCases: FuneralCase[];
   documents: Document[];
@@ -146,6 +148,39 @@ const parlourSubscriptionsSeed: ParlourSubscription[] = [
     notes: 'Follow-up required before reactivation.',
     createdAt: '2026-02-01T00:00:00.000Z',
     updatedAt: '2026-04-10T00:00:00.000Z',
+  },
+];
+
+const reconciliationImportsSeed: ReconciliationImportRecord[] = [
+  {
+    id: 'rec1',
+    parlourId: 'p1',
+    fileName: 'Ubuntu_April_2026.csv',
+    importedBy: 'Mpho Tau',
+    importedAt: '2026-04-20',
+    matched: 142,
+    exceptions: 3,
+    status: 'completed',
+  },
+  {
+    id: 'rec2',
+    parlourId: 'p1',
+    fileName: 'Ubuntu_March_2026.csv',
+    importedBy: 'Mpho Tau',
+    importedAt: '2026-03-21',
+    matched: 138,
+    exceptions: 5,
+    status: 'completed',
+  },
+  {
+    id: 'rec3',
+    parlourId: 'p2',
+    fileName: 'Dignity_April_2026.csv',
+    importedBy: 'Zanele Mkhize',
+    importedAt: '2026-04-19',
+    matched: 96,
+    exceptions: 2,
+    status: 'completed',
   },
 ];
 
@@ -252,6 +287,7 @@ export function createSeedDemoState(): DemoState {
     products: cloneValue(products),
     policies: cloneValue(policies),
     payments: cloneValue(payments),
+    reconciliationImports: cloneValue(reconciliationImportsSeed),
     leads: cloneValue(leads),
     funeralCases: cloneValue(funeralCases),
     documents: cloneValue(documents),
@@ -265,6 +301,40 @@ export function createSeedDemoState(): DemoState {
   };
 }
 
+function normalizeStoredState(stored: unknown): DemoState | null {
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
+    return null;
+  }
+
+  const seed = createSeedDemoState();
+  const candidate = stored as Partial<DemoState>;
+
+  return {
+    ...seed,
+    ...candidate,
+    users: Array.isArray(candidate.users) ? candidate.users : seed.users,
+    parlours: Array.isArray(candidate.parlours) ? candidate.parlours : seed.parlours,
+    branches: Array.isArray(candidate.branches) ? candidate.branches : seed.branches,
+    members: Array.isArray(candidate.members) ? candidate.members : seed.members,
+    products: Array.isArray(candidate.products) ? candidate.products : seed.products,
+    policies: Array.isArray(candidate.policies) ? candidate.policies : seed.policies,
+    payments: Array.isArray(candidate.payments) ? candidate.payments : seed.payments,
+    reconciliationImports: Array.isArray(candidate.reconciliationImports) ? candidate.reconciliationImports : seed.reconciliationImports,
+    leads: Array.isArray(candidate.leads) ? candidate.leads : seed.leads,
+    funeralCases: Array.isArray(candidate.funeralCases) ? candidate.funeralCases : seed.funeralCases,
+    documents: Array.isArray(candidate.documents) ? candidate.documents : seed.documents,
+    communications: Array.isArray(candidate.communications) ? candidate.communications : seed.communications,
+    communicationTemplates: Array.isArray(candidate.communicationTemplates) ? candidate.communicationTemplates : seed.communicationTemplates,
+    resources: Array.isArray(candidate.resources) ? candidate.resources : seed.resources,
+    auditEntries: Array.isArray(candidate.auditEntries) ? candidate.auditEntries : seed.auditEntries,
+    subscriptionPlans: Array.isArray(candidate.subscriptionPlans) ? candidate.subscriptionPlans : seed.subscriptionPlans,
+    parlourSubscriptions: Array.isArray(candidate.parlourSubscriptions) ? candidate.parlourSubscriptions : seed.parlourSubscriptions,
+    adoptionByParlourId: candidate.adoptionByParlourId && typeof candidate.adoptionByParlourId === 'object' && !Array.isArray(candidate.adoptionByParlourId)
+      ? { ...seed.adoptionByParlourId, ...candidate.adoptionByParlourId }
+      : seed.adoptionByParlourId,
+  };
+}
+
 function readStoredState(): DemoState | null {
   try {
     const raw = window.sessionStorage.getItem(DEMO_STORE_KEY);
@@ -272,7 +342,7 @@ function readStoredState(): DemoState | null {
       return null;
     }
 
-    return JSON.parse(raw) as DemoState;
+    return normalizeStoredState(JSON.parse(raw));
   } catch {
     return null;
   }

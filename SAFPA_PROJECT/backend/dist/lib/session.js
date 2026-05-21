@@ -6,6 +6,7 @@ const PUBLIC_ENDPOINTS = new Set(['/api/health', '/api/auth/login', '/api/auth/s
 const ROLE_PERMISSIONS = [
     { prefix: '/api/members/', methods: ['PATCH'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'policyholder_customer'] },
     { prefix: '/api/payments', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'collections_clerk', 'policyholder_customer'] },
+    { prefix: '/api/documents', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator', 'policyholder_customer'] },
     { prefix: '/api/parlours', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
     { prefix: '/api/resources', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin'] },
     { prefix: '/api/branches', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner'] },
@@ -16,7 +17,8 @@ const ROLE_PERMISSIONS = [
     { prefix: '/api/policies', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin'] },
     { prefix: '/api/leads', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin'] },
     { prefix: '/api/payments', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'collections_clerk'] },
-    { prefix: '/api/funeral-cases', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'operations_coordinator'] },
+    { prefix: '/api/funeral-cases', methods: ['POST'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'operations_coordinator', 'policyholder_customer'] },
+    { prefix: '/api/funeral-cases', methods: ['PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'operations_coordinator'] },
     { prefix: '/api/documents', methods: ['POST', 'PATCH', 'DELETE'], roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'operations_coordinator'] },
     { prefix: '/api/audit', roles: ['safpa_admin', 'parlour_owner'] },
     { prefix: '/api/reports', roles: ['safpa_admin', 'parlour_owner', 'branch_manager', 'policy_admin', 'collections_clerk', 'operations_coordinator'] },

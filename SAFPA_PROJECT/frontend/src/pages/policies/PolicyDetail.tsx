@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, DollarSign, AlertCircle, Upload, File } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, DollarSign, AlertCircle, Upload, File, Bot } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import { useCallback, useEffect, useState } from 'react';
+import { openAssistant } from '../../components/assistant/assistantEvents';
 import type { Document, Member, Policy } from '../../types';
 import { fetchDocuments } from '../../services/documentsApi';
 import { fetchMembers } from '../../services/membersApi';
@@ -175,6 +176,21 @@ export default function PolicyDetail() {
       <div className="flex items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold">{policy.policyNumber}</h1>
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[policy.status]}`}>{policy.status}</span>
+        <button
+          type="button"
+          onClick={() => openAssistant({
+            prompt: `Explain policy ${policy.policyNumber}`,
+            context: {
+              page: 'policy_detail',
+              entityType: 'policy',
+              entityId: policy.id,
+              currentPath: `/policies/${policy.id}`,
+            },
+          })}
+          className="ml-auto inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+        >
+          <Bot size={15} /> Ask Assistant
+        </button>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}

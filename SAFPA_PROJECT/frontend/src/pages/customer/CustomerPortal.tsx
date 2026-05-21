@@ -20,6 +20,7 @@ const emptyProfile: ProfileFormState = {
 
 const tabLinks = [
   { label: 'My Policy', to: '/customer/policy' },
+  { label: 'Claims', to: '/customer/claim' },
   { label: 'Payments', to: '/customer/payments' },
   { label: 'Support', to: '/customer/support' },
 ];

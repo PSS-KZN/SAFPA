@@ -7,6 +7,7 @@ import { collectMountedRoutes, type MountedRouter } from './lib/routeCatalog';
 import { authScopeMiddleware } from './lib/session';
 import { authRouter } from './routes/auth';
 import { auditRouter } from './routes/audit';
+import { assistantRouter } from './routes/assistant';
 import { branchesRouter } from './routes/branches';
 import { communicationsRouter } from './routes/communications';
 import { documentsRouter } from './routes/documents';
@@ -46,6 +47,7 @@ const mountedRouters: MountedRouter[] = [
   { basePath: '/api/funeral-cases', router: funeralCasesRouter },
   { basePath: '/api/reports', router: reportsRouter },
   { basePath: '/api/audit', router: auditRouter },
+  { basePath: '/api/assistant', router: assistantRouter },
   { basePath: '/api/resources', router: resourcesRouter },
   { basePath: '/api/subscriptions', router: subscriptionsRouter },
   { basePath: '/api/parlour-subscriptions', router: parlourSubscriptionsRouter },
@@ -125,6 +127,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/funeral-cases', funeralCasesRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/audit', auditRouter);
+app.use('/api/assistant', assistantRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/parlour-subscriptions', parlourSubscriptionsRouter);

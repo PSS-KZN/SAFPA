@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import FloatingAssistant from '../assistant/FloatingAssistant';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { TenantBrandingProvider } from '../../contexts/TenantBrandingContext';
@@ -20,6 +21,7 @@ function AppShell() {
             <Outlet />
           </div>
         </main>
+        <FloatingAssistant />
       </div>
     </div>
   );
