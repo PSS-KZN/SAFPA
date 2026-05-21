@@ -44,6 +44,16 @@ const roleLabels: Record<UserRole, string> = {
   policyholder_customer: 'Policyholder / Customer',
 };
 
+function getVisibleDemoUsers(users: DemoLoginUser[], role: UserRole): DemoLoginUser[] {
+  const roleUsers = users.filter((user) => user.role === role);
+
+  if (role === 'parlour_owner' || role === 'branch_manager') {
+    return roleUsers.filter((user) => user.parlourId === 'p1');
+  }
+
+  return roleUsers;
+}
+
 function getLoginTheme(): CSSProperties {
   return {
     '--page-bg': '#f5f0e8',
@@ -115,7 +125,7 @@ export default function LoginPage() {
     return <Navigate to={roleDefaultPath[currentUser.role]} replace />;
   }
 
-  const matchingUsers = availableUsers.filter((user) => user.role === role);
+  const matchingUsers = getVisibleDemoUsers(availableUsers, role);
   const theme = getLoginTheme();
 
   const handleSubmit = async () => {
@@ -430,8 +440,9 @@ export default function LoginPage() {
                     id="login-role"
                     value={role}
                     onChange={(event) => {
-                      setRole(event.target.value as UserRole);
-                      setEmail(availableUsers.find((user) => user.role === event.target.value)?.email || '');
+                      const nextRole = event.target.value as UserRole;
+                      setRole(nextRole);
+                      setEmail(getVisibleDemoUsers(availableUsers, nextRole)[0]?.email || '');
                     }}
                     className="field-line select-line"
                   >
