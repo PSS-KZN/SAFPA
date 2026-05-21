@@ -61,6 +61,20 @@ function allowedPolicyTransitions(policy) {
     };
     return defaults[policy.status] || [];
 }
+function countJsonArrayItems(value) {
+    return Array.isArray(value) ? value.length : 0;
+}
+function countOpenTaskItems(value) {
+    if (!Array.isArray(value)) {
+        return 0;
+    }
+    return value.filter((task) => {
+        if (!task || typeof task !== 'object' || !('completed' in task)) {
+            return false;
+        }
+        return task.completed !== true;
+    }).length;
+}
 async function visibleMemberIds(actor) {
     if (actor.role === 'safpa_admin') {
         const members = await prisma_1.prisma.member.findMany({ select: { id: true } });
@@ -279,8 +293,10 @@ exports.assistantRouter.post('/chat', async (req, res) => {
     if (member && ((prompt.includes('member') || prompt.includes('customer') || prompt.includes('person') || prompt.includes('profile')) || (parsed.data.context?.entityType === 'member' && prompt.includes('explain')))) {
         const memberPolicies = policies.filter((item) => item.memberId === member.id);
         const successfulPayments = await prisma_1.prisma.paymentTransaction.count({ where: { memberId: member.id, status: 'successful' } });
+        const dependantCount = countJsonArrayItems(member.dependants);
+        const beneficiaryCount = countJsonArrayItems(member.beneficiaries);
         return res.json({
-            answer: `${member.firstName} ${member.lastName} is currently an ${member.status} member in ${member.city}, ${member.province}. Their join date is ${member.joinDate}, and I can see ${memberPolicies.length} policy${memberPolicies.length === 1 ? '' : 'ies'} linked to this member, ${successfulPayments} successful payment${successfulPayments === 1 ? '' : 's'}, ${member.dependants.length} dependant${member.dependants.length === 1 ? '' : 's'}, and ${member.beneficiaries.length} beneficiar${member.beneficiaries.length === 1 ? 'y' : 'ies'}. This explanation is based on the member profile currently visible to your ${actor.role} role.`,
+            answer: `${member.firstName} ${member.lastName} is currently an ${member.status} member in ${member.city}, ${member.province}. Their join date is ${member.joinDate}, and I can see ${memberPolicies.length} policy${memberPolicies.length === 1 ? '' : 'ies'} linked to this member, ${successfulPayments} successful payment${successfulPayments === 1 ? '' : 's'}, ${dependantCount} dependant${dependantCount === 1 ? '' : 's'}, and ${beneficiaryCount} beneficiar${beneficiaryCount === 1 ? 'y' : 'ies'}. This explanation is based on the member profile currently visible to your ${actor.role} role.`,
             suggestions: ['Explain a policy', 'What should I do next for this member?', 'What documents are needed?'],
             appliedRole: actor.role,
             guardrail: `Member explanations are limited to records visible to the ${actor.role} role.`,
@@ -299,8 +315,8 @@ exports.assistantRouter.post('/chat', async (req, res) => {
         });
     }
     if (funeralCase && ((prompt.includes('funeral') || prompt.includes('case') || prompt.includes('deceased') || prompt.includes('service')) || (parsed.data.context?.entityType === 'funeral_case' && prompt.includes('explain')))) {
-        const openTasks = Array.isArray(funeralCase.tasks) ? funeralCase.tasks.filter((task) => !task.completed).length : 0;
-        const notesCount = Array.isArray(funeralCase.notes) ? funeralCase.notes.length : 0;
+        const openTasks = countOpenTaskItems(funeralCase.tasks);
+        const notesCount = countJsonArrayItems(funeralCase.notes);
         return res.json({
             answer: `Funeral case ${funeralCase.caseNumber} for ${funeralCase.deceasedName} is currently ${funeralCase.status}. The case type is ${funeralCase.caseType}, the coordinator is ${funeralCase.coordinatorName}, the date of death is ${funeralCase.dateOfDeath}, and the funeral date is ${funeralCase.funeralDate || 'not yet scheduled'}. I can see ${openTasks} open task${openTasks === 1 ? '' : 's'}, ${notesCount} note${notesCount === 1 ? '' : 's'}, and ${funeralCase.bodyCollected ? 'the body has already been collected.' : 'body collection is still pending.'}`,
             suggestions: ['What should I do next for this case?', 'What documents are needed?', 'Show communications for this case'],
