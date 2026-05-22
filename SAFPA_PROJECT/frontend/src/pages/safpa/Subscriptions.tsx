@@ -57,7 +57,7 @@ export default function Subscriptions() {
       {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">Loading subscriptions...</div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr className="text-left text-slate-500">

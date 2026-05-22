@@ -255,30 +255,32 @@ export default function PolicyDetail() {
       {/* Payment History */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
         <h3 className="font-semibold mb-4">Payment History</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-500 border-b">
-              <th className="pb-2">Date</th>
-              <th className="pb-2">Amount</th>
-              <th className="pb-2">Method</th>
-              <th className="pb-2">Reference</th>
-              <th className="pb-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {policyPayments.map((p) => (
-              <tr key={p.id} className="border-b border-slate-100">
-                <td className="py-2">{p.date}</td>
-                <td className="py-2">R{p.amount}</td>
-                <td className="py-2 capitalize">{p.method.replace('_', ' ')}</td>
-                <td className="py-2 font-mono text-xs">{p.reference}</td>
-                <td className="py-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'successful' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
-                </td>
+        <div className="table-scroll">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b">
+                <th className="pb-2">Date</th>
+                <th className="pb-2">Amount</th>
+                <th className="pb-2">Method</th>
+                <th className="pb-2">Reference</th>
+                <th className="pb-2">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {policyPayments.map((p) => (
+                <tr key={p.id} className="border-b border-slate-100">
+                  <td className="py-2">{p.date}</td>
+                  <td className="py-2">R{p.amount}</td>
+                  <td className="py-2 capitalize">{p.method.replace('_', ' ')}</td>
+                  <td className="py-2 font-mono text-xs">{p.reference}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'successful' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Documents */}

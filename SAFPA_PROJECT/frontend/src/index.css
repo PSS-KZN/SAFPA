@@ -160,17 +160,18 @@ textarea {
   background-color: rgba(122, 46, 46, 0.04);
 }
 
-main table {
-  display: block;
-  width: max-content;
-  min-width: 100%;
-  max-width: 100%;
+.table-scroll {
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
-main table th,
-main table td {
+.table-scroll table {
+  min-width: max-content;
+  width: 100%;
+}
+
+.table-scroll th {
   white-space: nowrap;
 }
 

@@ -50,7 +50,7 @@ export default function CustomerPolicyPage() {
         </div>
 
         {payments.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="table-scroll rounded-xl border border-slate-200">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-slate-500">
                 <tr>

@@ -176,7 +176,7 @@ export default function SAFPADashboard() {
               <p className="text-[13px] text-slate-500">Active network members</p>
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="table-scroll flex-1">
             <table className="data-table">
               <thead>
                 <tr>

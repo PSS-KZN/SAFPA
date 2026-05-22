@@ -458,30 +458,32 @@ export default function ParlourDetail() {
       {/* Branches Table */}
       <div className="mt-6 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
         <h3 className="font-semibold mb-4">Branches ({parlourBranches.length})</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-500 border-b">
-              <th className="pb-2">Branch</th>
-              <th className="pb-2">City</th>
-              <th className="pb-2">Manager</th>
-              <th className="pb-2">Phone</th>
-              <th className="pb-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {parlourBranches.map((b) => (
-              <tr key={b.id} className="border-b border-slate-100">
-                <td className="py-2 font-medium">{b.name}</td>
-                <td className="py-2 text-slate-500">{b.city}</td>
-                <td className="py-2">{b.manager}</td>
-                <td className="py-2 text-slate-500">{b.phone}</td>
-                <td className="py-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${b.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>{b.status}</span>
-                </td>
+        <div className="table-scroll">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b">
+                <th className="pb-2">Branch</th>
+                <th className="pb-2">City</th>
+                <th className="pb-2">Manager</th>
+                <th className="pb-2">Phone</th>
+                <th className="pb-2">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {parlourBranches.map((b) => (
+                <tr key={b.id} className="border-b border-slate-100">
+                  <td className="py-2 font-medium">{b.name}</td>
+                  <td className="py-2 text-slate-500">{b.city}</td>
+                  <td className="py-2">{b.manager}</td>
+                  <td className="py-2 text-slate-500">{b.phone}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${b.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>{b.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

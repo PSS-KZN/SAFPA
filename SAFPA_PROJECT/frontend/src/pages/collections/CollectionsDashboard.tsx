@@ -412,7 +412,7 @@ export default function CollectionsDashboard() {
       )}
 
       {activeTab === 'transactions' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="table-scroll bg-white rounded-xl shadow-sm border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr className="text-left text-slate-500">
@@ -456,7 +456,7 @@ export default function CollectionsDashboard() {
       )}
 
       {activeTab === 'arrears' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="table-scroll bg-white rounded-xl shadow-sm border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr className="text-left text-slate-500">
@@ -523,7 +523,8 @@ export default function CollectionsDashboard() {
             <div className="px-5 py-4 border-b border-slate-200">
               <h3 className="font-semibold">Previous Reconciliation Imports</h3>
             </div>
-            <table className="w-full text-sm">
+            <div className="table-scroll">
+              <table className="w-full text-sm">
               <thead className="bg-slate-50">
                 <tr className="text-left text-slate-500">
                   <th className="px-4 py-3">File Name</th>
@@ -557,7 +558,8 @@ export default function CollectionsDashboard() {
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -401,63 +401,67 @@ export default function MemberDetail() {
       {/* Policies */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
         <h3 className="font-semibold mb-4 flex items-center gap-2"><FileText size={18} /> Policies ({memberPolicies.length})</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-500 border-b">
-              <th className="pb-2">Policy #</th>
-              <th className="pb-2">Product</th>
-              <th className="pb-2">Premium</th>
-              <th className="pb-2">Cover</th>
-              <th className="pb-2">Status</th>
-              <th className="pb-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {memberPolicies.map((p) => (
-              <tr key={p.id} className="border-b border-slate-100">
-                <td className="py-2 font-mono text-xs">{p.policyNumber}</td>
-                <td className="py-2">{p.productName}</td>
-                <td className="py-2">R{p.premiumAmount}/mo</td>
-                <td className="py-2">R{p.coverAmount.toLocaleString()}</td>
-                <td className="py-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'active' ? 'bg-green-100 text-green-700' : p.status === 'suspended' ? 'bg-amber-100 text-amber-700' : p.status === 'lapsed' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
-                </td>
-                <td className="py-2">
-                  <Link to={`/policies/${p.id}`} className="text-red-600 hover:text-red-800 text-xs">View</Link>
-                </td>
+        <div className="table-scroll">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b">
+                <th className="pb-2">Policy #</th>
+                <th className="pb-2">Product</th>
+                <th className="pb-2">Premium</th>
+                <th className="pb-2">Cover</th>
+                <th className="pb-2">Status</th>
+                <th className="pb-2">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {memberPolicies.map((p) => (
+                <tr key={p.id} className="border-b border-slate-100">
+                  <td className="py-2 font-mono text-xs">{p.policyNumber}</td>
+                  <td className="py-2">{p.productName}</td>
+                  <td className="py-2">R{p.premiumAmount}/mo</td>
+                  <td className="py-2">R{p.coverAmount.toLocaleString()}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'active' ? 'bg-green-100 text-green-700' : p.status === 'suspended' ? 'bg-amber-100 text-amber-700' : p.status === 'lapsed' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
+                  </td>
+                  <td className="py-2">
+                    <Link to={`/policies/${p.id}`} className="text-red-600 hover:text-red-800 text-xs">View</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Payment History */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
         <h3 className="font-semibold mb-4 flex items-center gap-2"><Wallet size={18} /> Payment History</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-500 border-b">
-              <th className="pb-2">Date</th>
-              <th className="pb-2">Amount</th>
-              <th className="pb-2">Method</th>
-              <th className="pb-2">Reference</th>
-              <th className="pb-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {memberPayments.map((p) => (
-              <tr key={p.id} className="border-b border-slate-100">
-                <td className="py-2">{p.date}</td>
-                <td className="py-2">R{p.amount}</td>
-                <td className="py-2 capitalize">{p.method.replace('_', ' ')}</td>
-                <td className="py-2 font-mono text-xs">{p.reference}</td>
-                <td className="py-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'successful' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
-                </td>
+        <div className="table-scroll">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b">
+                <th className="pb-2">Date</th>
+                <th className="pb-2">Amount</th>
+                <th className="pb-2">Method</th>
+                <th className="pb-2">Reference</th>
+                <th className="pb-2">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {memberPayments.map((p) => (
+                <tr key={p.id} className="border-b border-slate-100">
+                  <td className="py-2">{p.date}</td>
+                  <td className="py-2">R{p.amount}</td>
+                  <td className="py-2 capitalize">{p.method.replace('_', ' ')}</td>
+                  <td className="py-2 font-mono text-xs">{p.reference}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'successful' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Documents */}

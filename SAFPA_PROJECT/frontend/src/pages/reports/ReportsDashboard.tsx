@@ -252,7 +252,7 @@ function MonthlyPerformanceTable({
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
       <h3 className="font-semibold mb-4">{title}</h3>
-      <div className="overflow-x-auto">
+      <div className="table-scroll">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -299,29 +299,31 @@ function BreakdownTable({
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
       <h3 className="font-semibold mb-4">{title}</h3>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-slate-500">
-            <th className="pb-2">Segment</th>
-            <th className="pb-2">{valueLabel}</th>
-            <th className="pb-2">Share</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-b border-slate-100 last:border-b-0">
-              <td className="py-3 font-medium capitalize">{row.label}</td>
-              <td className="py-3">{row.value.toLocaleString()}</td>
-              <td className="py-3">{formatPercent(row.share)}</td>
+      <div className="table-scroll">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="pb-2">Segment</th>
+              <th className="pb-2">{valueLabel}</th>
+              <th className="pb-2">Share</th>
             </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={3} className="py-10 text-center text-slate-400">{emptyLabel}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-b border-slate-100 last:border-b-0">
+                <td className="py-3 font-medium capitalize">{row.label}</td>
+                <td className="py-3">{row.value.toLocaleString()}</td>
+                <td className="py-3">{formatPercent(row.share)}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={3} className="py-10 text-center text-slate-400">{emptyLabel}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -342,7 +344,7 @@ function PolicyLifecyclePanel({ policyLifecycle }: { policyLifecycle: Array<{ st
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="rounded-lg border border-slate-200">
+        <div className="table-scroll rounded-lg border border-slate-200">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-slate-500">
@@ -382,38 +384,40 @@ function BranchPerformanceTable({
   return (
     <div className="mt-6 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
       <h3 className="font-semibold mb-4">Branch Performance</h3>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-slate-500 border-b">
-            <th className="pb-2">Branch</th>
-            <th className="pb-2">Members</th>
-            <th className="pb-2">Collection Rate</th>
-            <th className="pb-2">Performance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((branch) => (
-            <tr key={branch.branchId} className="border-b border-slate-100">
-              <td className="py-3 font-medium">{branch.branch}</td>
-              <td className="py-3">{branch.members.toLocaleString()}</td>
-              <td className="py-3">{branch.collections}%</td>
-              <td className="py-3">
-                <div className="w-32 h-2 bg-slate-200 rounded-full">
-                  <div
-                    className={`h-full rounded-full ${branch.collections >= 90 ? 'bg-green-500' : branch.collections >= 80 ? 'bg-amber-500' : 'bg-red-500'}`}
-                    style={{ width: `${Math.max(0, Math.min(branch.collections, 100))}%` }}
-                  />
-                </div>
-              </td>
+      <div className="table-scroll">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-slate-500 border-b">
+              <th className="pb-2">Branch</th>
+              <th className="pb-2">Members</th>
+              <th className="pb-2">Collection Rate</th>
+              <th className="pb-2">Performance</th>
             </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-10 text-center text-slate-400">No branch performance data available</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((branch) => (
+              <tr key={branch.branchId} className="border-b border-slate-100">
+                <td className="py-3 font-medium">{branch.branch}</td>
+                <td className="py-3">{branch.members.toLocaleString()}</td>
+                <td className="py-3">{branch.collections}%</td>
+                <td className="py-3">
+                  <div className="w-32 h-2 bg-slate-200 rounded-full">
+                    <div
+                      className={`h-full rounded-full ${branch.collections >= 90 ? 'bg-green-500' : branch.collections >= 80 ? 'bg-amber-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.max(0, Math.min(branch.collections, 100))}%` }}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-10 text-center text-slate-400">No branch performance data available</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -476,7 +480,7 @@ function UsageSummaryTable({
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="table-scroll">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -628,7 +632,7 @@ function NetworkAdminView({
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 lg:col-span-2">
           <h3 className="font-semibold mb-4">Parlour Footprint</h3>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">

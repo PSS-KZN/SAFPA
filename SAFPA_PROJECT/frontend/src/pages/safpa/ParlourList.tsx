@@ -137,7 +137,7 @@ export default function ParlourList() {
       {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">Loading parlours...</div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="table-scroll bg-white rounded-xl shadow-sm border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr className="text-left text-slate-500">
