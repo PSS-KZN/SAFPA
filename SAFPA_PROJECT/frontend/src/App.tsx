@@ -152,6 +152,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to={defaultPath} replace /> : <LoginPage />} />
+      <Route path="/" element={isAuthenticated ? <Navigate to={defaultPath} replace /> : <LoginPage />} />
       <Route element={<AppLayout />}>
         {/* SAFPA Admin */}
         <Route path="/safpa" element={withAccess(['safpa_admin'], <SAFPADashboard />)} />
@@ -233,11 +234,8 @@ function AppRoutes() {
 
         {/* Audit Log */}
         <Route path="/audit-log" element={withAccess(['safpa_admin', 'parlour_owner'], <AuditLog />)} />
-
-        {/* Default entry keeps the shared URL stable for unauthenticated users. */}
-        <Route path="/" element={isAuthenticated ? <Navigate to={defaultPath} replace /> : <LoginPage />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/'} replace />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
