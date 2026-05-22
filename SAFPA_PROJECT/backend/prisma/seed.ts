@@ -42,7 +42,7 @@ async function main() {
       totalPolicies: 14200,
       contactEmail: 'info@ubuntufunerals.co.za',
       contactPhone: '011 234 5678',
-      logo: '/branding/ubuntu-logo.png',
+      logo: '/uploads/branding/ubuntu-logo.png',
       primaryColor: '#1e3a5f',
       secondaryColor: '#0f172a',
       accentColor: '#dc2626',

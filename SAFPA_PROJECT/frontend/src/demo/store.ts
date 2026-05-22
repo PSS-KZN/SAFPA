@@ -68,7 +68,7 @@ export interface DemoState {
   adoptionByParlourId: Record<string, DemoAdoptionRecord>;
 }
 
-const DEMO_STORE_KEY = 'safpa_frontend_demo_store_v1';
+const DEMO_STORE_KEY = 'safpa_frontend_demo_store_v2';
 
 const subscriptionPlansSeed: SubscriptionPlan[] = [
   {

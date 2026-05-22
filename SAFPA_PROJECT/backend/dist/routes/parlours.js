@@ -35,8 +35,9 @@ const domainSchema = zod_1.z.string().trim().toLowerCase().refine((value) => {
 }, 'Expected a valid domain name');
 const brandingUpload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 const logoMimeTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const uploadsRootDir = node_path_1.default.resolve(__dirname, '..', '..', 'uploads');
 function brandingUploadsDir() {
-    const dir = node_path_1.default.resolve(process.cwd(), 'uploads', 'branding');
+    const dir = node_path_1.default.resolve(uploadsRootDir, 'branding');
     if (!node_fs_1.default.existsSync(dir)) {
         node_fs_1.default.mkdirSync(dir, { recursive: true });
     }
@@ -47,7 +48,7 @@ function removeStoredLogoIfManaged(logoPath) {
         return;
     }
     const relativePath = logoPath.replace(/^\/uploads\//, '');
-    const fullPath = node_path_1.default.resolve(process.cwd(), 'uploads', relativePath);
+    const fullPath = node_path_1.default.resolve(uploadsRootDir, relativePath);
     if (node_fs_1.default.existsSync(fullPath)) {
         node_fs_1.default.unlinkSync(fullPath);
     }

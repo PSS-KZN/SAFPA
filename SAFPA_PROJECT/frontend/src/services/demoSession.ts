@@ -2,7 +2,7 @@ import { IS_DEMO_MODE } from '../demo/config';
 import { resetDemoState } from '../demo/store';
 import { API_BASE_URL } from './http';
 
-const DEMO_SESSION_KEY = 'safpa_demo_session_v1';
+const DEMO_SESSION_KEY = 'safpa_demo_session_v2';
 let bootstrapPromise: Promise<void> | null = null;
 
 export function ensureDemoSessionSeeded(): Promise<void> {

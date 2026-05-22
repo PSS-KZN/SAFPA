@@ -30,6 +30,7 @@ const resources_1 = require("./routes/resources");
 const subscriptions_1 = require("./routes/subscriptions");
 const templates_1 = require("./routes/templates");
 const users_1 = require("./routes/users");
+const uploadsDir = node_path_1.default.resolve(__dirname, '..', 'uploads');
 exports.app = (0, express_1.default)();
 const port = Number(process.env.PORT || 4000);
 const showRouteIndex = process.env.NODE_ENV !== 'production';
@@ -78,7 +79,7 @@ exports.app.use((0, cors_1.default)({
     },
 }));
 exports.app.use(express_1.default.json());
-exports.app.use('/uploads', express_1.default.static(node_path_1.default.resolve(process.cwd(), 'uploads')));
+exports.app.use('/uploads', express_1.default.static(uploadsDir));
 exports.app.get(`${docsBasePath}/openapi.json`, (req, res) => {
     const serverUrl = `${req.protocol}://${req.get('host') || `localhost:${port}`}`;
     res.json((0, openapi_1.createOpenApiDocument)(getDocumentedEndpoints(), serverUrl));

@@ -25,6 +25,8 @@ import { subscriptionsRouter } from './routes/subscriptions';
 import { templatesRouter } from './routes/templates';
 import { usersRouter } from './routes/users';
 
+const uploadsDir = path.resolve(__dirname, '..', 'uploads');
+
 export const app = express();
 const port = Number(process.env.PORT || 4000);
 const showRouteIndex = process.env.NODE_ENV !== 'production';
@@ -77,7 +79,7 @@ app.use(cors({
   },
 }));
 app.use(express.json());
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 app.get(`${docsBasePath}/openapi.json`, (req, res) => {
   const serverUrl = `${req.protocol}://${req.get('host') || `localhost:${port}`}`;
