@@ -337,7 +337,7 @@ export default function LoginPage() {
                 Sign into the SAFPA Funeral Parlour Operations System to move between administration, member servicing, collections, and funeral case execution from one secure workspace.
               </p>
 
-              <div className="mt-10 grid max-w-md grid-cols-2 gap-x-8 gap-y-4 animate-gentleFade" style={{ animationDelay: '0.62s' }}>
+              <div className="mt-10 grid max-w-md grid-cols-1 gap-x-8 gap-y-4 animate-gentleFade sm:grid-cols-2" style={{ animationDelay: '0.62s' }}>
                 {[
                   { num: 'I', label: 'Administration' },
                   { num: 'II', label: 'Policy Servicing' },
@@ -384,14 +384,14 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="relative flex items-center justify-center px-6 py-16 sm:px-12 lg:px-20">
+          <section className="relative flex items-center justify-center px-4 py-12 sm:px-12 sm:py-16 lg:px-20">
             <div className="absolute left-1/2 top-10 -translate-x-1/2 lg:hidden">
               <div className="flex h-20 w-20 items-center justify-center rounded-sm bg-white p-2.5 shadow-md">
                 <img src="/safpa-logo.png" alt="SAFPA" className="h-full w-full object-contain" />
               </div>
             </div>
 
-            <div className="w-full max-w-md animate-gentleFade pt-10 lg:pt-0" style={{ animationDelay: '0.28s' }}>
+            <div className="w-full max-w-md animate-gentleFade pt-16 sm:pt-10 lg:pt-0" style={{ animationDelay: '0.28s' }}>
               <div className="text-center">
                 <div className="mb-8 inline-flex items-center gap-2.5 border border-[var(--line-soft)] bg-[var(--surface-soft)] px-4 py-2">
                   <span className="block h-1.5 w-1.5 rounded-full bg-[var(--accent)] opacity-60" />

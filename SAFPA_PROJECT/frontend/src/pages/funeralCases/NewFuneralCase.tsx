@@ -139,7 +139,7 @@ export default function NewFuneralCase() {
           <h3 className="font-semibold">Death Notice Intake</h3>
           <div><label className="block text-sm text-slate-600 mb-1">Deceased Full Name*</label>
             <input type="text" value={form.deceasedName} onChange={(e) => update('deceasedName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div><label className="block text-sm text-slate-600 mb-1">ID Number*</label>
               <input type="text" value={form.deceasedIdNumber} onChange={(e) => update('deceasedIdNumber', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" maxLength={13} /></div>
             <div><label className="block text-sm text-slate-600 mb-1">Date of Death*</label>
@@ -201,7 +201,7 @@ export default function NewFuneralCase() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div><label className="block text-sm text-slate-600 mb-1">Funeral Date</label>
               <input type="date" value={form.funeralDate} onChange={(e) => update('funeralDate', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             <div><label className="block text-sm text-slate-600 mb-1">Coordinator</label>

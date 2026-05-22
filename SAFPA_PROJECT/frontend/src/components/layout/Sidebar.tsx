@@ -5,10 +5,15 @@ import type { UserRole } from '../../types';
 import {
   LayoutDashboard, Building2, Users, FileText, Wallet, HeartHandshake,
   MessageSquare, BarChart3, Globe, UserPlus, ChevronLeft, ChevronRight,
-  BookOpen, Shield, FolderOpen, LayoutTemplate, SwatchBook, LogOut,
+  BookOpen, Shield, FolderOpen, LayoutTemplate, SwatchBook, LogOut, X,
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+
+interface SidebarProps {
+  mobileOpen: boolean;
+  onMobileOpenChange: (open: boolean) => void;
+}
 
 interface NavItem {
   label: string;
@@ -68,7 +73,7 @@ const navItems: NavItem[] = [
   { label: 'Audit Log', path: '/audit-log', icon: <Shield size={18} />, roles: ['safpa_admin', 'parlour_owner'], group: 'Analytics' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
   const { currentUser, logout } = useRole();
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [collapsed, setCollapsed] = useState(false);
@@ -102,10 +107,19 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} flex min-h-screen flex-col border-r text-[var(--app-sidebar-ink)] shadow-2xl transition-all duration-300 relative z-20`} style={sidebarBackground}>
+    <>
+      <div
+        className={`fixed inset-0 z-20 bg-[rgba(25,19,17,0.45)] backdrop-blur-[2px] transition-opacity duration-300 md:hidden ${mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        onClick={() => onMobileOpenChange(false)}
+        aria-hidden="true"
+      />
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 flex w-[280px] max-w-[85vw] flex-col border-r text-[var(--app-sidebar-ink)] shadow-2xl transition-all duration-300 md:static md:z-20 md:min-h-screen md:max-w-none ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'md:w-[72px]' : 'md:w-[260px]'} md:translate-x-0`}
+        style={sidebarBackground}
+      >
       {/* Logo */}
       <div className="flex h-20 flex-shrink-0 items-center justify-between border-b border-[rgba(200,154,109,0.1)] px-5">
-        {!collapsed && (
+        {(!collapsed || mobileOpen) && (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1 shadow-[0_0_15px_rgba(255,255,255,0.1)]" style={logoSurface}>
               {isTenantBranded && parlourBrand?.logo ? (
@@ -121,7 +135,7 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-        {collapsed && (
+        {collapsed && !mobileOpen && (
           <div className="w-10 h-10 mx-auto rounded-xl bg-white flex items-center justify-center p-1">
             {isTenantBranded && parlourBrand?.logo ? (
               <img src={resolveAssetUrl(parlourBrand.logo)} alt={`${tenantTitle} logo`} className="w-full h-full object-contain" />
@@ -130,14 +144,21 @@ export default function Sidebar() {
             )}
           </div>
         )}
-        {!collapsed && (
+        <button
+          onClick={() => onMobileOpenChange(false)}
+          className="rounded-lg p-1.5 text-[var(--app-sidebar-muted)] transition-colors hover:bg-white/5 hover:text-[var(--app-sidebar-ink-strong)] md:hidden"
+          aria-label="Close navigation"
+        >
+          <X size={18} />
+        </button>
+        {!collapsed && !mobileOpen && (
           <button onClick={() => setCollapsed(true)} className="rounded-lg p-1.5 text-[var(--app-sidebar-muted)] transition-colors hover:bg-white/5 hover:text-[var(--app-sidebar-ink-strong)]">
             <ChevronLeft size={18} />
           </button>
         )}
       </div>
 
-      {collapsed && (
+      {collapsed && !mobileOpen && (
         <button onClick={() => setCollapsed(false)} className="mx-auto mt-4 rounded-lg bg-white/5 p-2 text-[var(--app-sidebar-muted)] transition-colors hover:bg-white/10 hover:text-[var(--app-sidebar-ink-strong)]">
           <ChevronRight size={18} />
         </button>
@@ -147,18 +168,19 @@ export default function Sidebar() {
       <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar">
         {grouped.map((section, si) => (
           <div key={si} className={si > 0 ? 'mt-6' : ''}>
-            {!collapsed && section.group && (
+            {(!collapsed || mobileOpen) && section.group && (
               <div className="mb-2 px-6 text-[11px] font-bold uppercase tracking-widest text-[var(--app-sidebar-muted)]">
                 {section.group}
               </div>
             )}
-            {collapsed && si > 0 && <div className="mx-4 my-4 border-t border-[rgba(200,154,109,0.1)]" />}
+            {collapsed && !mobileOpen && si > 0 && <div className="mx-4 my-4 border-t border-[rgba(200,154,109,0.1)]" />}
             
             <div className="space-y-1">
               {section.items.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  onClick={() => onMobileOpenChange(false)}
                   end={item.path === '/safpa' || item.path === '/parlour'}
                   style={({ isActive }) =>
                     isActive && isTenantBranded
@@ -182,7 +204,7 @@ export default function Sidebar() {
                       <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-[#c89a6d]' : 'text-[#8f7e68] group-hover:text-[#e8dbc6]'}`}>
                         {item.icon}
                       </span>
-                      {!collapsed && <span>{item.label}</span>}
+                      {(!collapsed || mobileOpen) && <span>{item.label}</span>}
                     </>
                   )}
                 </NavLink>
@@ -193,7 +215,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
+      {(!collapsed || mobileOpen) && (
         <div className="border-t border-[rgba(200,154,109,0.1)] bg-[var(--app-sidebar-panel)] px-4 py-4">
           <button
             onClick={handleLogout}
@@ -211,7 +233,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      {collapsed && (
+      {collapsed && !mobileOpen && (
         <div className="border-t border-[rgba(200,154,109,0.1)] bg-[var(--app-sidebar-panel)] px-3 py-4">
           <button
             onClick={handleLogout}
@@ -223,5 +245,6 @@ export default function Sidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

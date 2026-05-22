@@ -160,7 +160,7 @@ export default function AddMember() {
       <h1 className="text-2xl font-bold mb-6">Add New Member</h1>
 
       {/* Step Indicator */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-2">
         {['Personal Info', 'Dependants', 'Beneficiary', 'Package', 'Policy Rules'].map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${step > i + 1 ? 'bg-green-500 text-white' : step === i + 1 ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
@@ -176,17 +176,17 @@ export default function AddMember() {
         {step === 1 && (
           <div className="space-y-4">
             <h3 className="font-semibold mb-2">Personal Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div><label className="block text-sm text-slate-600 mb-1">First Name*</label><input type="text" value={form.firstName} onChange={(e) => update('firstName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
               <div><label className="block text-sm text-slate-600 mb-1">Last Name*</label><input type="text" value={form.lastName} onChange={(e) => update('lastName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             </div>
             <div><label className="block text-sm text-slate-600 mb-1">SA ID Number*</label><input type="text" value={form.idNumber} onChange={(e) => update('idNumber', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" maxLength={13} /></div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div><label className="block text-sm text-slate-600 mb-1">Phone*</label><input type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
               <div><label className="block text-sm text-slate-600 mb-1">Email</label><input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             </div>
             <div><label className="block text-sm text-slate-600 mb-1">Address</label><input type="text" value={form.address} onChange={(e) => update('address', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div><label className="block text-sm text-slate-600 mb-1">City</label><input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
               <div><label className="block text-sm text-slate-600 mb-1">Province</label>
                 <select value={form.province} onChange={(e) => update('province', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
@@ -201,7 +201,7 @@ export default function AddMember() {
         {step === 2 && (
           <div className="space-y-4">
             <h3 className="font-semibold mb-2">Add Dependant</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div><label className="block text-sm text-slate-600 mb-1">First Name</label><input type="text" value={form.depFirstName} onChange={(e) => update('depFirstName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
               <div><label className="block text-sm text-slate-600 mb-1">Last Name</label><input type="text" value={form.depLastName} onChange={(e) => update('depLastName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             </div>
@@ -218,7 +218,7 @@ export default function AddMember() {
         {step === 3 && (
           <div className="space-y-4">
             <h3 className="font-semibold mb-2">Add Beneficiary</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div><label className="block text-sm text-slate-600 mb-1">First Name</label><input type="text" value={form.benFirstName} onChange={(e) => update('benFirstName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
               <div><label className="block text-sm text-slate-600 mb-1">Last Name</label><input type="text" value={form.benLastName} onChange={(e) => update('benLastName', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
             </div>
@@ -251,7 +251,7 @@ export default function AddMember() {
         {step === 5 && (
           <div className="space-y-4">
             <h3 className="font-semibold mb-2">Policy Rules</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm text-slate-600 mb-1">Initial Policy Status</label>
                 <select value={form.policyStatus} onChange={(e) => update('policyStatus', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
@@ -268,7 +268,7 @@ export default function AddMember() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm text-slate-600 mb-1">Policy Start Date</label>
                 <input type="date" value={form.startDate} onChange={(e) => update('startDate', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />

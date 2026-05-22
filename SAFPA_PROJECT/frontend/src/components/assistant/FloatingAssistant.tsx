@@ -172,16 +172,16 @@ export default function FloatingAssistant() {
           setIsExpanded(false);
           setIsOpen((current) => !current);
         }}
-        className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-accent)] text-white shadow-[0_18px_45px_rgba(122,46,46,0.35)] transition hover:scale-105 hover:bg-[var(--app-accent-strong)]"
+        className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-accent)] text-white shadow-[0_18px_45px_rgba(122,46,46,0.35)] transition hover:scale-105 hover:bg-[var(--app-accent-strong)] md:bottom-6 md:right-6 md:h-16 md:w-16"
         aria-label="Open assistant"
       >
         <Bot size={26} />
       </button>
 
       {isOpen && (
-        <section className={`fixed z-40 overflow-hidden rounded-[28px] border border-[var(--app-border-soft)] bg-white shadow-[0_28px_80px_rgba(15,23,42,0.22)] transition-all duration-300 ${isExpanded ? 'bottom-8 right-8 h-[min(760px,calc(100vh-4rem))] w-[min(860px,calc(100vw-2rem))]' : 'bottom-24 right-6 h-[min(620px,calc(100vh-8rem))] w-[min(420px,calc(100vw-1.5rem))]'}`}>
+        <section className={`fixed z-40 overflow-hidden border border-[var(--app-border-soft)] bg-white shadow-[0_28px_80px_rgba(15,23,42,0.22)] transition-all duration-300 ${isExpanded ? 'inset-x-3 bottom-3 top-20 rounded-[24px] md:bottom-8 md:left-auto md:right-8 md:top-auto md:h-[min(760px,calc(100vh-4rem))] md:w-[min(860px,calc(100vw-2rem))]' : 'inset-x-3 bottom-20 h-[min(70vh,36rem)] rounded-[24px] md:bottom-24 md:left-auto md:right-6 md:h-[min(620px,calc(100vh-8rem))] md:w-[min(420px,calc(100vw-1.5rem))]'}`}>
           <div className="flex h-full flex-col">
-            <div className="border-b border-[var(--app-border-soft)] bg-[linear-gradient(135deg,#7c2d12_0%,#b45309_48%,#f59e0b_100%)] px-5 py-4 text-white">
+            <div className="border-b border-[var(--app-border-soft)] bg-[linear-gradient(135deg,#7c2d12_0%,#b45309_48%,#f59e0b_100%)] px-4 py-4 text-white md:px-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
@@ -189,7 +189,7 @@ export default function FloatingAssistant() {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold">Assistant</h2>
-                    <p className="mt-1 text-sm text-amber-50/90">Ask questions about policies, collections, claims, documents, and access rules.</p>
+                    <p className="mt-1 hidden text-sm text-amber-50/90 sm:block">Ask questions about policies, collections, claims, documents, and access rules.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export default function FloatingAssistant() {
             {error && <div className="mx-5 mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
             <div className={`grid min-h-0 flex-1 gap-0 ${isExpanded ? 'md:grid-cols-[minmax(0,1fr)_260px]' : 'grid-cols-1'}`}>
-              <div className="flex min-h-0 flex-col p-5">
+              <div className="flex min-h-0 flex-col p-4 md:p-5">
                 <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
                   {messages.map((message, index) => (
                     <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -254,12 +254,12 @@ export default function FloatingAssistant() {
                     placeholder="Ask about policy status, cover, payments, documents, claims, or what you should do next."
                     className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-amber-400"
                   />
-                  <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="mt-2 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-xs text-slate-500">Responses adapt to your role and currently visible records.</div>
                     <button
                       type="submit"
                       disabled={busy || !prompt.trim()}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                     >
                       <Send size={14} /> Send
                     </button>

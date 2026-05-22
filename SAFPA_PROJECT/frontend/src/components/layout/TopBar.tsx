@@ -2,7 +2,7 @@ import { useRole } from '../../contexts/RoleContext';
 import { useTenantBranding } from '../../contexts/useTenantBranding';
 import { resolveAssetUrl } from '../../services/http';
 import type { UserRole } from '../../types';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 import { useState } from 'react';
 
 const roleLabels: Record<UserRole, string> = {
@@ -15,7 +15,11 @@ const roleLabels: Record<UserRole, string> = {
   policyholder_customer: 'Policyholder / Customer',
 };
 
-export default function TopBar() {
+interface TopBarProps {
+  onMenuClick: () => void;
+}
+
+export default function TopBar({ onMenuClick }: TopBarProps) {
   const { currentUser } = useRole();
   const { parlourBrand, isTenantBranded } = useTenantBranding();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -38,9 +42,19 @@ export default function TopBar() {
   ];
 
   return (
-    <header className="relative z-20 flex h-16 flex-shrink-0 items-center justify-between border-b px-6 shadow-sm" style={headerStyle}>
+    <header className="relative z-20 flex min-h-16 flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3 shadow-sm md:h-16 md:flex-nowrap md:px-6 md:py-0" style={headerStyle}>
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border text-[var(--app-ink-muted)] transition-colors hover:bg-[rgba(122,46,46,0.06)] hover:text-[var(--app-ink)] md:hidden"
+        style={{ borderColor: 'var(--app-border)' }}
+        aria-label="Open navigation"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Search */}
-      <div className="flex w-96 items-center gap-2 rounded-lg border px-4 py-2 transition-all" style={{ borderColor: 'var(--app-border)', background: 'rgba(255, 250, 242, 0.9)', boxShadow: 'inset 0 0 0 1px rgba(122, 46, 46, 0.06)' }}>
+      <div className="order-3 flex w-full items-center gap-2 rounded-lg border px-4 py-2 transition-all md:order-none md:w-96" style={{ borderColor: 'var(--app-border)', background: 'rgba(255, 250, 242, 0.9)', boxShadow: 'inset 0 0 0 1px rgba(122, 46, 46, 0.06)' }}>
         <Search size={16} className="text-[var(--app-ink-muted)]" />
         <input
           type="text"
@@ -49,7 +63,7 @@ export default function TopBar() {
         />
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="ml-auto flex items-center gap-3 sm:gap-4 md:ml-0 md:gap-6">
         {isTenantBranded && parlourBrand && (
           <div className="hidden items-center gap-3 rounded-xl border px-4 py-2 lg:flex" style={{ borderColor: 'var(--app-border-soft)', background: 'rgba(255, 250, 242, 0.74)' }}>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
@@ -76,7 +90,7 @@ export default function TopBar() {
             <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-white" style={{ backgroundColor: shellAccent }}></span>
           </button>
           {showNotifications && (
-            <div className="absolute right-0 top-full z-50 mt-3 w-80 overflow-hidden rounded-xl border bg-[var(--app-surface)] shadow-lg animate-fade-in" style={{ borderColor: 'var(--app-border-soft)' }}>
+            <div className="absolute right-0 top-full z-50 mt-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border bg-[var(--app-surface)] shadow-lg animate-fade-in" style={{ borderColor: 'var(--app-border-soft)' }}>
               <div className="flex items-center justify-between border-b px-4 py-4 text-sm font-semibold text-[var(--app-ink)]" style={{ borderColor: 'var(--app-border-soft)', background: 'rgba(122, 46, 46, 0.04)' }}>
                 <span>Notifications</span>
                 <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: 'rgba(122, 46, 46, 0.08)', color: 'var(--app-accent)' }}>{notifications.length} New</span>
@@ -94,7 +108,7 @@ export default function TopBar() {
         </div>
 
         {/* User Info */}
-        <div className="flex items-center gap-3 border-l pl-4" style={{ borderColor: 'var(--app-border-soft)' }}>
+        <div className="flex items-center gap-3 border-l pl-3 sm:pl-4" style={{ borderColor: 'var(--app-border-soft)' }}>
           <div className="text-right hidden sm:block">
             <div className="text-sm font-semibold text-[var(--app-ink)]">{currentUser.name}</div>
             <div className="text-xs text-[var(--app-ink-muted)]">{roleLabels[currentUser.role]}</div>
