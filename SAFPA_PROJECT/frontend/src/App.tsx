@@ -234,9 +234,9 @@ function AppRoutes() {
         {/* Audit Log */}
         <Route path="/audit-log" element={withAccess(['safpa_admin', 'parlour_owner'], <AuditLog />)} />
 
-        {/* Default redirect based on role */}
-        <Route path="/" element={<Navigate to={isAuthenticated ? defaultPath : '/login'} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
+        {/* Default entry keeps the shared URL stable for unauthenticated users. */}
+        <Route path="/" element={isAuthenticated ? <Navigate to={defaultPath} replace /> : <LoginPage />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/'} replace />} />
       </Route>
     </Routes>
   );
