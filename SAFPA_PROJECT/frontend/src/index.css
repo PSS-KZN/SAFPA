@@ -160,6 +160,20 @@ textarea {
   background-color: rgba(122, 46, 46, 0.04);
 }
 
+main table {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+main table th,
+main table td {
+  white-space: nowrap;
+}
+
 /* Buttons */
 .btn-primary {
   background: linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent-strong) 100%);
